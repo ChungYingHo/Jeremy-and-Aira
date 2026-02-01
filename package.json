@@ -9,7 +9,10 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^5.17.1"
+    "@astrojs/svelte": "^7.2.5",
+    "astro": "^5.17.1",
+    "svelte": "^5.49.1",
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.54.0",
