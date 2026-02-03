@@ -1,61 +1,71 @@
-import astro from "eslint-plugin-astro"
-import tseslint from "@typescript-eslint/eslint-plugin"
-import tsParser from "@typescript-eslint/parser"
+import astro from 'eslint-plugin-astro'
+import tseslint from '@typescript-eslint/eslint-plugin'
+import tsParser from '@typescript-eslint/parser'
+import importPlugin from 'eslint-plugin-import'
 
 export default [
   ...astro.configs.recommended,
+
   {
-    files: ["**/*.{js,ts}"],
+    files: ['**/*.{js,ts,tsx,mts,cts}'],
     languageOptions: {
       parser: tsParser,
-      ecmaVersion: "latest",
-      sourceType: "module",
+      ecmaVersion: 'latest',
+      sourceType: 'module',
     },
     plugins: {
-      "@typescript-eslint": tseslint,
+      '@typescript-eslint': tseslint,
+      import: importPlugin,
     },
     rules: {
-      "@typescript-eslint/no-unused-vars": [
-        "warn",
+      quotes: ['error', 'single', { avoidEscape: true }],
+      semi: ['error', 'never'],
+      indent: ['error', 2, { SwitchCase: 1 }],
+      'eol-last': ['error', 'always'],
+      'no-multiple-empty-lines': ['error', { max: 1, maxEOF: 1 }],
+
+      eqeqeq: ['error', 'always'],
+      'no-var': 'error',
+      'prefer-const': 'error',
+      'no-useless-return': 'warn',
+      'no-else-return': 'warn',
+      'no-unexpected-multiline': 'error',
+
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
         {
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
         },
       ],
-      "eol-last": ["error", "always"],
-      indent: [
-        "error",
-        2,
+
+      'no-restricted-imports': [
+        'error',
         {
-          SwitchCase: 1,
+          patterns: ['../*', './*'],
         },
       ],
-      semi: ["error", "never"],
-      "no-multiple-empty-lines": [
-        "error",
+
+      'import/no-relative-parent-imports': 'error',
+      'import/no-relative-packages': 'error',
+
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
         {
-          max: 1,
-          maxEOF: 1,
+          prefer: 'type-imports',
+          disallowTypeAnnotations: false,
+          fixStyle: 'inline-type-imports',
         },
       ],
-      "no-console": [
-        "warn",
-        {
-          allow: ["warn", "error"],
-        },
-      ],
-      eqeqeq: ["error", "always"],
-      "no-var": "error",
-      "prefer-const": "error",
-      "no-useless-return": "warn",
-      "no-else-return": "warn",
-      "no-unexpected-multiline": "error",
     },
   },
+
   {
-    files: ["**/*.astro"],
+    files: ['**/*.astro'],
     rules: {
-      "no-console": "off",
+      'no-console': 'off',
     },
   },
 ]
