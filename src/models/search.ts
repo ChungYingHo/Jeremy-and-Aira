@@ -3,8 +3,10 @@ export interface SearchIndexItem {
   slug: string;
   content: string;
   description?: string;
-  type: 'Page' | 'Article' | 'Note';
+  type: string; 
   tags?: string[];
+
+  [key: string]: any;
 }
 
 export interface RawFileContent {
