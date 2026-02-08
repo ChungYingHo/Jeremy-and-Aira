@@ -2,7 +2,7 @@
 import '@/styles/tailwind.css'
 import '@/styles/main.scss'
 import Menu from '@/components/Menu.svelte'
-import { useMenu } from '@/composables/useMenu'
+import { useMenu } from '@/utils/useMenu'
 
 const { menu } = await useMenu()
 // 取得當前路徑 (例如 /notes/java/20260205-type)
