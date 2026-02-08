@@ -2,6 +2,7 @@
   import { onMount } from "svelte"
   import type { MenuItem, MenuGroup } from "@/models/menu"
   import DrilldownMenu from "@/components/DrilldownMenu.svelte"
+  import SearchBtn from "@/components/SearchBtn.svelte" // [!code ++]
   import { fade, slide } from "svelte/transition"
 
   export let rootItems: MenuItem[] = []
@@ -17,8 +18,6 @@
 
   // 遞迴檢查：某個 Group 是否包含當前路徑
   function groupContainsPath(group: MenuGroup, path: string): boolean {
-    // 簡單優化：如果是 /notes 開頭且 Group Title 是 Notes，直接回傳 true
-    // 但為了精確，我們遞迴檢查 children
     return group.children.some(child => {
       if (child.type === 'page') return child.href === path || path.startsWith(child.href)
       if (child.type === 'group') return groupContainsPath(child, path)
@@ -97,6 +96,10 @@
           {/if}
         {/each}
       </ul>
+
+      <div class="hidden md:block w-px h-5 bg-gradient-to-b from-transparent via-white/20 to-transparent mx-1"></div>
+
+      <SearchBtn {rootItems} />
     </div>
 
     {#if desktopOpenGroup && desktopMenuElement}
