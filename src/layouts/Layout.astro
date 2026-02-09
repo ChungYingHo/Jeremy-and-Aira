@@ -78,25 +78,19 @@ const {
     scroll-behavior: smooth;
   }
 
-  /* 生成 SVG 噪點 (比圖片更輕量) 
-    這會讓背景看起來更有質感，不像單純的 CSS 漸層
-  */
+  /* 生成 SVG 噪點 */
   .bg-noise {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   }
 
-  /* 極簡網格背景 
-    讓頁面看起來更有工程師/技術感
-  */
+  /* 極簡網格背景 */
   .bg-grid-pattern {
     background-size: 40px 40px;
     background-image: linear-gradient(to right, #ffffff 1px, transparent 1px),
       linear-gradient(to bottom, #ffffff 1px, transparent 1px);
   }
 
-  /* 緩慢呼吸動畫 
-    讓背景不那麼死板
-  */
+  /* 緩慢呼吸動畫 */
   @keyframes pulse-slow {
     0%, 100% { opacity: 0.4; transform: scale(1); }
     50% { opacity: 0.7; transform: scale(1.1); }
@@ -105,7 +99,7 @@ const {
     animation: pulse-slow 8s ease-in-out infinite;
   }
 
-  /* Scrollbar 美化 - 更細緻 */
+  /* Scrollbar 美化 */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -118,7 +112,7 @@ const {
   ::-webkit-scrollbar-thumb {
     background: #262626;
     border-radius: 4px;
-    border: 1px solid #050505; /* 增加邊框讓它看起來分離 */
+    border: 1px solid #050505;
   }
 
   ::-webkit-scrollbar-thumb:hover {
