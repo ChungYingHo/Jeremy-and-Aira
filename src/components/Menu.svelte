@@ -94,6 +94,12 @@
     }
   }
 
+  // [新增] 回到頂部功能
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    closeAll();
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     if ((e.metaKey || e.ctrlKey) && e.key === "k") {
       e.preventDefault()
@@ -258,6 +264,24 @@
               onTitleChange={(title) => (desktopTitle = title || (isMobileMenuOpen ? "MENU" : desktopOpenGroup?.title) || "")}
             />
           {/key}
+
+          {#if innerWidth < 1024}
+            <div class="mt-2 pt-2 border-t border-white/5">
+              <button 
+                on:click={scrollToTop}
+                class="
+                  flex items-center justify-center gap-2 px-3 py-3 rounded-lg w-full
+                  text-white/50 font-bold tracking-widest uppercase text-[10px]
+                  hover:bg-white/5 hover:text-pink-200 transition-all duration-200
+                "
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m18 15-6-6-6 6"/>
+                </svg>
+                <span>Back to Top</span>
+              </button>
+            </div>
+          {/if}
         </div>
       </div>
     {/if}
