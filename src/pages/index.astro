@@ -5,7 +5,7 @@ import Layout from '@/layouts/Layout.astro';
 <Layout title="Welcome">
   <main 
     id="canvas-area"
-    class="fixed inset-0 z-[50] w-full h-full bg-[#121011] text-white overflow-hidden cursor-crosshair font-sans selection:bg-pink-500 selection:text-white"
+    class="fixed inset-0 z-0 w-full h-full bg-[#121011] text-white overflow-hidden font-sans selection:bg-pink-500 selection:text-white"
   >
     
     <div id="splatter-container" class="absolute inset-0 pointer-events-none z-0"></div>
@@ -110,7 +110,6 @@ const initPage = () => {
 // === 2. Splatter Logic ===
 const container = document.getElementById('splatter-container')
 const canvasArea = document.getElementById('canvas-area')
-// [修改] 手機版上限稍微低一點 (15)，桌機 (20)
 const MAX_BLOBS = window.innerWidth < 768 ? 15 : 20
 
 const COLORS = [
@@ -126,7 +125,6 @@ const createSplatter = (x: number, y: number, isInitial = false) => {
   const isMobile = window.innerWidth < 768
   const color = COLORS[Math.floor(Math.random() * COLORS.length)]
   
-  // [修改] 手機版尺寸縮小
   let size
   if (isMobile) {
     size = isInitial ? random(100, 220) : random(50, 150)

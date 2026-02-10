@@ -3,6 +3,7 @@ import '@/styles/tailwind.css'
 import '@/styles/main.scss'
 import Menu from '@/components/Menu.svelte'
 import { useMenu } from '@/utils/useMenu'
+import CustomCursor from '@/components/CustomCursor.astro'
 
 const { menu } = await useMenu()
 const currentPath = Astro.url.pathname
@@ -65,6 +66,8 @@ const {
     <main class="flex-1 w-full max-w-5xl mx-auto px-6 pt-32 pb-24 relative z-10">
       <slot />
     </main>
+
+    <CustomCursor />
   </body>
 </html>
 
