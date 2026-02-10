@@ -13,10 +13,16 @@ interface Props {
   description?: string
 }
 
+// 1. 定義網站名稱
+const SITE_NAME = 'Jeremy x Aira'
+
 const {
-  title = 'Jeremy & Aira',
+  title = SITE_NAME,
   description = "Jeremy & Aira's Tech Blog",
 } = Astro.props
+
+// 2. 標題邏輯
+const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
 ---
 
 <!doctype html>
@@ -26,7 +32,8 @@ const {
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
-    <title>{title}</title>
+    
+    <title>{pageTitle}</title>
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
@@ -68,57 +75,57 @@ const {
     </main>
 
     <CustomCursor />
+
+    <style is:global>
+      :root {
+        color-scheme: dark;
+      }
+
+      html {
+        font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+        scroll-behavior: smooth;
+      }
+
+      /* 生成 SVG 噪點 */
+      .bg-noise {
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      }
+
+      /* 極簡網格背景 */
+      .bg-grid-pattern {
+        background-size: 40px 40px;
+        background-image: linear-gradient(to right, #ffffff 1px, transparent 1px),
+          linear-gradient(to bottom, #ffffff 1px, transparent 1px);
+      }
+
+      /* 緩慢呼吸動畫 */
+      @keyframes pulse-slow {
+        0%, 100% { opacity: 0.4; transform: scale(1); }
+        50% { opacity: 0.7; transform: scale(1.1); }
+      }
+      .animate-pulse-slow {
+        animation: pulse-slow 8s ease-in-out infinite;
+      }
+
+      /* Scrollbar 美化 */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #262626;
+        border-radius: 4px;
+        border: 1px solid #050505;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #404040;
+      }
+    </style>
   </body>
 </html>
-
-<style is:global>
-  :root {
-    color-scheme: dark;
-  }
-
-  html {
-    font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
-    scroll-behavior: smooth;
-  }
-
-  /* 生成 SVG 噪點 */
-  .bg-noise {
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  }
-
-  /* 極簡網格背景 */
-  .bg-grid-pattern {
-    background-size: 40px 40px;
-    background-image: linear-gradient(to right, #ffffff 1px, transparent 1px),
-      linear-gradient(to bottom, #ffffff 1px, transparent 1px);
-  }
-
-  /* 緩慢呼吸動畫 */
-  @keyframes pulse-slow {
-    0%, 100% { opacity: 0.4; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.1); }
-  }
-  .animate-pulse-slow {
-    animation: pulse-slow 8s ease-in-out infinite;
-  }
-
-  /* Scrollbar 美化 */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: #262626;
-    border-radius: 4px;
-    border: 1px solid #050505;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: #404040;
-  }
-</style>
