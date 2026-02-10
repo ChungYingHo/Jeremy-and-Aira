@@ -24,7 +24,7 @@
 
   function handleScroll() {
     const currentScrollY = window.scrollY
-    const threshold = 50
+    const threshold = 50 
 
     if (currentScrollY < threshold) {
       showMenu = true
@@ -51,7 +51,8 @@
   }
 
   function openDesktopGroup(menuGroup: MenuGroup, event: MouseEvent) {
-    if (innerWidth < 768) return
+    // [修改] 門檻提高到 1024 (lg)
+    if (innerWidth < 1024) return
     if (desktopOpenGroup && desktopOpenGroup.title === menuGroup.title) {
       closeAll()
       return
@@ -62,7 +63,8 @@
   }
 
   function handleLogoClick(e: MouseEvent) {
-    if (innerWidth < 768) {
+    // [修改] 門檻提高到 1024 (lg)
+    if (innerWidth < 1024) {
       e.preventDefault()
       if (isMobileMenuOpen) {
         closeAll()
@@ -102,7 +104,8 @@
   }
 
   function isActive(item: MenuItem): boolean {
-    if (innerWidth >= 768 && desktopOpenGroup === item) return true
+    // [修改] 門檻提高到 1024 (lg)
+    if (innerWidth >= 1024 && desktopOpenGroup === item) return true
     if (isGroup(item)) return groupContainsPath(item, currentPath)
     return item.href === currentPath
   }
@@ -126,38 +129,48 @@
 >
   <div 
     class="
-      pointer-events-auto mx-auto w-fit flex justify-center items-center px-3 py-2 md:pl-3 md:pr-4 relative 
+      pointer-events-auto mx-auto w-fit flex justify-center items-center px-3 py-2 lg:pl-3 lg:pr-4 relative 
       border border-white/10 rounded-full transition-all duration-500
-      {scrollY > 50 ? 'bg-[#121212] shadow-2xl shadow-black/80' : 'bg-[#121212]/80 backdrop-blur-lg shadow-xl'}
+      {scrollY > 50 ? 'bg-[#161213] shadow-2xl shadow-black/80' : 'bg-[#161213]/80 backdrop-blur-lg shadow-xl'}
     "
   >
 
-    <div class="flex w-auto justify-center items-center gap-2 md:gap-4 relative">
+    <div class="flex w-auto justify-center items-center gap-2 lg:gap-4 relative">
       <a 
         href="/" 
         on:click={handleLogoClick}
         class="
-          group relative flex items-center justify-center h-10 px-6 md:px-8 rounded-full 
-          bg-gradient-to-b from-slate-50 via-slate-300 to-slate-400 
-          text-slate-800 font-bold tracking-[0.15em] md:tracking-[0.2em] text-xs md:text-sm 
-          shadow-[0_4px_6px_-1px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.9)] 
-          border-t border-white/50 ring-1 ring-slate-400/30
-          hover:brightness-110 hover:-translate-y-[1px]
-          active:scale-[0.98] transition-all duration-300 ease-out
+          group relative flex items-center justify-center h-10 px-6 lg:px-8 rounded-full 
+          bg-white/5 
+          border border-white/10 
+          hover:border-pink-300/30 hover:bg-white/10
+          transition-all duration-300 ease-out
+          active:scale-[0.98]
           z-20
         "
       >
-        <span class="drop-shadow-[0_1px_0_rgba(255,255,255,0.6)] group-hover:drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] whitespace-nowrap">
-          JEREMY & AIRA
+        <span class="
+          text-xs md:text-sm font-bold tracking-[0.15em] lg:tracking-[0.2em] whitespace-nowrap
+          text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-purple-200 to-indigo-200
+          drop-shadow-[0_0_10px_rgba(255,192,203,0.3)]
+          group-hover:drop-shadow-[0_0_15px_rgba(255,192,203,0.6)]
+          transition-all duration-300
+        ">
+          JEREMY &times; AIRA
         </span>
       </a>
 
-      <ul class="hidden md:flex menu menu-horizontal bg-transparent px-1 gap-2" bind:this={desktopMenuElement}>
+      <ul class="hidden lg:flex menu menu-horizontal bg-transparent px-1 gap-2" bind:this={desktopMenuElement}>
         {#each rootItems as menuItem}
           {#if isGroup(menuItem)}
             <li>
               <button 
-                class="h-10 px-5 rounded-full text-base font-medium tracking-wide transition-all duration-300 {isActive(menuItem) ? 'bg-white/15 backdrop-blur-md text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]' : 'text-white/80 hover:text-white hover:bg-white/5'}"
+                class="
+                  h-10 px-5 rounded-full text-base font-medium tracking-wide transition-all duration-300 
+                  {isActive(menuItem) 
+                    ? 'bg-pink-500/10 backdrop-blur-md text-pink-100 shadow-[inset_0_1px_0_0_rgba(255,192,203,0.2)] border border-pink-500/20' 
+                    : 'text-white/90 hover:text-pink-100 hover:bg-white/5'}
+                "
                 on:click={(event) => openDesktopGroup(menuItem, event)}
               >
                 {menuItem.title}
@@ -167,7 +180,12 @@
             <li>
               <a 
                 href={menuItem.href}
-                class="h-10 px-5 rounded-full text-base font-medium tracking-wide transition-all duration-300 flex items-center {isActive(menuItem) ? 'bg-white/15 text-white' : 'text-white/80 hover:text-white hover:bg-white/5'}"
+                class="
+                  h-10 px-5 rounded-full text-base font-medium tracking-wide transition-all duration-300 flex items-center 
+                  {isActive(menuItem) 
+                    ? 'bg-pink-500/10 text-pink-100 border border-pink-500/20' 
+                    : 'text-white/90 hover:text-pink-100 hover:bg-white/5'}
+                "
               >
                 {menuItem.title}
               </a>
@@ -176,37 +194,61 @@
         {/each}
       </ul>
 
-      <div class="flex items-center gap-1 md:gap-3 md:pl-1">
-        <div class="hidden md:block w-px h-5 bg-gradient-to-b from-transparent via-white/20 to-transparent"></div>
+      <div class="flex items-center gap-1 lg:gap-3 lg:pl-1">
+        <div class="hidden lg:block w-px h-5 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
         <SearchBtn onClick={toggleSearch} />
       </div>
     </div>
 
-    {#if (desktopOpenGroup && innerWidth >= 768) || (isMobileMenuOpen && innerWidth < 768)}
+    {#if (desktopOpenGroup && innerWidth >= 1024) || (isMobileMenuOpen && innerWidth < 1024)}
       <div
         class="
           absolute top-full pt-4 z-50
           w-[calc(100vw-32px)] max-w-[320px] left-1/2 -translate-x-1/2
-          md:w-full md:max-w-none md:left-0 md:translate-x-0
+          /* [修改] 面板樣式斷點改為 lg: */
+          lg:w-full lg:max-w-none lg:left-0 lg:translate-x-0
         "
         transition:fade={{ duration: 120 }}
       >
         <div
           class="
-            bg-[#121212] border border-white/10 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)] rounded-2xl
-            p-2.5 md:p-2 text-xs
-            max-h-[60vh] md:max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar
+            bg-[#161213] border border-white/10 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)] rounded-2xl
+            p-2.5 lg:p-2 text-xs
+            max-h-[60vh] lg:max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar
           "
           transition:slide={{ duration: 250, axis: "y" }}
         >
-          <div class="flex items-center justify-between mb-1 px-2 pt-1 pb-1.5 border-b border-white/5 sticky top-0 bg-[#121212] z-10">
+          <div class="flex items-center justify-between mb-1 px-2 pt-1 pb-1.5 border-b border-white/5 sticky top-0 bg-[#161213] z-10">
              {#key desktopTitle}
-              <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 ml-1" in:fade={{ duration: 150 }}>
+              <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-pink-200/50 ml-1" in:fade={{ duration: 150 }}>
                 {desktopTitle}
               </div>
              {/key}
             <button class="btn btn-ghost btn-xs btn-circle w-5 h-5 min-h-0 text-white/40 hover:text-white hover:bg-white/10 transition-colors" on:click={closeAll}>✕</button>
           </div>
+
+          {#if innerWidth < 1024}
+            <div class="mb-2">
+              <a 
+                href="/" 
+                on:click={closeAll}
+                class="
+                  flex items-center gap-3 px-3 py-3 rounded-lg w-full
+                  text-white/90 font-bold tracking-widest uppercase
+                  hover:bg-white/5 hover:text-pink-100 transition-all duration-200
+                "
+              >
+                <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-pink-200">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/> 
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                  </svg>
+                </div>
+                <span>HOME</span>
+              </a>
+              <div class="h-px bg-white/5 mx-2 mt-1"></div>
+            </div>
+          {/if}
 
           {#key (isMobileMenuOpen ? 'mobile-root' : desktopOpenGroup?.title)}
             <DrilldownMenu
@@ -227,15 +269,15 @@
         class="
           absolute top-full pt-4 z-50
           w-[calc(100vw-32px)] max-w-[320px] left-1/2 -translate-x-1/2
-          md:w-full md:max-w-none md:left-0 md:translate-x-0
+          lg:w-full lg:max-w-none lg:left-0 lg:translate-x-0
         "
         transition:fade={{ duration: 120 }}
       >
         <div
           class="
-            bg-[#121212] border border-white/10 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)] rounded-2xl
-            p-2.5 md:p-0 text-xs
-            max-h-[60vh] md:max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar
+            bg-[#161213] border border-white/10 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)] rounded-2xl
+            p-2.5 lg:p-0 text-xs
+            max-h-[60vh] lg:max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar
           "
           transition:slide={{ duration: 250, axis: "y" }}
         >
@@ -247,7 +289,7 @@
   </div>
 </header>
 
-{#if (desktopOpenGroup && innerWidth >= 768) || isMobileMenuOpen || isSearchOpen}
+{#if (desktopOpenGroup && innerWidth >= 1024) || isMobileMenuOpen || isSearchOpen}
   <button 
     class="fixed inset-0 z-40 cursor-default focus:outline-none" 
     aria-label="Close panel" 
@@ -256,7 +298,6 @@
 {/if}
 
 <style>
-  /* 針對 Menu 內部的微型 Scrollbar */
   .custom-scrollbar::-webkit-scrollbar {
     width: 4px;
   }
@@ -264,10 +305,10 @@
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 192, 203, 0.15);
     border-radius: 4px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 192, 203, 0.3);
   }
 </style>

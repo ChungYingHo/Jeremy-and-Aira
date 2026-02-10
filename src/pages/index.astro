@@ -76,7 +76,7 @@ import Layout from '@/layouts/Layout.astro';
 </Layout>
 
 <script>
-// === 1. 時間招呼語 ===
+// === 1. Greeting ===
 const greetingContainer = document.getElementById('greeting-container')
 const greetingMain = document.getElementById('greeting-main')
 const greetingSub = document.getElementById('greeting-sub')
@@ -107,10 +107,11 @@ const initPage = () => {
   })
 }
 
-// === 2. 噴墨核心邏輯 ===
+// === 2. Splatter Logic ===
 const container = document.getElementById('splatter-container')
 const canvasArea = document.getElementById('canvas-area')
-const MAX_BLOBS = 20
+// [修改] 手機版上限稍微低一點 (15)，桌機 (20)
+const MAX_BLOBS = window.innerWidth < 768 ? 15 : 20
 
 const COLORS = [
   '#FFADAD', '#FFD6A5', '#FDFFB6', '#CAFFBF', 
@@ -122,8 +123,16 @@ const random = (min: number, max: number) => Math.random() * (max - min) + min
 const createSplatter = (x: number, y: number, isInitial = false) => {
   if (!container) return
 
+  const isMobile = window.innerWidth < 768
   const color = COLORS[Math.floor(Math.random() * COLORS.length)]
-  const size = isInitial ? random(150, 350) : random(80, 220)
+  
+  // [修改] 手機版尺寸縮小
+  let size
+  if (isMobile) {
+    size = isInitial ? random(100, 220) : random(50, 150)
+  } else {
+    size = isInitial ? random(150, 350) : random(80, 220)
+  }
   
   // Group
   const group = document.createElement('div')
@@ -197,6 +206,7 @@ const createSplatter = (x: number, y: number, isInitial = false) => {
 
   // Lifecycle
   setTimeout(() => {
+    group.dataset.dying = 'true' 
     group.style.transition = 'opacity 1s ease-out'
     group.style.opacity = '0'
     setTimeout(() => {
@@ -213,7 +223,7 @@ const createSplatter = (x: number, y: number, isInitial = false) => {
   }
 }
 
-// === 3. Idle Auto-Paint ===
+// === 3. Idle Loop ===
 let lastInteractionTime = Date.now()
 
 const resetTimer = () => {
@@ -223,7 +233,17 @@ const resetTimer = () => {
 const startIdleLoop = () => {
   setInterval(() => {
     const now = Date.now()
-    if (now - lastInteractionTime > 2000 && container && container.children.length < 5) {
+    
+    let activeCount = 0
+    if (container) {
+      for (let i = 0; i < container.children.length; i++) {
+        if (!container.children[i].hasAttribute('data-dying')) {
+          activeCount++
+        }
+      }
+    }
+
+    if (now - lastInteractionTime > 2000 && activeCount < 5) {
       const x = random(window.innerWidth * 0.1, window.innerWidth * 0.9)
       const y = random(window.innerHeight * 0.1, window.innerHeight * 0.9)
       createSplatter(x, y)
@@ -234,9 +254,11 @@ const startIdleLoop = () => {
 // === 4. Init ===
 window.addEventListener('DOMContentLoaded', () => {
   initPage()
-  setTimeout(() => createSplatter(window.innerWidth * 0.2, window.innerHeight * 0.3, true), 500)
-  setTimeout(() => createSplatter(window.innerWidth * 0.8, window.innerHeight * 0.7, true), 700)
-  setTimeout(() => createSplatter(window.innerWidth * 0.5, window.innerHeight * 0.5, true), 900)
+  
+  // Progressive Entrance
+  setTimeout(() => createSplatter(window.innerWidth * 0.25, window.innerHeight * 0.35, true), 500)
+  setTimeout(() => createSplatter(window.innerWidth * 0.75, window.innerHeight * 0.65, true), 1200)
+  setTimeout(() => createSplatter(window.innerWidth * 0.5, window.innerHeight * 0.5, true), 2000)
   
   startIdleLoop()
 })

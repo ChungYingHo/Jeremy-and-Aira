@@ -195,8 +195,12 @@ document.querySelectorAll('.mobile-toc-link').forEach(l => l.addEventListener('c
 </script>
 
 <style is:global>
-  /* 以下保持原本的樣式不變 */
-  .md-content { color: #cbd5e1; font-size: 1rem; line-height: 1.75; letter-spacing: 0.01em; }
+  /* [修改] 內文顏色提亮至 #e2e8f0 (Slate-200)，對比度更高，閱讀更輕鬆 */
+  .md-content { color: #e2e8f0; font-size: 1rem; line-height: 1.75; letter-spacing: 0.01em; }
+  
+  /* [修改] 強調粗體字為純白，並加粗 */
+  .md-content strong { color: #fff; font-weight: 600; }
+  
   @media (min-width: 768px) { .md-content { font-size: 1.05rem; line-height: 1.9; } }
   .md-content h1, .md-content h2, .md-content h3, .md-content h4 { color: #fff; font-weight: 700; line-height: 1.3; scroll-margin-top: 6rem; }
   .md-content h1 { display: none; }
@@ -212,7 +216,10 @@ document.querySelectorAll('.mobile-toc-link').forEach(l => l.addEventListener('c
   .md-content ul, .md-content ol { margin: 1.25rem 0; padding-left: 1.25rem; }
   @media (min-width: 768px) { .md-content ul, .md-content ol { padding-left: 1.5rem; } }
   .md-content li { margin: 0.5rem 0; padding-left: 0.25rem; }
-  .md-content li::marker { color: #64748b; }
+  
+  /* [修改] 列表標記顏色提亮 */
+  .md-content li::marker { color: #94a3b8; }
+  
   .md-content blockquote { margin: 1.5rem 0; padding: 0.75rem 1rem; border-left: 3px solid #3b82f6; background: rgba(59, 130, 246, 0.05); border-radius: 0 0.5rem 0.5rem 0; color: #e2e8f0; font-style: italic; }
   @media (min-width: 768px) { .md-content blockquote { padding: 1rem 1.5rem; border-left-width: 4px; } }
   .md-content :not(pre) > code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.85em; color: #ff79c6; background: #282a36; padding: 0.2em 0.4em; border-radius: 0.3em; vertical-align: 1px; border: 1px solid rgba(255,255,255,0.05); }
@@ -224,6 +231,18 @@ document.querySelectorAll('.mobile-toc-link').forEach(l => l.addEventListener('c
   @media (min-width: 768px) { .md-content img { border-radius: 0.75rem; margin: 2rem auto; } }
   .md-content hr { border: 0; height: 1px; background: rgba(255,255,255,0.1); margin: 2.5rem 0; }
   
+  /* Table Styles */
+  .md-content table { 
+    display: block; width: 100%; overflow-x: auto; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.95rem; white-space: nowrap; 
+  }
+  @media (min-width: 768px) { .md-content table { display: table; white-space: normal; } }
+  
+  /* [修改] 表格內容文字顏色提亮 */
+  .md-content th { text-align: left; padding: 0.75rem 1rem; font-weight: 600; color: #fff; background: rgba(255, 255, 255, 0.03); border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+  .md-content td { padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #e2e8f0; transition: background-color 0.2s; }
+  .md-content tr:last-child td { border-bottom: none; }
+  .md-content tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
   /* Admonitions */
   .admonition { margin: 1.5rem 0; padding: 0.75rem 1rem; border-left: 3px solid; border-radius: 0.5rem; background: rgba(255, 255, 255, 0.02); font-size: 0.95rem; }
   @media (min-width: 768px) { .admonition { padding: 1rem 1.25rem; border-left-width: 4px; } }
