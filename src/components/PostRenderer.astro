@@ -11,7 +11,9 @@ const { entry } = Astro.props;
 const { Content, headings } = await entry.render();
 
 const authorKey = entry.data.author || 'Jeremy';
-const authorData = AUTHORS.find(a => a.name === authorKey) || AUTHORS[0];
+// 大小寫不敏感比對
+const authorData = AUTHORS.find(a => a.name.toLowerCase() === authorKey.toLowerCase()) || AUTHORS[0];
+
 const publishDate = entry.data.date ? new Date(entry.data.date) : new Date();
 const tags: string[] = entry.data.tags || [];
 
@@ -26,7 +28,7 @@ const formatDate = (d: Date) => {
   <div id="progress-bar" class="fixed top-0 left-0 h-[3px] bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 z-[100] w-0 transition-all duration-100 ease-out shadow-[0_0_10px_rgba(56,189,248,0.5)]"></div>
   <div class="fixed top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-indigo-900/10 blur-[150px] rounded-full pointer-events-none -z-10"></div>
 
-  <div class="relative w-full max-w-[900px] mx-auto px-5 md:px-8 pt-0 pb-32">
+  <div class="relative w-full max-w-[900px] mx-auto px-5 md:px-8 pt-0 pb-0">
     
     <header class="flex flex-col items-center text-center mb-12 md:mb-16 space-y-5 animate-fade-in-up">
       {tags.length > 0 && (
@@ -44,7 +46,6 @@ const formatDate = (d: Date) => {
       </h1>
 
       <div class="flex flex-wrap items-center justify-center gap-5 text-xs font-medium text-slate-500 tracking-wider uppercase">
-        
         <a 
           href="/about" 
           class="flex items-center gap-3 group cursor-pointer hover:opacity-90 transition-opacity p-1 -ml-1"
@@ -59,13 +60,10 @@ const formatDate = (d: Date) => {
             {authorData.name}
           </span>
         </a>
-
         <div class="w-px h-4 bg-white/10 hidden sm:block"></div>
-        
         <div class="flex items-center gap-2" title="Published Date">
           <span class="text-slate-500">{formatDate(publishDate)}</span>
         </div>
-
       </div>
     </header>
 
@@ -121,7 +119,6 @@ const formatDate = (d: Date) => {
          </svg>
        </div>
     </button>
-    
     <div class="px-6 py-6 pb-16 max-h-[60vh] overflow-y-auto custom-scrollbar">
       <ul class="space-y-3">
         {headings.map((heading) => (
@@ -142,6 +139,7 @@ const formatDate = (d: Date) => {
 </Layout>
 
 <script>
+// === 1. Progress Bar ===
 const progressBar = document.getElementById('progress-bar')
 window.addEventListener('scroll', () => {
   if(progressBar) {
@@ -152,6 +150,7 @@ window.addEventListener('scroll', () => {
   }
 })
 
+// === 2. TOC Highlight ===
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
@@ -169,6 +168,7 @@ const observer = new IntersectionObserver((entries) => {
 }, { rootMargin: '-100px 0px -70% 0px' })
 document.querySelectorAll('.md-content h2, .md-content h3').forEach(h => observer.observe(h))
 
+// === 3. Mobile TOC Toggle ===
 const toggleBtn = document.getElementById('toc-toggle')
 const container = document.getElementById('mobile-toc-container')
 const icon = document.getElementById('toc-icon')
@@ -192,13 +192,49 @@ const toggle = (force?: boolean) => {
 
 toggleBtn?.addEventListener('click', () => toggle())
 document.querySelectorAll('.mobile-toc-link').forEach(l => l.addEventListener('click', () => toggle(false)))
+
+// === 4. Code Block Copy Button (Wrapper Pattern) ===
+document.addEventListener('DOMContentLoaded', () => {
+  const preElements = document.querySelectorAll('pre')
+
+  preElements.forEach(pre => {
+    const wrapper = document.createElement('div')
+    wrapper.className = 'code-block-wrapper group relative mb-6 rounded-lg overflow-hidden'
+    
+    pre.parentNode?.insertBefore(wrapper, pre)
+    wrapper.appendChild(pre)
+
+    pre.style.marginTop = '0'
+    pre.style.marginBottom = '0'
+    pre.style.borderRadius = '0'
+
+    const copyBtn = document.createElement('button')
+    copyBtn.className = 'copy-btn'
+    copyBtn.setAttribute('aria-label', 'Copy code')
+    
+    copyBtn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" class="icon-copy" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" class="icon-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    `
+
+    copyBtn.addEventListener('click', async () => {
+      const code = pre.querySelector('code')?.innerText || ''
+      try {
+        await navigator.clipboard.writeText(code)
+        copyBtn.classList.add('is-copied')
+        setTimeout(() => copyBtn.classList.remove('is-copied'), 2000)
+      } catch (err) {
+        console.error('Failed to copy!', err)
+      }
+    })
+
+    wrapper.appendChild(copyBtn)
+  })
+})
 </script>
 
 <style is:global>
-  /* [修改] 內文顏色提亮至 #e2e8f0 (Slate-200)，對比度更高，閱讀更輕鬆 */
   .md-content { color: #e2e8f0; font-size: 1rem; line-height: 1.75; letter-spacing: 0.01em; }
-  
-  /* [修改] 強調粗體字為純白，並加粗 */
   .md-content strong { color: #fff; font-weight: 600; }
   
   @media (min-width: 768px) { .md-content { font-size: 1.05rem; line-height: 1.9; } }
@@ -216,53 +252,159 @@ document.querySelectorAll('.mobile-toc-link').forEach(l => l.addEventListener('c
   .md-content ul, .md-content ol { margin: 1.25rem 0; padding-left: 1.25rem; }
   @media (min-width: 768px) { .md-content ul, .md-content ol { padding-left: 1.5rem; } }
   .md-content li { margin: 0.5rem 0; padding-left: 0.25rem; }
-  
-  /* [修改] 列表標記顏色提亮 */
   .md-content li::marker { color: #94a3b8; }
   
-  .md-content blockquote { margin: 1.5rem 0; padding: 0.75rem 1rem; border-left: 3px solid #3b82f6; background: rgba(59, 130, 246, 0.05); border-radius: 0 0.5rem 0.5rem 0; color: #e2e8f0; font-style: italic; }
-  @media (min-width: 768px) { .md-content blockquote { padding: 1rem 1.5rem; border-left-width: 4px; } }
+  /* [修改] Blockquote 樣式：粉彩霓虹資源卡風格 */
+  .md-content blockquote { 
+    position: relative;
+    margin: 1.5rem 0; 
+    padding: 1rem 1.25rem; 
+    
+    /* 粉色左側邊框 */
+    border-left: 4px solid #f472b6; /* Pink-400 */
+    background: rgba(244, 114, 182, 0.05); /* 淡粉背景 */
+    
+    border-radius: 0.5rem; 
+    color: #e2e8f0; 
+    font-style: normal; /* [關鍵] 移除斜體，讓連結文字清晰 */
+    overflow: hidden;
+  }
+  
+  @media (min-width: 768px) { .md-content blockquote { padding: 1rem 1.5rem; } }
+
+  /* [新增] Blockquote 內的連結樣式強化 */
+  .md-content blockquote a {
+    color: #f472b6 !important; /* 強制粉色 */
+    font-weight: 700;
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(244, 114, 182, 0.5); /* 虛線底線 */
+    transition: all 0.2s;
+  }
+  .md-content blockquote a:hover {
+    border-bottom-style: solid; /* Hover 變實線 */
+    opacity: 0.8;
+  }
+  
+  /* Code Block Styles */
   .md-content :not(pre) > code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.85em; color: #ff79c6; background: #282a36; padding: 0.2em 0.4em; border-radius: 0.3em; vertical-align: 1px; border: 1px solid rgba(255,255,255,0.05); }
-  .md-content pre { margin: 1.5rem 0; padding: 1rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.08); background: #1e1e1e; overflow-x: auto; }
-  @media (min-width: 768px) { .md-content pre { margin: 1.75rem 0; padding: 1.25rem; border-radius: 0.75rem; } }
-  .md-content pre code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.85rem; background: transparent; padding: 0; color: inherit; border: none; }
-  @media (min-width: 768px) { .md-content pre code { font-size: 0.9rem; } }
+  
+  .md-content pre { padding: 1rem; background: #1e1e1e; overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.85rem; }
+  @media (min-width: 768px) { .md-content pre { padding: 1.25rem; font-size: 0.9rem; } }
+  .md-content pre code { background: transparent; padding: 0; color: inherit; border: none; font-size: inherit; }
+
   .md-content img { border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.05); margin: 1.5rem auto; display: block; max-width: 100%; height: auto; }
   @media (min-width: 768px) { .md-content img { border-radius: 0.75rem; margin: 2rem auto; } }
   .md-content hr { border: 0; height: 1px; background: rgba(255,255,255,0.1); margin: 2.5rem 0; }
   
   /* Table Styles */
-  .md-content table { 
-    display: block; width: 100%; overflow-x: auto; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.95rem; white-space: nowrap; 
-  }
+  .md-content table { display: block; width: 100%; overflow-x: auto; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.95rem; white-space: nowrap; }
   @media (min-width: 768px) { .md-content table { display: table; white-space: normal; } }
-  
-  /* [修改] 表格內容文字顏色提亮 */
   .md-content th { text-align: left; padding: 0.75rem 1rem; font-weight: 600; color: #fff; background: rgba(255, 255, 255, 0.03); border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
   .md-content td { padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #e2e8f0; transition: background-color 0.2s; }
   .md-content tr:last-child td { border-bottom: none; }
   .md-content tr:hover td { background: rgba(255, 255, 255, 0.02); }
 
-  /* Admonitions */
-  .admonition { margin: 1.5rem 0; padding: 0.75rem 1rem; border-left: 3px solid; border-radius: 0.5rem; background: rgba(255, 255, 255, 0.02); font-size: 0.95rem; }
-  @media (min-width: 768px) { .admonition { padding: 1rem 1.25rem; border-left-width: 4px; } }
-  .admonition::before { content: attr(class); text-transform: uppercase; font-weight: 800; font-size: 0.75rem; letter-spacing: 0.1em; display: block; margin-bottom: 0.5rem; opacity: 0.9; }
+  /* === Admonitions === */
+  .admonition { 
+    margin: 1.5rem 0; 
+    padding: 0.75rem 1rem; 
+    border-radius: 0.5rem; 
+    background: rgba(255, 255, 255, 0.02); 
+    font-size: 0.95rem;
+    padding-left: 1.25rem;
+    
+    /* 左側色條 (原生 Border) */
+    border-left-width: 4px;
+    border-left-style: solid;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  @media (min-width: 768px) { 
+    .admonition { 
+      padding: 1rem 1.5rem; 
+      padding-left: 1.75rem; 
+    } 
+  }
+
+  /* 移除 ::after (舊的標題顯示方式) */
+  .admonition::after { display: none; }
+
+  /* [關鍵修改] 改用 ::before 顯示標題，這樣它會出現在內容的最上方 */
+  .admonition::before { 
+    content: attr(class); 
+    text-transform: uppercase; 
+    font-weight: 800; 
+    font-size: 0.75rem; 
+    letter-spacing: 0.1em; 
+    display: block; 
+    margin-bottom: 0.5rem; 
+    opacity: 0.9; 
+    visibility: visible;
+  }
+  
+  /* 針對不同類型的標題文字與顏色 (需覆蓋 content 屬性) */
+  .admonition.info::before { content: 'INFO'; color: #60a5fa; }
+  .admonition.note::before { content: 'NOTE'; color: #cbd5e1; }
+  .admonition.tip::before { content: 'TIP'; color: #34d399; }
+  .admonition.warning::before { content: 'WARNING'; color: #fbbf24; }
+  .admonition.danger::before { content: 'DANGER'; color: #f87171; }
+
+  /* Border Colors */
+  .admonition.info { border-left-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+  .admonition.note { border-left-color: #94a3b8; background: rgba(148, 163, 184, 0.1); }
+  .admonition.tip { border-left-color: #10b981; background: rgba(16, 185, 129, 0.1); }
+  .admonition.warning { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+  .admonition.danger { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+
   .admonition p { margin: 0.5rem 0 0 0; }
   .admonition p:first-of-type { margin-top: 0; }
-  .admonition.info { border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
-  .admonition.info::before { content: 'INFO'; color: #60a5fa; }
-  .admonition.note { border-color: #94a3b8; background: rgba(148, 163, 184, 0.1); }
-  .admonition.note::before { content: 'NOTE'; color: #cbd5e1; }
-  .admonition.tip { border-color: #10b981; background: rgba(16, 185, 129, 0.1); }
-  .admonition.tip::before { content: 'TIP'; color: #34d399; }
-  .admonition.warning { border-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
-  .admonition.warning::before { content: 'WARNING'; color: #fbbf24; }
-  .admonition.danger { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
-  .admonition.danger::before { content: 'DANGER'; color: #f87171; }
 
   .custom-scrollbar::-webkit-scrollbar { width: 4px; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+  /* Copy Button Wrapper */
+  .copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.375rem;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #94a3b8;
+    transition: all 0.2s;
+    backdrop-filter: blur(4px);
+    opacity: 0; 
+    z-index: 20;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .code-block-wrapper:hover .copy-btn {
+    opacity: 1;
+  }
+
+  .copy-btn:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border-color: rgba(255,255,255,0.1);
+  }
+
+  .copy-btn.is-copied {
+    border-color: rgba(74, 222, 128, 0.3);
+    background-color: rgba(74, 222, 128, 0.1);
+    color: #4ade80;
+  }
+
+  .copy-btn .icon-check { display: none; }
+  .copy-btn .icon-copy { display: block; }
+
+  .copy-btn.is-copied .icon-check { display: block; }
+  .copy-btn.is-copied .icon-copy { display: none; }
 
   @keyframes fade-in-up {
     from { opacity: 0; transform: translateY(20px); }
