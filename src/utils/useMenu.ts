@@ -1,4 +1,5 @@
 import type { MenuItem, MenuGroup } from '@/models/menu'
+import { MENU_COLLECTIONS, type CollectionType } from '@/models/menu'
 import { getCollection, type CollectionEntry } from 'astro:content'
 
 /**
@@ -20,8 +21,9 @@ function humanizeSegment(pathSegment: string): string {
 /**
  * 決定 Collection Entry 的標題
  */
-function resolveEntryTitle(entry: CollectionEntry<'notes' | 'series'>): string {
-  if (entry.data.title) return entry.data.title
+function resolveEntryTitle(entry: CollectionEntry<CollectionType>): string {
+  const data = entry.data as any
+  if (data.title) return data.title
   
   const slugParts = entry.slug.split('/')
   const fileName = slugParts[slugParts.length - 1]
@@ -58,7 +60,7 @@ function getOrCreateGroup(
  */
 function insertEntryIntoTree(
   menuTree: MenuItem[],
-  entry: CollectionEntry<'notes' | 'series'>,
+  entry: CollectionEntry<CollectionType>,
   baseUrl: string
 ): void {
   const pathSegments = entry.slug.split('/')
@@ -102,19 +104,21 @@ function sortMenuTree(menuItems: MenuItem[]): void {
 
 /**
  * 建構 Collection 樹狀選單
+ * [修正 TS 錯誤] 將 filter 參數宣告為 (entry: any)，避免 unknown 解構錯誤
  */
 async function buildTreeFromCollection(
-  name: 'notes' | 'series',
+  name: CollectionType,
   baseUrl: string
 ) {
   const tree: MenuItem[] = []
   
-  const entries = await getCollection(name, ({ data }) => {
-    return data.draft !== true
+  // 這裡使用 entry: any 是解決 TS 多載錯誤最直接的方法
+  const entries = await getCollection(name as any, (entry: any) => {
+    return entry.data.draft !== true
   })
 
   for (const entry of entries) {
-    insertEntryIntoTree(tree, entry, baseUrl)
+    insertEntryIntoTree(tree, entry as CollectionEntry<CollectionType>, baseUrl)
   }
 
   sortMenuTree(tree)
@@ -123,15 +127,11 @@ async function buildTreeFromCollection(
 }
 
 /**
- * [新增] 定義靜態頁面 (src/pages/ 下的獨立頁面)
- * 可以在這裡手動加入 About, Contact, 或其他單頁
+ * 定義靜態頁面
  */
 function getStaticPages(): MenuItem[] {
   return [
-    // 如果想要首頁也在選單出現，可以取消下面註解
-    // { type: 'page', title: 'Home', href: '/' },
     { type: 'page', title: 'About', href: '/about' },
-    // { type: 'page', title: 'Contact', href: '/contact' },
   ]
 }
 
@@ -139,27 +139,47 @@ function getStaticPages(): MenuItem[] {
  * Public API: 整合 Static Pages 與 Collections
  */
 export async function useMenu() {
-  const notesTree = await buildTreeFromCollection('notes', '/notes')
-  const seriesTree = await buildTreeFromCollection('series', '/series')
-
   const staticPages = getStaticPages()
 
-  const collectionsMenu: MenuItem[] = [
-    {
-      type: 'group' as const,
-      title: 'Notes',
-      children: notesTree
-    },
-    {
-      type: 'group' as const,
-      title: 'Series',
-      children: seriesTree
+  // 1. 動態讀取 menu.ts 的設定
+  const collectionMenusPromises = MENU_COLLECTIONS.map(async (config) => {
+    
+    // [新功能] 如果是 Blog，直接回傳 Page 類型 (不建立樹狀選單)
+    if (config.title === 'Blog') {
+      return {
+        type: 'page' as const,
+        title: config.title,
+        href: config.baseUrl // 直接連到 /blog
+      }
     }
-  ].filter(item =>
-    item.type === 'group' && item.children.length > 0
-  )
 
-  const fullMenu = [...staticPages, ...collectionsMenu]
+    // 其他 (Notes, Series) 繼續建立樹狀選單
+    const tree = await buildTreeFromCollection(config.collectionName, config.baseUrl)
+    return {
+      type: 'group' as const,
+      title: config.title,
+      children: tree
+    }
+  })
+
+  const collectionMenus = await Promise.all(collectionMenusPromises)
+
+  // 2. 過濾邏輯調整
+  // 保留 'page' 類型的 Item (如 Blog)，
+  // 對於 'group' 類型，則檢查是否有 children
+  const validCollectionMenus = collectionMenus.filter(item => {
+    if (item.type === 'page') return true
+    return item.children && item.children.length > 0
+  })
+
+  // 3. 強制排序：讓 "Blog" 永遠排在最後面
+  validCollectionMenus.sort((a, b) => {
+    if (a.title === 'Blog') return 1
+    if (b.title === 'Blog') return -1
+    return 0
+  })
+
+  const fullMenu = [...staticPages, ...validCollectionMenus]
 
   return { menu: fullMenu }
 }

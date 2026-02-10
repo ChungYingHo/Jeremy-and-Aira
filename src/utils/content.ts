@@ -1,15 +1,15 @@
-import { getCollection, type CollectionEntry } from 'astro:content'
+import { getCollection } from 'astro:content'
+import type { CollectionType } from '@/models/menu' 
 
-/**
- * 通用的路徑生成器
- * @param collectionName content/config.ts 裡定義的集合名稱
- */
-export async function generateCollectionPaths(collectionName: 'notes' | 'series') {
-  const entries = await getCollection(collectionName, ({ data }: CollectionEntry<'notes' | 'series'>) => {
-    return data.draft !== true
+export async function generateCollectionPaths(collectionName: CollectionType) {
+  // [修正]
+  // 1. collectionName as any: 繞過集合名稱檢查
+  // 2. (entry: any): 參數直接設為 any，避免 unknown 解構錯誤
+  const entries = await getCollection(collectionName as any, (entry: any) => {
+    return entry.data.draft !== true
   })
 
-  return entries.map((entry: CollectionEntry<'notes' | 'series'>) => ({
+  return entries.map((entry: any) => ({
     params: { slug: entry.slug },
     props: { entry },
   }))

@@ -4,7 +4,7 @@ import { AUTHORS } from '@/constants/authors';
 import Layout from '@/layouts/Layout.astro';
 
 interface Props {
-  entry: CollectionEntry<'notes'> | CollectionEntry<'series'>;
+  entry: CollectionEntry<'notes'> | CollectionEntry<'series'> | CollectionEntry<'blog'>;
 }
 
 const { entry } = Astro.props;
