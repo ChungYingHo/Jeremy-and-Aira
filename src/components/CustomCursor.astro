@@ -7,7 +7,7 @@
 
 <script>
 const initCursor = () => {
-  // 1. 裝置檢測：觸控裝置 (手機/平板) 不啟用自定義游標
+  // 裝置檢測
   if (window.matchMedia('(pointer: coarse)').matches) return
 
   const dot = document.getElementById('cursor-dot')
@@ -20,16 +20,14 @@ const initCursor = () => {
   let ringX = -100
   let ringY = -100
 
-  // 2. 初始顯示
+  // 初始顯示
   document.addEventListener('mousemove', (e) => {
     mouseX = e.clientX
     mouseY = e.clientY
-    
-    // 讓 dot 瞬間移動 (無延遲)
     dot.style.transform = `translate(${mouseX}px, ${mouseY}px)`
   })
 
-  // 3. 點擊效果
+  // 點擊效果
   document.addEventListener('mousedown', () => {
     ring.classList.add('clicking')
   })
@@ -38,28 +36,36 @@ const initCursor = () => {
     ring.classList.remove('clicking')
   })
 
-  // 4. Hover 偵測
-  const addHoverListeners = () => {
-    const interactiveElements = document.querySelectorAll('a, button, [role="button"], input, select, textarea, .hover-trigger')
+  // === 核心邏輯：狀態偵測 ===
+  const updateCursorState = (e: MouseEvent) => {
+    const target = e.target as HTMLElement
+
+    // 1. 互動元素
+    const clickable = target.closest('a, button, [role="button"], input[type="submit"], input[type="button"], .hover-trigger')
     
-    interactiveElements.forEach((el) => {
-      el.addEventListener('mouseenter', () => {
-        ring.classList.add('hovering')
-        dot.classList.add('hovering')
-      })
-      el.addEventListener('mouseleave', () => {
-        ring.classList.remove('hovering')
-        dot.classList.remove('hovering')
-      })
-    })
+    // 2. 文字元素
+    const textable = target.closest('p, h1, h2, h3, h4, h5, h6, span, code, pre, blockquote, input[type="text"], textarea, label, li, td, th')
+
+    if (clickable) {
+      // [模式 A: 互動] 放大光暈
+      ring.classList.add('hovering')
+      ring.classList.remove('text-mode')
+      dot.classList.add('hovering')
+    } else if (textable) {
+      // [模式 B: 文字] 閱讀燈模式 (Dot 消失，Ring 變柔和光暈)
+      ring.classList.add('text-mode')
+      ring.classList.remove('hovering')
+      dot.classList.add('text-mode')
+    } else {
+      // [模式 C: 預設] 顯示標準自定義游標
+      ring.classList.remove('hovering', 'text-mode')
+      dot.classList.remove('hovering', 'text-mode')
+    }
   }
 
-  addHoverListeners()
-  
-  const observer = new MutationObserver(addHoverListeners)
-  observer.observe(document.body, { childList: true, subtree: true })
+  document.addEventListener('mouseover', updateCursorState)
 
-  // 5. 動畫迴圈
+  // 動畫迴圈
   const render = () => {
     ringX += (mouseX - ringX) * 0.15
     ringY += (mouseY - ringY) * 0.15
@@ -77,10 +83,23 @@ document.addEventListener('DOMContentLoaded', initCursor)
 </script>
 
 <style>
-  /* 全局隱藏預設游標 */
+  /* === 1. 系統游標控制 === */
   @media (pointer: fine) {
-    :global(body), :global(a), :global(button) {
+    /* 預設：全站隱藏系統游標 */
+    :global(body) {
       cursor: none;
+    }
+    
+    /* 文字模式：顯示 I-beam 方便選取 */
+    :global(p), :global(h1), :global(h2), :global(h3), :global(h4), :global(h5), :global(h6), 
+    :global(span), :global(code), :global(pre), :global(blockquote), 
+    :global(input[type="text"]), :global(textarea), :global(label), :global(li), :global(td), :global(th) {
+      cursor: text !important;
+    }
+
+    /* 互動模式：隱藏 */
+    :global(a), :global(button), :global(input[type="submit"]) {
+      cursor: none !important;
     }
   }
 
@@ -94,14 +113,16 @@ document.addEventListener('DOMContentLoaded', initCursor)
     background-color: white;
     border-radius: 50%;
     pointer-events: none;
-    z-index: 10001; /* [修改] 層級極高，蓋過 Menu */
+    z-index: 100000;
     margin-left: -4px; 
     margin-top: -4px;
     mix-blend-mode: exclusion;
     transition: width 0.3s, height 0.3s, opacity 0.3s;
   }
 
-  .cursor-dot.hovering {
+  /* Hover 或 Text 模式下，Dot 都消失，以免干擾視線 */
+  .cursor-dot.hovering,
+  .cursor-dot.text-mode {
     opacity: 0;
   }
 
@@ -114,41 +135,52 @@ document.addEventListener('DOMContentLoaded', initCursor)
     height: 32px;
     border-radius: 50%;
     pointer-events: none;
-    z-index: 10000; /* [修改] 層級極高，蓋過 Menu */
+    z-index: 99999;
     margin-left: -16px;
     margin-top: -16px;
     
+    /* 預設狀態：空心圓環 */
     border: 1px solid rgba(244, 114, 182, 0.4);
     background: radial-gradient(circle, rgba(244, 114, 182, 0.1) 0%, transparent 70%);
     box-shadow: 0 0 10px rgba(244, 114, 182, 0.2);
     
     mix-blend-mode: screen;
-    transition: width 0.3s cubic-bezier(0.25, 1, 0.5, 1), 
-                height 0.3s cubic-bezier(0.25, 1, 0.5, 1),
-                background-color 0.3s,
-                border-color 0.3s;
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
   }
 
-  /* Hover 狀態：光暈放大 */
+  /* 模式 A: Hover (放大強調) */
   .cursor-ring.hovering {
-    /* [修改] 縮小尺寸至 48px，更精緻 */
     width: 48px;
     height: 48px;
     margin-left: -24px;
     margin-top: -24px;
-    
     background: rgba(244, 114, 182, 0.15);
     border-color: rgba(244, 114, 182, 0.8);
     box-shadow: 0 0 15px rgba(192, 132, 252, 0.4);
   }
 
-  /* Click 狀態 */
-  .cursor-ring.clicking {
-    width: 24px;
+  /* 模式 B: Text 模式 (氛圍閱讀燈) */
+  .cursor-ring.text-mode {
+    /* [關鍵修改] 保持存在，但變得柔和 */
+    width: 24px; /* 比預設略小 */
     height: 24px;
     margin-left: -12px;
     margin-top: -12px;
-    background: rgba(255, 255, 255, 0.8);
+    
+    /* 變成實心但透明的填充，去除邊框 */
     border-color: transparent;
+    background: rgba(244, 114, 182, 0.25); 
+    box-shadow: 0 0 15px rgba(244, 114, 182, 0.3); /* 增加一點模糊光暈 */
+  }
+
+  /* Click 狀態 */
+  .cursor-ring.clicking {
+    width: 20px;
+    height: 20px;
+    margin-left: -10px;
+    margin-top: -10px;
+    background: rgba(255, 255, 255, 0.9);
+    border-color: transparent;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
   }
 </style>
