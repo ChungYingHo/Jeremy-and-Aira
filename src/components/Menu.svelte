@@ -30,9 +30,9 @@
       showMenu = true
     } else {
       if (currentScrollY > lastScrollY) {
-        showMenu = false // 下滑 -> 隱藏
+        showMenu = false 
       } else {
-        showMenu = true  // 上滑 -> 顯示
+        showMenu = true 
       }
     }
     lastScrollY = currentScrollY
@@ -51,7 +51,6 @@
   }
 
   function openDesktopGroup(menuGroup: MenuGroup, event: MouseEvent) {
-    // [修改] 門檻提高到 1024 (lg)
     if (innerWidth < 1024) return
     if (desktopOpenGroup && desktopOpenGroup.title === menuGroup.title) {
       closeAll()
@@ -63,7 +62,6 @@
   }
 
   function handleLogoClick(e: MouseEvent) {
-    // [修改] 門檻提高到 1024 (lg)
     if (innerWidth < 1024) {
       e.preventDefault()
       if (isMobileMenuOpen) {
@@ -104,7 +102,6 @@
   }
 
   function isActive(item: MenuItem): boolean {
-    // [修改] 門檻提高到 1024 (lg)
     if (innerWidth >= 1024 && desktopOpenGroup === item) return true
     if (isGroup(item)) return groupContainsPath(item, currentPath)
     return item.href === currentPath
@@ -204,8 +201,9 @@
       <div
         class="
           absolute top-full pt-4 z-50
-          w-[calc(100vw-32px)] max-w-[320px] left-1/2 -translate-x-1/2
-          /* [修改] 面板樣式斷點改為 lg: */
+          w-[calc(100vw-32px)] max-w-[320px] 
+          md:w-[600px] md:max-w-[600px] 
+          left-1/2 -translate-x-1/2
           lg:w-full lg:max-w-none lg:left-0 lg:translate-x-0
         "
         transition:fade={{ duration: 120 }}
@@ -268,7 +266,9 @@
       <div
         class="
           absolute top-full pt-4 z-50
-          w-[calc(100vw-32px)] max-w-[320px] left-1/2 -translate-x-1/2
+          w-[calc(100vw-32px)] max-w-[320px] 
+          md:w-[600px] md:max-w-[600px]
+          left-1/2 -translate-x-1/2
           lg:w-full lg:max-w-none lg:left-0 lg:translate-x-0
         "
         transition:fade={{ duration: 120 }}
@@ -281,7 +281,7 @@
           "
           transition:slide={{ duration: 250, axis: "y" }}
         >
-          <SearchPanel {rootItems} onClose={closeAll} />
+          <SearchPanel onClose={closeAll} />
         </div>
       </div>
     {/if}

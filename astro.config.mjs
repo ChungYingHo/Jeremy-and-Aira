@@ -6,6 +6,7 @@ import path from 'node:path'
 import mdx from '@astrojs/mdx'
 import remarkDirective from 'remark-directive'
 import { visit } from 'unist-util-visit'
+import pagefind from 'astro-pagefind'
 
 function remarkAdmonitions() {
   // 👇 修改這裡：加入 JSDoc 標註 tree 為 any，解決隱含 any 的報錯
@@ -35,7 +36,11 @@ function remarkAdmonitions() {
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: [svelte(), mdx()],
+  integrations: [
+    svelte(),
+    mdx(),
+    pagefind()
+  ],
 
   vite: {
     resolve: {
