@@ -7,9 +7,9 @@ import mdx from '@astrojs/mdx'
 import remarkDirective from 'remark-directive'
 import { visit } from 'unist-util-visit'
 import pagefind from 'astro-pagefind'
+import vercel from '@astrojs/vercel'
 
 function remarkAdmonitions() {
-  // 👇 修改這裡：加入 JSDoc 標註 tree 為 any，解決隱含 any 的報錯
   return (/** @type {any} */ tree) => {
     visit(tree, (node) => {
       if (
@@ -36,6 +36,9 @@ function remarkAdmonitions() {
 
 // https://astro.build/config
 export default defineConfig({
+  // 明確指定 static，確保 pagefind 搜尋功能正常運作
+  output: 'static',
+
   integrations: [
     svelte(),
     mdx(),
@@ -61,4 +64,9 @@ export default defineConfig({
       remarkAdmonitions,
     ],
   },
+
+  adapter: vercel({
+    webAnalytics: { enabled: true }, // 開啟 Vercel 流量分析
+    imageService: true, // 使用 Vercel 的圖片優化服務
+  }),
 });
