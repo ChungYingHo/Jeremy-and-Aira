@@ -7,57 +7,69 @@
 
 <script>
 const initCursor = () => {
-  // 裝置檢測
+  // 1. 裝置檢測
   if (window.matchMedia('(pointer: coarse)').matches) return
 
   const dot = document.getElementById('cursor-dot')
   const ring = document.getElementById('cursor-ring')
+  const body = document.body
 
   if (!dot || !ring) return
 
-  let mouseX = -100
-  let mouseY = -100
-  let ringX = -100
-  let ringY = -100
+  let mouseX = 0
+  let mouseY = 0
+  let ringX = 0
+  let ringY = 0
+  let isCursorActive = false 
 
-  // 初始顯示
+  // 2. 核心監聽
   document.addEventListener('mousemove', (e) => {
     mouseX = e.clientX
     mouseY = e.clientY
+
+    // === [關鍵優化] 第一次喚醒 ===
+    if (!isCursorActive) {
+      isCursorActive = true
+      
+      // A. 瞬間同步座標 (消除飛入感)
+      ringX = mouseX
+      ringY = mouseY
+      
+      // B. 強制設定初始位置 (避免第一幀閃爍)
+      dot.style.transform = `translate(${mouseX}px, ${mouseY}px)`
+      ring.style.transform = `translate(${mouseX}px, ${mouseY}px)`
+      
+      // C. 啟動 CSS 動畫 (讓 body 隱藏系統游標，讓光圈放大出現)
+      requestAnimationFrame(() => {
+        body.classList.add('custom-cursor-active')
+      })
+    }
+
+    // Dot 始終無延遲跟隨
     dot.style.transform = `translate(${mouseX}px, ${mouseY}px)`
   })
 
   // 點擊效果
-  document.addEventListener('mousedown', () => {
-    ring.classList.add('clicking')
-  })
+  document.addEventListener('mousedown', () => ring.classList.add('clicking'))
+  document.addEventListener('mouseup', () => ring.classList.remove('clicking'))
 
-  document.addEventListener('mouseup', () => {
-    ring.classList.remove('clicking')
-  })
-
-  // === 核心邏輯：狀態偵測 ===
+  // 狀態偵測
   const updateCursorState = (e: MouseEvent) => {
-    const target = e.target as HTMLElement
+    if (!isCursorActive) return // 還沒啟動前不偵測
 
-    // 1. 互動元素
+    const target = e.target as HTMLElement
     const clickable = target.closest('a, button, [role="button"], input[type="submit"], input[type="button"], .hover-trigger')
-    
-    // 2. 文字元素
     const textable = target.closest('p, h1, h2, h3, h4, h5, h6, span, code, pre, blockquote, input[type="text"], textarea, label, li, td, th')
 
     if (clickable) {
-      // [模式 A: 互動] 放大光暈
       ring.classList.add('hovering')
       ring.classList.remove('text-mode')
       dot.classList.add('hovering')
     } else if (textable) {
-      // [模式 B: 文字] 閱讀燈模式 (Dot 消失，Ring 變柔和光暈)
       ring.classList.add('text-mode')
       ring.classList.remove('hovering')
       dot.classList.add('text-mode')
     } else {
-      // [模式 C: 預設] 顯示標準自定義游標
       ring.classList.remove('hovering', 'text-mode')
       dot.classList.remove('hovering', 'text-mode')
     }
@@ -65,13 +77,14 @@ const initCursor = () => {
 
   document.addEventListener('mouseover', updateCursorState)
 
-  // 動畫迴圈
+  // 動畫迴圈 (Lerp 延遲效果)
   const render = () => {
-    ringX += (mouseX - ringX) * 0.15
-    ringY += (mouseY - ringY) * 0.15
-
-    ring.style.transform = `translate(${ringX}px, ${ringY}px)`
-
+    if (isCursorActive) {
+      // 滑鼠移動時的平滑跟隨
+      ringX += (mouseX - ringX) * 0.15
+      ringY += (mouseY - ringY) * 0.15
+      ring.style.transform = `translate(${ringX}px, ${ringY}px)`
+    }
     requestAnimationFrame(render)
   }
 
@@ -83,72 +96,106 @@ document.addEventListener('DOMContentLoaded', initCursor)
 </script>
 
 <style>
-  /* === 1. 系統游標控制 === */
-  @media (pointer: fine) {
-    /* 預設：全站隱藏系統游標 */
-    :global(body) {
-      cursor: none;
-    }
-    
-    /* 文字模式：顯示 I-beam 方便選取 */
-    :global(p), :global(h1), :global(h2), :global(h3), :global(h4), :global(h5), :global(h6), 
-    :global(span), :global(code), :global(pre), :global(blockquote), 
-    :global(input[type="text"]), :global(textarea), :global(label), :global(li), :global(td), :global(th) {
-      cursor: text !important;
-    }
-
-    /* 互動模式：隱藏 */
-    :global(a), :global(button), :global(input[type="submit"]) {
-      cursor: none !important;
-    }
-  }
-
-  /* --- 實心小點 (Dot) --- */
-  .cursor-dot {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 8px;
-    height: 8px;
-    background-color: white;
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 100000;
-    margin-left: -4px; 
-    margin-top: -4px;
-    mix-blend-mode: exclusion;
-    transition: width 0.3s, height 0.3s, opacity 0.3s;
-  }
-
-  /* Hover 或 Text 模式下，Dot 都消失，以免干擾視線 */
-  .cursor-dot.hovering,
-  .cursor-dot.text-mode {
-    opacity: 0;
-  }
-
-  /* --- 柔光光暈 (Ring) --- */
+  /* === 基礎層級 === */
+  .cursor-dot,
   .cursor-ring {
     position: fixed;
     top: 0;
     left: 0;
+    pointer-events: none;
+    z-index: 100000;
+  }
+
+  /* === 初始狀態 (未啟動) === */
+  /* 設為 scale(0.5) 和 opacity 0，準備做「綻放」動畫 */
+  .cursor-ring {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    pointer-events: none;
-    z-index: 99999;
     margin-left: -16px;
     margin-top: -16px;
     
-    /* 預設狀態：空心圓環 */
     border: 1px solid rgba(244, 114, 182, 0.4);
     background: radial-gradient(circle, rgba(244, 114, 182, 0.1) 0%, transparent 70%);
     box-shadow: 0 0 10px rgba(244, 114, 182, 0.2);
     
     mix-blend-mode: screen;
-    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    
+    /* 關鍵：初始縮小且透明 */
+    opacity: 0;
+    transform: scale(0.5); 
+    
+    /* 設定 transform 為獨立層，避免重繪效能問題 */
+    will-change: transform, width, height, opacity;
+    
+    /* 這裡是通用過渡，但下面會針對啟動做特殊處理 */
+    transition: width 0.3s, height 0.3s, background 0.3s, border 0.3s, opacity 0.3s;
   }
 
-  /* 模式 A: Hover (放大強調) */
+  .cursor-dot {
+    width: 8px;
+    height: 8px;
+    background-color: white;
+    border-radius: 50%;
+    margin-left: -4px; 
+    margin-top: -4px;
+    mix-blend-mode: exclusion;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  /* === 啟動狀態 (Active) === */
+  @media (pointer: fine) {
+    
+    /* 1. 隱藏系統游標 */
+    :global(body.custom-cursor-active) {
+      cursor: none;
+    }
+
+    /* 2. 顯示並放大光圈 (Spawn Animation) */
+    :global(body.custom-cursor-active) .cursor-ring {
+      opacity: 1;
+      /* 這裡不需要寫 transform: scale(1)，因為 JS 的 render loop 會接管 transform */
+      /* 但我們可以利用 animation 或 transition 讓它從 0.5 變到 1 的過程更滑順 */
+      animation: cursor-spawn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    :global(body.custom-cursor-active) .cursor-dot {
+      opacity: 1;
+    }
+
+    /* 互動游標隱藏 */
+    :global(body.custom-cursor-active) :global(a), 
+    :global(body.custom-cursor-active) :global(button) {
+      cursor: none !important;
+    }
+    
+    /* 輸入框保留系統游標 */
+    :global(body.custom-cursor-active) :global(input[type="text"]), 
+    :global(body.custom-cursor-active) :global(textarea) {
+      cursor: text !important;
+    }
+  }
+
+  /* === 定義喚醒動畫 === */
+  @keyframes cursor-spawn {
+    0% {
+      opacity: 0;
+      width: 0px;
+      height: 0px;
+      margin-left: 0;
+      margin-top: 0;
+    }
+    100% {
+      opacity: 1;
+      width: 32px;
+      height: 32px;
+      margin-left: -16px;
+      margin-top: -16px;
+    }
+  }
+
+  /* === 狀態變化 (維持原本邏輯) === */
   .cursor-ring.hovering {
     width: 48px;
     height: 48px;
@@ -157,23 +204,25 @@ document.addEventListener('DOMContentLoaded', initCursor)
     background: rgba(244, 114, 182, 0.15);
     border-color: rgba(244, 114, 182, 0.8);
     box-shadow: 0 0 15px rgba(192, 132, 252, 0.4);
+    animation: none; /* 狀態改變時取消 spawn 動畫 */
   }
 
-  /* 模式 B: Text 模式 (氛圍閱讀燈) */
   .cursor-ring.text-mode {
-    /* [關鍵修改] 保持存在，但變得柔和 */
-    width: 24px; /* 比預設略小 */
+    width: 24px;
     height: 24px;
     margin-left: -12px;
     margin-top: -12px;
-    
-    /* 變成實心但透明的填充，去除邊框 */
     border-color: transparent;
     background: rgba(244, 114, 182, 0.25); 
-    box-shadow: 0 0 15px rgba(244, 114, 182, 0.3); /* 增加一點模糊光暈 */
+    box-shadow: 0 0 15px rgba(244, 114, 182, 0.3);
+    animation: none;
   }
 
-  /* Click 狀態 */
+  .cursor-dot.hovering,
+  .cursor-dot.text-mode {
+    opacity: 0 !important;
+  }
+  
   .cursor-ring.clicking {
     width: 20px;
     height: 20px;
@@ -181,6 +230,5 @@ document.addEventListener('DOMContentLoaded', initCursor)
     margin-top: -10px;
     background: rgba(255, 255, 255, 0.9);
     border-color: transparent;
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
   }
 </style>
