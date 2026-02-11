@@ -7,7 +7,7 @@ const SocialIcons: Record<string, string> = {
   linkedin: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>`,
   npm: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 12v3H8v-3H5v7h14v-7h-3zM21 8H3v10h18V8zM3 8v-2h18v2"/></svg>`,
   ithome: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>`,
-  default: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`
+  default: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path></svg>`
 }
 
 const getSocialIcon = (key: string) => SocialIcons[key.toLowerCase()] || SocialIcons.default
@@ -42,8 +42,9 @@ const splitSummary = (text: string) => {
 
     <div class="space-y-12">
       
-      {AUTHORS.map((author) => {
+      {AUTHORS.map((author, index) => {
         const { quote, author: quoteAuthor } = splitSummary(author.summary || '');
+        const hasPortfolio = author.portfolio && author.portfolio.length > 0;
         
         return (
           <article 
@@ -59,6 +60,7 @@ const splitSummary = (text: string) => {
               
               <div class="flex flex-col md:flex-row gap-8 md:gap-12 items-start md:items-center">
                 
+                {/* Avatar Section */}
                 <div class="shrink-0 mx-auto md:mx-0 relative">
                   <div class={`
                     relative w-32 h-32 md:w-40 md:h-40 rounded-full p-1
@@ -88,6 +90,7 @@ const splitSummary = (text: string) => {
                   </div>
                 </div>
 
+                {/* Content Section */}
                 <div class="flex-1 min-w-0 text-center md:text-left space-y-6 w-full">
                   
                   {/* Name & Role */}
@@ -110,8 +113,8 @@ const splitSummary = (text: string) => {
                     ) : (
                       // Aira's Redacted Role
                       <div class="flex items-center justify-center md:justify-start gap-2 opacity-50">
-                         <span class="bg-slate-800 text-transparent rounded px-2 select-none text-xs">UNKNOWN ROLE</span>
-                         <span class="text-[10px] font-mono text-slate-600 uppercase tracking-widest">[ REDACTED ]</span>
+                          <span class="bg-slate-800 text-transparent rounded px-2 select-none text-xs">UNKNOWN ROLE</span>
+                          <span class="text-[10px] font-mono text-slate-600 uppercase tracking-widest">[ REDACTED ]</span>
                       </div>
                     )}
                   </div>
@@ -119,19 +122,19 @@ const splitSummary = (text: string) => {
                   {/* Description Text */}
                   <div class="prose prose-invert prose-sm max-w-none text-slate-300 whitespace-pre-line leading-relaxed">
                     {author.isSecret ? (
-                       // Aira's Secret Message (English)
-                       <div class="py-4 pl-4 border-l-2 border-white/5 space-y-3">
-                         <p class="text-slate-500/80 font-mono text-xs leading-loose">
-                           &gt; Accessing user profile... <span class="text-red-400">DENIED</span><br/>
-                           &gt; Decrypting bio... <span class="text-red-400">FAILED</span><br/>
-                           &gt; Status: <span class="text-slate-400">Character not yet unlocked.</span>
-                         </p>
-                         <p class="text-slate-400 text-sm italic pt-2">
-                           "This profile appears to be encrypted.<br/>Please check back later... or perhaps try to find the key?" 🤫
-                         </p>
-                       </div>
+                        // Aira's Secret Message
+                        <div class="py-4 pl-4 border-l-2 border-white/5 space-y-3">
+                          <p class="text-slate-500/80 font-mono text-xs leading-loose">
+                            &gt; Accessing user profile... <span class="text-red-400">DENIED</span><br/>
+                            &gt; Decrypting bio... <span class="text-red-400">FAILED</span><br/>
+                            &gt; Status: <span class="text-slate-400">Character not yet unlocked.</span>
+                          </p>
+                          <p class="text-slate-400 text-sm italic pt-2">
+                            "This profile appears to be encrypted.<br/>Please check back later... or perhaps try to find the key?" 🤫
+                          </p>
+                        </div>
                     ) : (
-                      // Jeremy's Bio (Standard)
+                      // Jeremy's Bio
                       <>
                         {quote && (
                           <div class="mb-6">
@@ -152,36 +155,93 @@ const splitSummary = (text: string) => {
 
                   {/* Tech Stack & Links (Only for Jeremy) */}
                   {!author.isSecret && (
-                    <div class="pt-6 border-t border-white/5 flex flex-col md:flex-row items-center md:justify-between gap-6">
-                      {/* Tech Stack */}
-                      {author.programmingLanguages && (
-                        <div class="flex flex-wrap gap-2 justify-center">
-                          {author.programmingLanguages.map(lang => (
-                            <span class="px-3 py-1 text-xs font-medium rounded-full bg-white/5 text-slate-400 border border-white/5">
-                              {lang}
-                            </span>
-                          ))}
+                    <div class="pt-6 border-t border-white/5 flex flex-col items-center md:items-start gap-6">
+                      <div class="w-full flex flex-col md:flex-row items-center md:justify-between gap-6">
+                        {/* Tech Stack */}
+                        {author.programmingLanguages && (
+                          <div class="flex flex-wrap gap-2 justify-center">
+                            {author.programmingLanguages.map(lang => (
+                              <span class="px-3 py-1 text-xs font-medium rounded-full bg-white/5 text-slate-400 border border-white/5">
+                                {lang}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Social Links */}
+                        {author.socialLinks && (
+                          <div class="flex gap-4">
+                            {Object.entries(author.socialLinks).map(([platform, url]) => (
+                              <a 
+                                href={url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                class="text-slate-500 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full"
+                                title={platform}
+                              >
+                                <Fragment set:html={getSocialIcon(platform)} />
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* === PORTFOLIO SECTION === */}
+                      {hasPortfolio && (
+                        <div class="w-full pt-2">
+                           <button 
+                            class="portfolio-trigger group/btn flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-slate-500 hover:text-pink-300 transition-colors"
+                            data-target={`portfolio-${index}`}
+                           >
+                            <span>Featured Projects</span>
+                            <svg 
+                              xmlns="http://www.w3.org/2000/svg" 
+                              width="14" height="14" 
+                              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                              class="transform transition-transform duration-300 group-data-[expanded=true]/btn:rotate-180"
+                            >
+                              <path d="m6 9 6 6 6-6"/>
+                            </svg>
+                           </button>
+
+                           <div 
+                              id={`portfolio-${index}`} 
+                              class="portfolio-content grid grid-rows-[0fr] transition-[grid-template-rows] duration-500 ease-out"
+                           >
+                              <div class="overflow-hidden">
+                                {/* 單欄顯示：移除了 md:grid-cols-2 */}
+                                <div class="pt-6 grid gap-4">
+                                  {author.portfolio.map(project => (
+                                    <a 
+                                      href={project.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      class="
+                                        group/card block p-5 rounded-xl bg-white/[0.03] border border-white/5 
+                                        hover:bg-white/[0.06] hover:border-pink-500/30 hover:shadow-[0_4px_20px_-10px_rgba(236,72,153,0.3)]
+                                        transition-all duration-300
+                                      "
+                                    >
+                                      <div class="flex items-start justify-between mb-2">
+                                        <h3 class="font-bold text-slate-200 group-hover/card:text-pink-200 transition-colors">
+                                          {project.name}
+                                        </h3>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-600 group-hover/card:text-pink-400 group-hover/card:translate-x-0.5 group-hover/card:-translate-y-0.5 transition-all"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>
+                                      </div>
+                                      <p class="text-xs text-slate-400 leading-relaxed line-clamp-3 group-hover/card:text-slate-300 whitespace-pre-line">
+                                        {project.summary}
+                                      </p>
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                           </div>
                         </div>
                       )}
 
-                      {/* Social Links */}
-                      {author.socialLinks && (
-                        <div class="flex gap-4">
-                          {Object.entries(author.socialLinks).map(([platform, url]) => (
-                            <a 
-                              href={url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              class="text-slate-500 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full"
-                              title={platform}
-                            >
-                              <Fragment set:html={getSocialIcon(platform)} />
-                            </a>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   )}
+
                 </div>
               </div>
             </div>
@@ -196,6 +256,40 @@ const splitSummary = (text: string) => {
     </div>
   </div>
 </Layout>
+
+<script>
+// Simple Toggle Logic
+const triggers = document.querySelectorAll('.portfolio-trigger')
+
+triggers.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    // 1. 取得目標 ID
+    const targetId = btn.getAttribute('data-target')
+    
+    // 2. [修正點] 如果沒有 ID (null)，就直接 return，TypeScript 就不會報錯了
+    if (!targetId) return
+
+    const content = document.getElementById(targetId)
+    
+    // 如果找不到內容容器，也直接 return
+    if (!content) return
+
+    const isExpanded = btn.getAttribute('data-expanded') === 'true'
+    
+    // Toggle State
+    btn.setAttribute('data-expanded', (!isExpanded).toString())
+    
+    // Toggle CSS Grid Class for animation
+    if (!isExpanded) {
+      content.classList.remove('grid-rows-[0fr]')
+      content.classList.add('grid-rows-[1fr]')
+    } else {
+      content.classList.remove('grid-rows-[1fr]')
+      content.classList.add('grid-rows-[0fr]')
+    }
+  })
+})
+</script>
 
 <style>
   @keyframes fade-in-up {

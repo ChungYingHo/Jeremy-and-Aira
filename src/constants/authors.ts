@@ -16,7 +16,14 @@ export const AUTHORS = [
       linkedin: 'https://www.linkedin.com/in/chung-ying-ho',
       npm: 'https://www.npmjs.com/~ag_jeremy',
       ithome: 'https://ithelp.ithome.com.tw/users/20157439'
-    }
+    },
+    portfolio: [
+      {
+        name: 'Env Aligner',
+        link: 'https://www.npmjs.com/package/env-aligner',
+        summary: 'Env Aligner is a lightweight CLI tool that helps you validate and align environment variables between .env and .env.example files.\n\nIt checks for missing keys, empty values, and extra variables, and optionally formats .env files to match the schema.'
+      }
+    ]
   },
   {
     name: 'Aira',
