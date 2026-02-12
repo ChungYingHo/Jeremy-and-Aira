@@ -11,11 +11,16 @@ const { entry } = Astro.props;
 const { Content, headings } = await entry.render();
 
 const authorKey = entry.data.author || 'Jeremy';
-// 大小寫不敏感比對
 const authorData = AUTHORS.find(a => a.name.toLowerCase() === authorKey.toLowerCase()) || AUTHORS[0];
 
 const publishDate = entry.data.date ? new Date(entry.data.date) : new Date();
 const tags: string[] = entry.data.tags || [];
+
+// Process Changelog: Sort descending & take top 3
+const changelog = (entry.data.changelog || [])
+  .map(date => new Date(date))
+  .sort((a, b) => b.getTime() - a.getTime())
+  .slice(0, 3);
 
 const formatDate = (d: Date) => {
   if (isNaN(d.getTime())) return '';
@@ -30,7 +35,7 @@ const formatDate = (d: Date) => {
 
   <div class="relative w-full max-w-[900px] mx-auto px-5 md:px-8 pt-0 pb-0">
     
-    <header class="flex flex-col items-center text-center mb-12 md:mb-16 space-y-5 animate-fade-in-up">
+    <header class="flex flex-col items-center text-center mb-16 md:mb-24 space-y-6 animate-fade-in-up">
       {tags.length > 0 && (
         <div class="flex flex-wrap justify-center gap-2">
           {tags.map((tag: string) => (
@@ -41,7 +46,7 @@ const formatDate = (d: Date) => {
         </div>
       )}
 
-      <h1 class="text-2xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-[1.3] drop-shadow-xl max-w-4xl mx-auto">
+      <h1 class="text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.2] drop-shadow-xl max-w-4xl mx-auto">
         {entry.data.title}
       </h1>
 
@@ -68,8 +73,24 @@ const formatDate = (d: Date) => {
     </header>
 
     <div class="relative">
-      <article class="md-content min-w-0 break-words">
+      <article class="md-content min-w-0 break-words pb-24">
         <Content />
+        
+        {/* Changelog Section */}
+        {changelog.length > 0 && (
+          <div class="mt-24 pt-8 border-t border-white/10">
+            <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Latest Updates</h3>
+            <ul class="space-y-3">
+              {changelog.map(date => (
+                <li class="flex items-center gap-4 text-xs text-slate-500 group">
+                  <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 group-hover:bg-indigo-400 transition-colors"></span>
+                  <span class="font-mono text-slate-400">{formatDate(date)}</span>
+                  <span class="text-slate-600 group-hover:text-slate-400 transition-colors">Content updated</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </article>
 
       <aside class="hidden xl:block absolute top-0 left-[100%] ml-12 h-full">
@@ -193,13 +214,13 @@ const toggle = (force?: boolean) => {
 toggleBtn?.addEventListener('click', () => toggle())
 document.querySelectorAll('.mobile-toc-link').forEach(l => l.addEventListener('click', () => toggle(false)))
 
-// === 4. Code Block Copy Button (Wrapper Pattern) ===
+// === 4. Code Block Copy Button ===
 document.addEventListener('DOMContentLoaded', () => {
   const preElements = document.querySelectorAll('pre')
 
   preElements.forEach(pre => {
     const wrapper = document.createElement('div')
-    wrapper.className = 'code-block-wrapper group relative mb-6 rounded-lg overflow-hidden'
+    wrapper.className = 'code-block-wrapper group relative mb-8 rounded-lg overflow-hidden'
     
     pre.parentNode?.insertBefore(wrapper, pre)
     wrapper.appendChild(pre)
@@ -230,61 +251,174 @@ document.addEventListener('DOMContentLoaded', () => {
 
     wrapper.appendChild(copyBtn)
   })
+
+  // === 5. Heading Anchor Links ===
+  const headings = document.querySelectorAll('.md-content h1, .md-content h2, .md-content h3')
+  headings.forEach(heading => {
+    const anchor = document.createElement('a')
+    anchor.className = 'heading-anchor'
+    anchor.href = `#${heading.id}`
+    anchor.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+      </svg>
+    `
+    
+    anchor.addEventListener('click', (e) => {
+      e.preventDefault()
+      history.pushState(null, '', anchor.href)
+      navigator.clipboard.writeText(window.location.href)
+      
+      anchor.classList.add('copied')
+      setTimeout(() => anchor.classList.remove('copied'), 1500)
+    })
+
+    heading.appendChild(anchor)
+  })
 })
 </script>
 
 <style is:global>
-  .md-content { color: #e2e8f0; font-size: 1rem; line-height: 1.75; letter-spacing: 0.01em; }
+  /* Base Typography */
+  .md-content { 
+    color: #e2e8f0; 
+    font-size: 1.05rem; 
+    line-height: 1.8; 
+    letter-spacing: 0.01em; 
+  }
+  
+  @media (min-width: 768px) { 
+    .md-content { font-size: 1.125rem; line-height: 1.9; } 
+  }
+
   .md-content strong { color: #fff; font-weight: 600; }
   
-  @media (min-width: 768px) { .md-content { font-size: 1.05rem; line-height: 1.9; } }
-  .md-content h1, .md-content h2, .md-content h3, .md-content h4 { color: #fff; font-weight: 700; line-height: 1.3; scroll-margin-top: 6rem; }
+  /* Heading Styles - 包含 Anchor 定位 */
+  .md-content h1, .md-content h2, .md-content h3, .md-content h4 { 
+    color: #fff; 
+    font-weight: 700; 
+    line-height: 1.3; 
+    scroll-margin-top: 6rem;
+    position: relative; 
+  }
+  
+  /* Anchor Link Styles */
+  .heading-anchor {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.5rem;
+    opacity: 0;
+    color: #64748b; 
+    transition: all 0.2s;
+    vertical-align: middle;
+    cursor: pointer;
+  }
+  
+  .md-content h1:hover .heading-anchor,
+  .md-content h2:hover .heading-anchor,
+  .md-content h3:hover .heading-anchor {
+    opacity: 1;
+  }
+
+  .heading-anchor:hover { color: #fff; }
+  .heading-anchor.copied { color: #4ade80; transform: scale(1.1); }
+
   .md-content h1 { display: none; }
-  .md-content h2 { font-size: 1.5rem; margin-top: 2.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
-  @media (min-width: 768px) { .md-content h2 { font-size: 1.75rem; margin-top: 3.5rem; margin-bottom: 1.25rem; } }
-  .md-content h3 { font-size: 1.25rem; margin-top: 2rem; margin-bottom: 0.75rem; color: #e2e8f0; }
-  @media (min-width: 768px) { .md-content h3 { font-size: 1.35rem; margin-top: 2.5rem; margin-bottom: 1rem; } }
-  .md-content p { margin-bottom: 1.25rem; }
-  .md-content a { color: #60a5fa; text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
-  .md-content a:hover { border-bottom-color: #60a5fa; }
+  
+  /* H2: 主要章節標題 - 間距加大 */
+  .md-content h2 { 
+    font-size: 1.75rem; 
+    margin-top: 4rem; 
+    margin-bottom: 1.5rem; 
+    padding-bottom: 0.75rem; 
+    border-bottom: 1px solid rgba(255,255,255,0.1); 
+  }
+  @media (min-width: 768px) { 
+    .md-content h2 { 
+      font-size: 2rem; 
+      margin-top: 6rem; 
+      margin-bottom: 2rem; 
+    } 
+  }
+  
+  /* H3: 子章節標題 */
+  .md-content h3 { 
+    font-size: 1.35rem; 
+    margin-top: 2.5rem; 
+    margin-bottom: 1rem; 
+    color: #f1f5f9; 
+  }
+  @media (min-width: 768px) { 
+    .md-content h3 { 
+      font-size: 1.5rem; 
+      margin-top: 3.5rem; 
+      margin-bottom: 1.25rem; 
+    } 
+  }
+
+  /* H4: 小標題 */
+  .md-content h4 { 
+    font-size: 1.15rem; 
+    font-weight: 700; 
+    margin-top: 2rem; 
+    margin-bottom: 0.75rem; 
+    color: #cbd5e1;
+  }
+  @media (min-width: 768px) { .md-content h4 { font-size: 1.25rem; } }
+
+  /* Paragraphs & Lists */
+  .md-content p { margin-bottom: 1.5rem; }
+  
+  /* [修正] 恢復列表樣式 */
   .md-content ul { list-style: disc; }
   .md-content ol { list-style: decimal; }
-  .md-content ul, .md-content ol { margin: 1.25rem 0; padding-left: 1.25rem; }
-  @media (min-width: 768px) { .md-content ul, .md-content ol { padding-left: 1.5rem; } }
-  .md-content li { margin: 0.5rem 0; padding-left: 0.25rem; }
-  .md-content li::marker { color: #94a3b8; }
   
-  /* [修改] Blockquote 樣式：粉彩霓虹資源卡風格 */
-  .md-content blockquote { 
-    position: relative;
+  .md-content ul, .md-content ol { 
     margin: 1.5rem 0; 
-    padding: 1rem 1.25rem; 
-    
-    /* 粉色左側邊框 */
-    border-left: 4px solid #f472b6; /* Pink-400 */
-    background: rgba(244, 114, 182, 0.05); /* 淡粉背景 */
-    
-    border-radius: 0.5rem; 
-    color: #e2e8f0; 
-    font-style: normal; /* [關鍵] 移除斜體，讓連結文字清晰 */
-    overflow: hidden;
+    padding-left: 1.25rem; 
+  }
+  @media (min-width: 768px) { 
+    .md-content ul, .md-content ol { padding-left: 1.5rem; } 
   }
   
-  @media (min-width: 768px) { .md-content blockquote { padding: 1rem 1.5rem; } }
+  .md-content li { margin: 0.5rem 0; padding-left: 0.25rem; }
+  
+  /* 設定列表符號顏色 */
+  .md-content li::marker { color: #94a3b8; }
 
-  /* [新增] Blockquote 內的連結樣式強化 */
-  .md-content blockquote a {
-    color: #f472b6 !important; /* 強制粉色 */
-    font-weight: 700;
-    text-decoration: none;
-    border-bottom: 1px dashed rgba(244, 114, 182, 0.5); /* 虛線底線 */
-    transition: all 0.2s;
-  }
-  .md-content blockquote a:hover {
-    border-bottom-style: solid; /* Hover 變實線 */
-    opacity: 0.8;
-  }
+  /* Links */
+  .md-content a { color: #60a5fa; text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
+  .md-content a:hover { border-bottom-color: #60a5fa; }
   
+  /* Inscription Blockquote Styles */
+  .md-content blockquote { 
+    margin: 3rem 0; 
+    padding: 2rem; 
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    border-left: none;
+    background: transparent;
+    color: #94a3b8;
+    font-family: "Georgia", "Times New Roman", serif;
+    font-style: italic;
+    font-size: 1.15rem;
+    line-height: 1.8;
+  }
+
+  .md-content blockquote p { margin-bottom: 0; }
+  
+  .md-content blockquote a {
+    color: #e2e8f0 !important;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    border-bottom: none;
+    font-weight: normal;
+  }
+  .md-content blockquote a:hover { color: #fff !important; }
+
   /* Code Block Styles */
   .md-content :not(pre) > code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.85em; color: #ff79c6; background: #282a36; padding: 0.2em 0.4em; border-radius: 0.3em; vertical-align: 1px; border: 1px solid rgba(255,255,255,0.05); }
   
@@ -292,45 +426,35 @@ document.addEventListener('DOMContentLoaded', () => {
   @media (min-width: 768px) { .md-content pre { padding: 1.25rem; font-size: 0.9rem; } }
   .md-content pre code { background: transparent; padding: 0; color: inherit; border: none; font-size: inherit; }
 
-  .md-content img { border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.05); margin: 1.5rem auto; display: block; max-width: 100%; height: auto; }
-  @media (min-width: 768px) { .md-content img { border-radius: 0.75rem; margin: 2rem auto; } }
-  .md-content hr { border: 0; height: 1px; background: rgba(255,255,255,0.1); margin: 2.5rem 0; }
+  .md-content img { border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.05); margin: 2.5rem auto; display: block; max-width: 100%; height: auto; }
+  @media (min-width: 768px) { .md-content img { border-radius: 0.75rem; margin: 3.5rem auto; } }
+  .md-content hr { border: 0; height: 1px; background: rgba(255,255,255,0.1); margin: 4rem 0; }
   
   /* Table Styles */
-  .md-content table { display: block; width: 100%; overflow-x: auto; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.95rem; white-space: nowrap; }
+  .md-content table { display: block; width: 100%; overflow-x: auto; border-collapse: collapse; margin: 2rem 0; font-size: 0.95rem; white-space: nowrap; }
   @media (min-width: 768px) { .md-content table { display: table; white-space: normal; } }
   .md-content th { text-align: left; padding: 0.75rem 1rem; font-weight: 600; color: #fff; background: rgba(255, 255, 255, 0.03); border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
   .md-content td { padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #e2e8f0; transition: background-color 0.2s; }
   .md-content tr:last-child td { border-bottom: none; }
   .md-content tr:hover td { background: rgba(255, 255, 255, 0.02); }
 
-  /* === Admonitions === */
+  /* Admonitions Styles */
   .admonition { 
-    margin: 1.5rem 0; 
+    margin: 2rem 0; 
     padding: 0.75rem 1rem; 
     border-radius: 0.5rem; 
     background: rgba(255, 255, 255, 0.02); 
     font-size: 0.95rem;
     padding-left: 1.25rem;
-    
-    /* 左側色條 (原生 Border) */
     border-left-width: 4px;
     border-left-style: solid;
     position: relative;
     overflow: hidden;
   }
   
-  @media (min-width: 768px) { 
-    .admonition { 
-      padding: 1rem 1.5rem; 
-      padding-left: 1.75rem; 
-    } 
-  }
+  @media (min-width: 768px) { .admonition { padding: 1rem 1.5rem; padding-left: 1.75rem; } }
 
-  /* 移除 ::after (舊的標題顯示方式) */
   .admonition::after { display: none; }
-
-  /* [關鍵修改] 改用 ::before 顯示標題，這樣它會出現在內容的最上方 */
   .admonition::before { 
     content: attr(class); 
     text-transform: uppercase; 
@@ -343,14 +467,12 @@ document.addEventListener('DOMContentLoaded', () => {
     visibility: visible;
   }
   
-  /* 針對不同類型的標題文字與顏色 (需覆蓋 content 屬性) */
   .admonition.info::before { content: 'INFO'; color: #60a5fa; }
   .admonition.note::before { content: 'NOTE'; color: #cbd5e1; }
   .admonition.tip::before { content: 'TIP'; color: #34d399; }
   .admonition.warning::before { content: 'WARNING'; color: #fbbf24; }
   .admonition.danger::before { content: 'DANGER'; color: #f87171; }
 
-  /* Border Colors */
   .admonition.info { border-left-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
   .admonition.note { border-left-color: #94a3b8; background: rgba(148, 163, 184, 0.1); }
   .admonition.tip { border-left-color: #10b981; background: rgba(16, 185, 129, 0.1); }
@@ -384,25 +506,12 @@ document.addEventListener('DOMContentLoaded', () => {
     border: 1px solid rgba(255,255,255,0.05);
   }
 
-  .code-block-wrapper:hover .copy-btn {
-    opacity: 1;
-  }
+  .code-block-wrapper:hover .copy-btn { opacity: 1; }
+  .copy-btn:hover { background-color: rgba(255, 255, 255, 0.15); color: #fff; border-color: rgba(255,255,255,0.1); }
 
-  .copy-btn:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-    color: #fff;
-    border-color: rgba(255,255,255,0.1);
-  }
-
-  .copy-btn.is-copied {
-    border-color: rgba(74, 222, 128, 0.3);
-    background-color: rgba(74, 222, 128, 0.1);
-    color: #4ade80;
-  }
-
+  .copy-btn.is-copied { border-color: rgba(74, 222, 128, 0.3); background-color: rgba(74, 222, 128, 0.1); color: #4ade80; }
   .copy-btn .icon-check { display: none; }
   .copy-btn .icon-copy { display: block; }
-
   .copy-btn.is-copied .icon-check { display: block; }
   .copy-btn.is-copied .icon-copy { display: none; }
 
