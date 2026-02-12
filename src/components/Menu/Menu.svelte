@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte"
   import type { MenuItem, MenuGroup } from "@/models/menu"
-  import DrilldownMenu from "@/components/DrilldownMenu.svelte"
-  import SearchBtn from "@/components/SearchBtn.svelte"
-  import SearchPanel from "@/components/SearchPanel.svelte"
+  import DrilldownMenu from "@/components/Menu/components/DrilldownMenu.svelte"
+  import SearchBtn from "@/components/Search/SearchBtn.svelte"
+  import SearchPanel from "@/components/Search/SearchPanel.svelte"
   import { fade, slide } from "svelte/transition"
 
   export let rootItems: MenuItem[] = []
