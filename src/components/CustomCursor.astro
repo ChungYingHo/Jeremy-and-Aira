@@ -1,13 +1,9 @@
----
-// src/components/CustomCursor.astro
----
-
 <div id="cursor-dot" class="cursor-dot"></div>
 <div id="cursor-ring" class="cursor-ring"></div>
 
 <script>
 const initCursor = () => {
-  // 1. 裝置檢測
+  // 裝置檢測
   if (window.matchMedia('(pointer: coarse)').matches) return
 
   const dot = document.getElementById('cursor-dot')
@@ -21,45 +17,56 @@ const initCursor = () => {
   let ringX = 0
   let ringY = 0
   let isCursorActive = false 
+  let isHoveringText = false 
 
-  // 2. 核心監聽
   document.addEventListener('mousemove', (e) => {
     mouseX = e.clientX
     mouseY = e.clientY
 
-    // === [關鍵優化] 第一次喚醒 ===
+    // === 無縫喚醒邏輯 ===
     if (!isCursorActive) {
       isCursorActive = true
       
-      // A. 瞬間同步座標 (消除飛入感)
+      // 瞬間同步座標，避免飛入
       ringX = mouseX
       ringY = mouseY
       
-      // B. 強制設定初始位置 (避免第一幀閃爍)
       dot.style.transform = `translate(${mouseX}px, ${mouseY}px)`
       ring.style.transform = `translate(${mouseX}px, ${mouseY}px)`
       
-      // C. 啟動 CSS 動畫 (讓 body 隱藏系統游標，讓光圈放大出現)
       requestAnimationFrame(() => {
         body.classList.add('custom-cursor-active')
       })
     }
 
-    // Dot 始終無延遲跟隨
+    // Dot 無延遲跟隨
     dot.style.transform = `translate(${mouseX}px, ${mouseY}px)`
   })
 
-  // 點擊效果
-  document.addEventListener('mousedown', () => ring.classList.add('clicking'))
-  document.addEventListener('mouseup', () => ring.classList.remove('clicking'))
+  // 點擊與選取偵測
+  document.addEventListener('mousedown', () => {
+    ring.classList.add('clicking')
+    // 只有在文字上按住滑鼠時，才進入「選取模式」(隱藏圓圈)
+    if (isHoveringText) {
+      ring.classList.add('selecting')
+    }
+  })
+
+  document.addEventListener('mouseup', () => {
+    ring.classList.remove('clicking', 'selecting')
+  })
 
   // 狀態偵測
   const updateCursorState = (e: MouseEvent) => {
-    if (!isCursorActive) return // 還沒啟動前不偵測
+    if (!isCursorActive) return 
 
     const target = e.target as HTMLElement
+    
     const clickable = target.closest('a, button, [role="button"], input[type="submit"], input[type="button"], .hover-trigger')
     const textable = target.closest('p, h1, h2, h3, h4, h5, h6, span, code, pre, blockquote, input[type="text"], textarea, label, li, td, th')
+
+    // 更新全域狀態
+    isHoveringText = !!textable
 
     if (clickable) {
       ring.classList.add('hovering')
@@ -77,10 +84,10 @@ const initCursor = () => {
 
   document.addEventListener('mouseover', updateCursorState)
 
-  // 動畫迴圈 (Lerp 延遲效果)
+  // 動畫迴圈 (Lerp)
   const render = () => {
     if (isCursorActive) {
-      // 滑鼠移動時的平滑跟隨
+      // 圓圈平滑跟隨
       ringX += (mouseX - ringX) * 0.15
       ringY += (mouseY - ringY) * 0.15
       ring.style.transform = `translate(${ringX}px, ${ringY}px)`
@@ -106,8 +113,7 @@ document.addEventListener('DOMContentLoaded', initCursor)
     z-index: 100000;
   }
 
-  /* === 初始狀態 (未啟動) === */
-  /* 設為 scale(0.5) 和 opacity 0，準備做「綻放」動畫 */
+  /* === 初始狀態 (隱藏) === */
   .cursor-ring {
     width: 32px;
     height: 32px;
@@ -115,20 +121,18 @@ document.addEventListener('DOMContentLoaded', initCursor)
     margin-left: -16px;
     margin-top: -16px;
     
+    /* 空心圓 */
     border: 1px solid rgba(244, 114, 182, 0.4);
     background: radial-gradient(circle, rgba(244, 114, 182, 0.1) 0%, transparent 70%);
     box-shadow: 0 0 10px rgba(244, 114, 182, 0.2);
     
     mix-blend-mode: screen;
     
-    /* 關鍵：初始縮小且透明 */
+    /* 初始縮小且透明，等待喚醒 */
     opacity: 0;
     transform: scale(0.5); 
     
-    /* 設定 transform 為獨立層，避免重繪效能問題 */
     will-change: transform, width, height, opacity;
-    
-    /* 這裡是通用過渡，但下面會針對啟動做特殊處理 */
     transition: width 0.3s, height 0.3s, background 0.3s, border 0.3s, opacity 0.3s;
   }
 
@@ -147,16 +151,14 @@ document.addEventListener('DOMContentLoaded', initCursor)
   /* === 啟動狀態 (Active) === */
   @media (pointer: fine) {
     
-    /* 1. 隱藏系統游標 */
+    /* 一般狀態：隱藏系統游標 */
     :global(body.custom-cursor-active) {
       cursor: none;
     }
 
-    /* 2. 顯示並放大光圈 (Spawn Animation) */
+    /* 顯示光圈 (喚醒動畫) */
     :global(body.custom-cursor-active) .cursor-ring {
       opacity: 1;
-      /* 這裡不需要寫 transform: scale(1)，因為 JS 的 render loop 會接管 transform */
-      /* 但我們可以利用 animation 或 transition 讓它從 0.5 變到 1 的過程更滑順 */
       animation: cursor-spawn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
 
@@ -164,38 +166,40 @@ document.addEventListener('DOMContentLoaded', initCursor)
       opacity: 1;
     }
 
-    /* 互動游標隱藏 */
+    /* 連結與按鈕：隱藏系統游標 */
     :global(body.custom-cursor-active) :global(a), 
     :global(body.custom-cursor-active) :global(button) {
       cursor: none !important;
     }
     
-    /* 輸入框保留系統游標 */
+    /* 在文字上：恢復系統 I-Beam 游標，方便精準選取，但同時保留背景的光圈 */
+    :global(body.custom-cursor-active) :global(p),
+    :global(body.custom-cursor-active) :global(h1),
+    :global(body.custom-cursor-active) :global(h2),
+    :global(body.custom-cursor-active) :global(h3),
+    :global(body.custom-cursor-active) :global(h4),
+    :global(body.custom-cursor-active) :global(h5),
+    :global(body.custom-cursor-active) :global(h6),
+    :global(body.custom-cursor-active) :global(span),
+    :global(body.custom-cursor-active) :global(code),
+    :global(body.custom-cursor-active) :global(pre),
+    :global(body.custom-cursor-active) :global(blockquote),
+    :global(body.custom-cursor-active) :global(li),
+    :global(body.custom-cursor-active) :global(td),
+    :global(body.custom-cursor-active) :global(th),
     :global(body.custom-cursor-active) :global(input[type="text"]), 
     :global(body.custom-cursor-active) :global(textarea) {
       cursor: text !important;
     }
   }
 
-  /* === 定義喚醒動畫 === */
   @keyframes cursor-spawn {
-    0% {
-      opacity: 0;
-      width: 0px;
-      height: 0px;
-      margin-left: 0;
-      margin-top: 0;
-    }
-    100% {
-      opacity: 1;
-      width: 32px;
-      height: 32px;
-      margin-left: -16px;
-      margin-top: -16px;
-    }
+    0% { opacity: 0; width: 0; height: 0; }
+    100% { opacity: 1; width: 32px; height: 32px; }
   }
 
-  /* === 狀態變化 (維持原本邏輯) === */
+  /* === 互動模式 (Hover) === */
+  /* 變大圓圈，強調可點擊 */
   .cursor-ring.hovering {
     width: 48px;
     height: 48px;
@@ -204,20 +208,23 @@ document.addEventListener('DOMContentLoaded', initCursor)
     background: rgba(244, 114, 182, 0.15);
     border-color: rgba(244, 114, 182, 0.8);
     box-shadow: 0 0 15px rgba(192, 132, 252, 0.4);
-    animation: none; /* 狀態改變時取消 spawn 動畫 */
+    animation: none; 
   }
 
+  /* === 文字模式 (Text Mode) === */
+  /* 回歸原本設定：變小，稍微實心，作為文字背景光 */
   .cursor-ring.text-mode {
     width: 24px;
     height: 24px;
     margin-left: -12px;
     margin-top: -12px;
     border-color: transparent;
-    background: rgba(244, 114, 182, 0.25); 
+    background: rgba(244, 114, 182, 0.25);
     box-shadow: 0 0 15px rgba(244, 114, 182, 0.3);
     animation: none;
   }
 
+  /* 在 Hover 或 Text 模式隱藏中心點 */
   .cursor-dot.hovering,
   .cursor-dot.text-mode {
     opacity: 0 !important;
@@ -230,5 +237,12 @@ document.addEventListener('DOMContentLoaded', initCursor)
     margin-top: -10px;
     background: rgba(255, 255, 255, 0.9);
     border-color: transparent;
+  }
+
+  /* 當按住滑鼠拖曳選字時，光圈優雅地縮小並消失 */
+  .cursor-ring.selecting {
+    opacity: 0 !important;
+    transform: scale(0.5);
+    background: rgba(244, 114, 182, 0.1);
   }
 </style>
