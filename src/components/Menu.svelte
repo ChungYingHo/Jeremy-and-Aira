@@ -17,7 +17,7 @@
   let isSearchOpen = false
   let isMobileMenuOpen = false
 
-  // --- Smart Navbar Logic ---
+  // --- Navbar Scroll Logic ---
   let scrollY = 0
   let lastScrollY = 0
   let showMenu = true
@@ -29,25 +29,54 @@
     if (currentScrollY < threshold) {
       showMenu = true
     } else {
-      if (currentScrollY > lastScrollY) {
-        showMenu = false 
-      } else {
-        showMenu = true 
-      }
+      // 向下滾動隱藏，向上滾動顯示
+      showMenu = currentScrollY <= lastScrollY
     }
     lastScrollY = currentScrollY
+  }
+
+  // --- Path Normalization Helper ---
+  function normalizePath(path: string) {
+    return path === '/' ? path : path.replace(/\/$/, '');
   }
 
   function isGroup(menuItem: MenuItem): menuItem is MenuGroup {
     return menuItem.type === "group"
   }
 
-  function groupContainsPath(group: MenuGroup, path: string): boolean {
+  function groupContainsPath(group: MenuGroup, targetPath: string): boolean {
+    const normalizedTarget = normalizePath(targetPath);
+    
     return group.children.some(child => {
-      if (child.type === 'page') return child.href === path || path.startsWith(child.href)
-      if (child.type === 'group') return groupContainsPath(child, path)
+      if (child.type === 'page') {
+        const childHref = normalizePath(child.href);
+        // 匹配：完全相等或子路徑 (如 /blog 匹配 /blog/post-1)
+        return childHref === normalizedTarget || (childHref !== '/' && normalizedTarget.startsWith(childHref + '/'));
+      }
+      if (child.type === 'group') {
+        return groupContainsPath(child, targetPath);
+      }
       return false
     })
+  }
+
+  function isActive(item: MenuItem): boolean {
+    // 桌面版：如果選單展開，強制標示為 Active
+    if (innerWidth >= 1024 && desktopOpenGroup === item) return true
+
+    const normalizedTarget = normalizePath(currentPath);
+
+    if (isGroup(item)) {
+      return groupContainsPath(item, currentPath);
+    }
+
+    if (item.type === 'page') {
+      const itemHref = normalizePath(item.href);
+      // 匹配：完全相等或子路徑 (如 /blog 匹配 /blog/post-1)
+      return itemHref === normalizedTarget || (itemHref !== '/' && normalizedTarget.startsWith(itemHref + '/'));
+    }
+
+    return false
   }
 
   function openDesktopGroup(menuGroup: MenuGroup, event: MouseEvent) {
@@ -64,11 +93,7 @@
   function handleLogoClick(e: MouseEvent) {
     if (innerWidth < 1024) {
       e.preventDefault()
-      if (isMobileMenuOpen) {
-        closeAll()
-      } else {
-        openMobileMenu()
-      }
+      isMobileMenuOpen ? closeAll() : openMobileMenu()
     }
   }
 
@@ -86,31 +111,12 @@
   }
 
   function toggleSearch() {
-    if (isSearchOpen) {
-      closeAll()
-    } else {
-      closeAll()
-      isSearchOpen = true
-    }
+    isSearchOpen ? closeAll() : (closeAll(), isSearchOpen = true)
   }
 
-  // [新增] 回到頂部功能
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: "smooth" });
     closeAll();
-  }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-      e.preventDefault()
-      toggleSearch()
-    }
-  }
-
-  function isActive(item: MenuItem): boolean {
-    if (innerWidth >= 1024 && desktopOpenGroup === item) return true
-    if (isGroup(item)) return groupContainsPath(item, currentPath)
-    return item.href === currentPath
   }
 
   onMount(() => {
