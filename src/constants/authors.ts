@@ -26,7 +26,7 @@ export const AUTHORS = [
     ]
   },
   {
-    name: 'Aira',
+    name: 'Aira Studio',
     imgPath: '/assets/authors/aira.png',
     isSecret: true,
   }
