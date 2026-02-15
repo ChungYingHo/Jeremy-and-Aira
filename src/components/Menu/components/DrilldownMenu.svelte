@@ -2,10 +2,13 @@
   import { fly } from "svelte/transition"
   import { cubicOut } from "svelte/easing"
   import type { MenuItem, MenuGroup } from "@/models/menu"
+  
+  // 🌟 引入我們剛剛抽出的共用函數
+  import { normalizePath } from "@/utils/readPath"
 
   export let rootItems: MenuItem[] = []
   export let initialItems: MenuItem[] | null = null
-  export let currentPath = "" // 接收路徑
+  export let currentPath = "" 
 
   export let onTitleChange: ((title: string) => void) | undefined = undefined
   export let onBackToRoot: (() => void) | undefined
@@ -17,25 +20,26 @@
 
   // --- 初始化邏輯 (Deep Linking) ---
   
-  // 1. 遞迴尋找目標路徑的父層堆疊
   function findPathStack(
     currentItems: MenuItem[], 
     targetPath: string, 
     currentStack: MenuItem[][]
   ): { found: boolean, stack: MenuItem[][], finalItems: MenuItem[] } {
     
+    // 🌟 將目標路徑正規化
+    const normalizedTarget = normalizePath(targetPath);
+
     for (const item of currentItems) {
-      // 如果找到目標 Page
-      if (item.type === 'page' && item.href === targetPath) {
+      // 🌟 將每個選單項目的路徑也正規化，確保精準比對
+      if (item.type === 'page' && normalizePath(item.href) === normalizedTarget) {
         return { found: true, stack: currentStack, finalItems: currentItems }
       }
 
-      // 如果是 Group，繼續往下找
       if (item.type === 'group') {
         const result = findPathStack(
           item.children, 
           targetPath, 
-          [...currentStack, currentItems] // 把目前這一層加入 stack
+          [...currentStack, currentItems] 
         )
         if (result.found) {
           return result
@@ -45,7 +49,6 @@
     return { found: false, stack: [], finalItems: [] }
   }
 
-  // 2. 初始化
   function init() {
     const baseItems = initialItems ?? rootItems
     
@@ -55,7 +58,6 @@
       if (found) {
         stack = newStack
         items = finalItems
-        // 如果有深入層級，記得通知父層更新標題
       } else {
         items = baseItems
       }
@@ -64,7 +66,6 @@
     }
   }
 
-  // 立即執行初始化
   init()
 
   // ------------------------------
@@ -89,15 +90,11 @@
     direction = -1
     items = stack[stack.length - 1]
     stack = stack.slice(0, -1)
-    
-    // Back 的時候標題邏輯可能需要優化，這裡先設回空字串讓父層顯示預設
     onTitleChange?.("")
   }
 
-  // 🌟 自動滾動到 Active 項目的 Svelte Action
   function scrollToActive(node: HTMLElement, isActive: boolean) {
     if (isActive) {
-      // 延遲 250ms 確保 Menu 的 slide/fade 動畫已展開完成，再進行滾動
       setTimeout(() => {
         node.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 250);
@@ -113,6 +110,9 @@
       }
     }
   }
+
+  // 為了在 Template 方便使用，我們先計算正規化後的當前路徑
+  $: normalizedCurrentPath = normalizePath(currentPath);
 </script>
 
 <div class="relative w-full grid grid-cols-1 grid-rows-1 transition-all duration-300 ease-out">
@@ -151,8 +151,8 @@
           {:else}
             <a
               href={item.href}
-              use:scrollToActive={item.href === currentPath}
-              class="group flex justify-between items-center w-full px-4 py-3 rounded-xl transition-all duration-200 {item.href === currentPath ? 'bg-white/20 text-white font-bold' : 'text-slate-300 hover:text-white hover:bg-white/10'}"
+              use:scrollToActive={normalizePath(item.href) === normalizedCurrentPath}
+              class="group flex justify-between items-center w-full px-4 py-3 rounded-xl transition-all duration-200 {normalizePath(item.href) === normalizedCurrentPath ? 'bg-white/20 text-white font-bold' : 'text-slate-300 hover:text-white hover:bg-white/10'}"
               on:click={onClose} 
             >
               <span class="text-base tracking-wide">{item.title}</span>

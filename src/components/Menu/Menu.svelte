@@ -5,6 +5,9 @@
   import SearchBtn from "@/components/Search/SearchBtn.svelte"
   import SearchPanel from "@/components/Search/SearchPanel.svelte"
   import { fade, slide } from "svelte/transition"
+  
+  // 🌟 引入我們剛剛抽出的共用函數
+  import { normalizePath } from "@/utils/readPath"
 
   export let rootItems: MenuItem[] = []
   export let currentPath = "" 
@@ -32,11 +35,6 @@
       showMenu = currentScrollY <= lastScrollY
     }
     lastScrollY = currentScrollY
-  }
-
-  // --- Path Normalization Helper ---
-  function normalizePath(path: string) {
-    return path === '/' ? path : path.replace(/\/$/, '');
   }
 
   function isGroup(menuItem: MenuItem): menuItem is MenuGroup {
@@ -75,7 +73,6 @@
     return false
   }
 
-  // 🌟 新增：取得當前活躍的群組 (Contextual Awareness)
   function getActiveGroup(): MenuGroup | null {
     for (const item of rootItems) {
       if (isGroup(item) && groupContainsPath(item, currentPath)) {
@@ -106,7 +103,6 @@
   function openMobileMenu() {
     closeAll()
     isMobileMenuOpen = true
-    // 🌟 修改：手機版打開時，標題優先顯示當前群組，找不到才退回 "MENU"
     const activeGroup = getActiveGroup()
     desktopTitle = activeGroup ? activeGroup.title : "MENU"
   }
@@ -276,7 +272,6 @@
               onBackToRoot={() => { if (!isMobileMenuOpen) closeAll(); }}
               onClose={closeAll}
               onTitleChange={(title) => {
-                // 🌟 修改：處理返回邏輯，如果傳回空字串 (回到根目錄)，則動態決定預設標題
                 if (title) {
                   desktopTitle = title;
                 } else {
