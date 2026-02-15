@@ -276,6 +276,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     heading.appendChild(anchor)
   })
+
+  // === 6. External Links in MDX ===
+  // 找出所有在文章內容裡的連結，並排除那些作為頁面內跳轉用的錨點（href 以 # 開頭的）
+  const contentLinks = document.querySelectorAll('.md-content a')
+  contentLinks.forEach(link => {
+    const href = link.getAttribute('href')
+    if (href && !href.startsWith('#')) {
+      link.setAttribute('target', '_blank')
+      link.setAttribute('rel', 'noopener noreferrer')
+    }
+  })
 })
 </script>
 
