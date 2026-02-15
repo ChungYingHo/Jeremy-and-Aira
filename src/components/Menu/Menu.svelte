@@ -29,7 +29,6 @@
     if (currentScrollY < threshold) {
       showMenu = true
     } else {
-      // 向下滾動隱藏，向上滾動顯示
       showMenu = currentScrollY <= lastScrollY
     }
     lastScrollY = currentScrollY
@@ -50,7 +49,6 @@
     return group.children.some(child => {
       if (child.type === 'page') {
         const childHref = normalizePath(child.href);
-        // 匹配：完全相等或子路徑 (如 /blog 匹配 /blog/post-1)
         return childHref === normalizedTarget || (childHref !== '/' && normalizedTarget.startsWith(childHref + '/'));
       }
       if (child.type === 'group') {
@@ -61,7 +59,6 @@
   }
 
   function isActive(item: MenuItem): boolean {
-    // 桌面版：如果選單展開，強制標示為 Active
     if (innerWidth >= 1024 && desktopOpenGroup === item) return true
 
     const normalizedTarget = normalizePath(currentPath);
@@ -72,11 +69,20 @@
 
     if (item.type === 'page') {
       const itemHref = normalizePath(item.href);
-      // 匹配：完全相等或子路徑 (如 /blog 匹配 /blog/post-1)
       return itemHref === normalizedTarget || (itemHref !== '/' && normalizedTarget.startsWith(itemHref + '/'));
     }
 
     return false
+  }
+
+  // 🌟 新增：取得當前活躍的群組 (Contextual Awareness)
+  function getActiveGroup(): MenuGroup | null {
+    for (const item of rootItems) {
+      if (isGroup(item) && groupContainsPath(item, currentPath)) {
+        return item;
+      }
+    }
+    return null;
   }
 
   function openDesktopGroup(menuGroup: MenuGroup, event: MouseEvent) {
@@ -100,7 +106,9 @@
   function openMobileMenu() {
     closeAll()
     isMobileMenuOpen = true
-    desktopTitle = "MENU"
+    // 🌟 修改：手機版打開時，標題優先顯示當前群組，找不到才退回 "MENU"
+    const activeGroup = getActiveGroup()
+    desktopTitle = activeGroup ? activeGroup.title : "MENU"
   }
 
   function closeAll() {
@@ -267,7 +275,14 @@
               currentPath={currentPath} 
               onBackToRoot={() => { if (!isMobileMenuOpen) closeAll(); }}
               onClose={closeAll}
-              onTitleChange={(title) => (desktopTitle = title || (isMobileMenuOpen ? "MENU" : desktopOpenGroup?.title) || "")}
+              onTitleChange={(title) => {
+                // 🌟 修改：處理返回邏輯，如果傳回空字串 (回到根目錄)，則動態決定預設標題
+                if (title) {
+                  desktopTitle = title;
+                } else {
+                  desktopTitle = isMobileMenuOpen ? "MENU" : (desktopOpenGroup?.title || "");
+                }
+              }}
             />
           {/key}
 

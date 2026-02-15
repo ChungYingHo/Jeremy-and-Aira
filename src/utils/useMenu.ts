@@ -1,6 +1,7 @@
 import type { MenuItem, MenuGroup } from '@/models/menu'
 import { MENU_COLLECTIONS, type CollectionType } from '@/models/menu'
 import { getCollection, type CollectionEntry } from 'astro:content'
+import { SERIES_LABELS } from '@/constants/seriesLabels'
 
 /**
  * 移除日期前綴
@@ -77,7 +78,9 @@ function insertEntryIntoTree(
         href: href,
       })
     } else {
-      const groupTitle = humanizeSegment(segment)
+      // 💡 關鍵修改：優先去 SERIES_LABELS 裡面找對應的中文標題，找不到才使用預設的 humanizeSegment
+      const groupTitle = (SERIES_LABELS as Record<string, string>)[segment] || humanizeSegment(segment)
+      
       const group = getOrCreateGroup(currentLevelItems, groupTitle)
       currentLevelItems = group.children
     }

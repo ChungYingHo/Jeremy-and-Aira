@@ -55,9 +55,7 @@
       if (found) {
         stack = newStack
         items = finalItems
-        // 如果有深入層級，記得通知父層更新標題 (例如更新為 "Java")
-        // 我們取 stack 最後一層的 group title (如果有)
-        // 這裡邏輯比較複雜，簡單做：如果 stack 有東西，標題維持不變或由父層控制
+        // 如果有深入層級，記得通知父層更新標題
       } else {
         items = baseItems
       }
@@ -94,6 +92,26 @@
     
     // Back 的時候標題邏輯可能需要優化，這裡先設回空字串讓父層顯示預設
     onTitleChange?.("")
+  }
+
+  // 🌟 自動滾動到 Active 項目的 Svelte Action
+  function scrollToActive(node: HTMLElement, isActive: boolean) {
+    if (isActive) {
+      // 延遲 250ms 確保 Menu 的 slide/fade 動畫已展開完成，再進行滾動
+      setTimeout(() => {
+        node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 250);
+    }
+    
+    return {
+      update(newIsActive: boolean) {
+        if (newIsActive) {
+          setTimeout(() => {
+            node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 250);
+        }
+      }
+    }
   }
 </script>
 
@@ -133,6 +151,7 @@
           {:else}
             <a
               href={item.href}
+              use:scrollToActive={item.href === currentPath}
               class="group flex justify-between items-center w-full px-4 py-3 rounded-xl transition-all duration-200 {item.href === currentPath ? 'bg-white/20 text-white font-bold' : 'text-slate-300 hover:text-white hover:bg-white/10'}"
               on:click={onClose} 
             >
