@@ -27,14 +27,13 @@
                     
                     data.push({ x: exactX, y: yAxisMax });
                 }
-                break;
+                break; 
             }
             data.push({ x: x, y: y });
         }
         return data;
     }
 
-    // 階乘計算
     const factorial = (n) => (n <= 1 ? 1 : n * factorial(n - 1));
 
     const datasets = [
@@ -59,9 +58,11 @@
       data: { datasets },
       options: {
         responsive: true,
+        maintainAspectRatio: false, 
         layout: {
             padding: {
-                right: 80,
+                // 🌟 關鍵修正：加大右邊距到 120 (電腦) / 90 (手機)，確保最長的標籤不會被切斷
+                right: window.innerWidth < 640 ? 90 : 120, 
                 top: 30,
                 bottom: 10,
                 left: 10
@@ -73,12 +74,12 @@
             color: (context) => context.dataset.borderColor,
             font: {
                 weight: 'bold',
-                size: 13,
+                size: window.innerWidth < 640 ? 11 : 13, 
                 family: "'JetBrains Mono', monospace"
             },
             align: 'right',
             anchor: 'center',
-            offset: 6,
+            offset: 4,
             clip: false,
             formatter: (value, context) => {
                 const dataArray = context.dataset.data;
@@ -114,6 +115,8 @@
   })
 </script>
 
-<div class="w-full max-w-3xl mx-auto my-8 p-4 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
-  <canvas bind:this={canvas}></canvas>
+<div class="w-full max-w-3xl mx-auto my-8 p-2 md:p-4 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
+  <div class="relative w-full h-[350px] md:h-[500px]">
+    <canvas bind:this={canvas}></canvas>
+  </div>
 </div>
