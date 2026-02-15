@@ -6,6 +6,8 @@ date: '2026-02-15'
 changelog: []
 ---
 
+import BigOChart from '@/components/ArticleRelated/BigOChart.svelte'
+
 對 computer science 來說，資料結構與演算法基本是不可或缺的基礎知識。  
 概念上來說，程式語言的本質就是資料結構與演算法的組合。  
 資料結構代表資料處理的過程中，分析、組織資料的方法語邏輯。  
@@ -186,15 +188,4 @@ $log$ 是對數的意思，基本公式是 $log_a(N) = b$，其中 $a$ 是底數
 舉例來說，當 $n = 3$ 時，執行時間可能是 $3! = 6$ 單位時間。當 $n = 4$ 時，執行時間可能是 $4! = 24$ 單位時間。
 
 
-:::tip
-**時間複雜度速率排序**  
-| Complexity | Speed      |
-|------------|-----------|
-| O(1)       | 很快      |
-| O(log n)   | 快        |
-| O(n)       | 中        |
-| O(n log n) | 慢        |
-| O(n^2)     | 很慢      |
-| O(2^n)     | 非常慢   |
-| O(n!)      | 超級慢   |
-:::
+<BigOChart client:only="svelte" />
