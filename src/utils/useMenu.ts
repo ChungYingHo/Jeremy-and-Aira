@@ -89,9 +89,27 @@ function insertEntryIntoTree(
  */
 function sortMenuTree(menuItems: MenuItem[]): void {
   menuItems.sort((a, b) => {
+    // 1. Page 優先，其次 Group
     if (a.type !== b.type) {
       return a.type === 'page' ? -1 : 1
     }
+
+    if (a.type === 'group' && b.type === 'group') {
+      const getWeight = (title: string) => {
+        const t = title.toLowerCase()
+        if (t === 'notes') return 1
+        if (t === 'languages') return 2
+        return 99
+      }
+      
+      const weightA = getWeight(a.title)
+      const weightB = getWeight(b.title)
+
+      if (weightA !== weightB) {
+        return weightA - weightB
+      }
+    }
+
     return a.title.localeCompare(b.title)
   })
 
@@ -143,17 +161,14 @@ export async function useMenu() {
 
   // 1. 動態讀取 menu.ts 的設定
   const collectionMenusPromises = MENU_COLLECTIONS.map(async (config) => {
-    
-    // [新功能] 如果是 Blog，直接回傳 Page 類型 (不建立樹狀選單)
     if (config.title === 'Blog') {
       return {
         type: 'page' as const,
         title: config.title,
-        href: config.baseUrl // 直接連到 /blog
+        href: config.baseUrl 
       }
     }
 
-    // 其他 (Notes, Series) 繼續建立樹狀選單
     const tree = await buildTreeFromCollection(config.collectionName, config.baseUrl)
     return {
       type: 'group' as const,
@@ -164,19 +179,21 @@ export async function useMenu() {
 
   const collectionMenus = await Promise.all(collectionMenusPromises)
 
-  // 2. 過濾邏輯調整
-  // 保留 'page' 類型的 Item (如 Blog)，
-  // 對於 'group' 類型，則檢查是否有 children
   const validCollectionMenus = collectionMenus.filter(item => {
     if (item.type === 'page') return true
     return item.children && item.children.length > 0
   })
 
-  // 3. 強制排序：讓 "Blog" 永遠排在最後面
   validCollectionMenus.sort((a, b) => {
-    if (a.title === 'Blog') return 1
-    if (b.title === 'Blog') return -1
-    return 0
+    const getWeight = (title: string) => {
+      const t = title.toLowerCase()
+      if (t === 'notes') return 1
+      if (t === 'languages') return 2
+      if (t === 'blog') return 999
+      return 50
+    }
+    
+    return getWeight(a.title) - getWeight(b.title)
   })
 
   const fullMenu = [...staticPages, ...validCollectionMenus]

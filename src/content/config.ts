@@ -22,7 +22,11 @@ const seriesCollection = defineCollection({
   schema: commonSchema,
 })
 
-// [新增] Blog Collection 定義
+const languagesCollection = defineCollection({
+  type: 'content',
+  schema: commonSchema,
+})
+
 const blogCollection = defineCollection({
   type: 'content',
   schema: commonSchema,
@@ -32,5 +36,6 @@ const blogCollection = defineCollection({
 export const collections = {
   'notes': notesCollection,
   'series': seriesCollection,
-  'blog': blogCollection, // [新增] 這裡加上 blog，對應 menu.ts 的設定
+  'languages': languagesCollection,
+  'blog': blogCollection,
 }
