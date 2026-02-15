@@ -4,6 +4,7 @@ import '@/styles/main.scss'
 import Menu from '@/components/Menu/Menu.svelte'
 import { useMenu } from '@/utils/useMenu'
 import CustomCursor from '@/components/CustomCursor.astro'
+import 'katex/dist/katex.min.css'
 
 const { menu } = await useMenu()
 const currentPath = Astro.url.pathname

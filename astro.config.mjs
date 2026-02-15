@@ -9,6 +9,10 @@ import { visit } from 'unist-util-visit'
 import pagefind from 'astro-pagefind'
 import vercel from '@astrojs/vercel'
 
+// [!code ++] 新增這兩個 import
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+
 function remarkAdmonitions() {
   return (/** @type {any} */ tree) => {
     visit(tree, (node) => {
@@ -62,6 +66,10 @@ export default defineConfig({
     remarkPlugins: [
       remarkDirective,
       remarkAdmonitions,
+      remarkMath, // 讓 Markdown 讀懂數學語法
+    ],
+    rehypePlugins: [
+      rehypeKatex, // 將數學語法轉成 HTML
     ],
   },
 
