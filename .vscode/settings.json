@@ -31,5 +31,8 @@
     "textable",
     "vocus",
     "Ying"
-  ]
+  ],
+  "chat.tools.terminal.autoApprove": {
+    "mv": true
+  }
 }

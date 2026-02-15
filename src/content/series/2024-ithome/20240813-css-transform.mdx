@@ -6,6 +6,8 @@ date: '2024-08-13'
 changelog: []
 ---
 
+import CodePen from '@/components/ArticleRelated/CodePen.astro';
+
 說到 CSS 的變形，大家都會聯想到 `transform` 這個屬性，這個屬性可以讓我們對元素進行旋轉、縮放、移動和傾斜等效果。  
 基本上，對於部分前端工程師來說，`transform` 這個屬性也不是很陌生，有一道經典的面試考題是這樣的：
 
@@ -37,11 +39,7 @@ changelog: []
  }
 }
 ```
-<iframe width="100%" height="600" title="Untitled" src="https://codepen.io/ChungYingHo/embed/OJeOprx?default-tab=html%2Cresult" frameborder="no" loading="lazy" allowtransparency="true" allowfullscreen="true">
-  See the Pen <a href="https://codepen.io/ChungYingHo/pen/OJeOprx">
-  Untitled</a> by ChungYingHo (<a href="https://codepen.io/ChungYingHo">@ChungYingHo</a>)
-  on <a href="https://codepen.io">CodePen</a>.
-</iframe>
+<CodePen id="OJeOprx" />
 
 在上述的例子中，如果僅透過 `position: absolute;` 來做置中，我們會發現是元素的**左上角**會被置中，而不是元素的**中心點**被置中。  
 這時後透過 `transform: translate(-50%, -50%);`，使元素向左及向右各移動自身寬度的一半，就可以達到元素的中心點被置中的效果。  
@@ -70,11 +68,7 @@ changelog: []
 | `scaleZ`       | 只在 Z 軸縮放元素 (3D 轉換) 。                            | `transform: scaleZ(2);`                              |
 | `skewZ`        | 繞 Z 軸傾斜元素 (3D 轉換) 。                              | `transform: skewZ(10deg);`                           |
 
-<iframe width="100%" height="600" title="day 2 - transform_method" src="https://codepen.io/ChungYingHo/embed/gONXWvj?default-tab=html%2Cresult" frameborder="no" loading="lazy" allowtransparency="true" allowfullscreen="true">
-  See the Pen <a href="https://codepen.io/ChungYingHo/pen/gONXWvj">
-  day 2 - transform_method</a> by ChungYingHo (<a href="https://codepen.io/ChungYingHo">@ChungYingHo</a>)
-  on <a href="https://codepen.io">CodePen</a>.
-</iframe>
+<CodePen id="gONXWvj" />
 
 ## `transition` 又是什麼？
 如果你夠細心，你會發現 `transform` 的變形是在瞬間完成的，這樣的效果有時候會讓人感到突兀，這時候就可以使用 `transition` 來讓變形的過程變得平滑。  
@@ -102,11 +96,7 @@ changelog: []
  width: 200px;
 }
 ```
-<iframe width="100%" height="600" title="day 2 - transition" src="https://codepen.io/ChungYingHo/embed/poXdPxo?default-tab=html%2Cresult" frameborder="no" loading="lazy" allowtransparency="true" allowfullscreen="true">
-  See the Pen <a href="https://codepen.io/ChungYingHo/pen/poXdPxo">
-  day 2 - transition</a> by ChungYingHo (<a href="https://codepen.io/ChungYingHo">@ChungYingHo</a>)
-  on <a href="https://codepen.io">CodePen</a>.
-</iframe>
+<CodePen id="poXdPxo" />
 
 ## Reference
 1. [W3 schools - 2D Transform](https://www.w3schools.com/css/css3_2dtransforms.asp)
