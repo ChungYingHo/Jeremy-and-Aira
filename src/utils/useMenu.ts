@@ -59,6 +59,9 @@ function getOrCreateGroup(
 /**
  * 將 Entry 插入樹狀結構
  */
+/**
+ * 將 Entry 插入樹狀結構
+ */
 function insertEntryIntoTree(
   menuTree: MenuItem[],
   entry: CollectionEntry<CollectionType>,
@@ -76,9 +79,9 @@ function insertEntryIntoTree(
         type: 'page',
         title: resolveEntryTitle(entry),
         href: href,
-      })
+        date: entry.data.date,
+      } as any)
     } else {
-      // 💡 關鍵修改：優先去 SERIES_LABELS 裡面找對應的中文標題，找不到才使用預設的 humanizeSegment
       const groupTitle = (SERIES_LABELS as Record<string, string>)[segment] || humanizeSegment(segment)
       
       const group = getOrCreateGroup(currentLevelItems, groupTitle)
@@ -92,11 +95,30 @@ function insertEntryIntoTree(
  */
 function sortMenuTree(menuItems: MenuItem[]): void {
   menuItems.sort((a, b) => {
+    if (a.type === 'page' && b.type === 'page') {
+      const pageA = a
+      const pageB = b
+      
+      if (pageA.date && pageB.date) {
+        const timeA = new Date(pageA.date).getTime()
+        const timeB = new Date(pageB.date).getTime()
+        
+        // 舊的文章在上面。
+        if (timeA !== timeB) {
+          return timeA - timeB 
+        }
+      }
+      
+      // 若沒有日期，或日期同一天，退回字母排序
+      return a.title.localeCompare(b.title)
+    }
+
     // 1. Page 優先，其次 Group
     if (a.type !== b.type) {
       return a.type === 'page' ? -1 : 1
     }
 
+    // 2. 處理 Group 的權重
     if (a.type === 'group' && b.type === 'group') {
       const getWeight = (title: string) => {
         const t = title.toLowerCase()
@@ -113,9 +135,11 @@ function sortMenuTree(menuItems: MenuItem[]): void {
       }
     }
 
+    // 3. Fallback: 標題字母排序
     return a.title.localeCompare(b.title)
   })
 
+  // 遞迴排序子層
   for (const item of menuItems) {
     if (item.type === 'group') {
       sortMenuTree(item.children)

@@ -9,6 +9,7 @@ export type MenuPage = {
   type: 'page';
   title: string;
   href: string;
+  date?: string | Date;
 }
 
 export type MenuGroup = {
