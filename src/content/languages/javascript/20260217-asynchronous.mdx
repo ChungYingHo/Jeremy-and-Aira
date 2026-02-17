@@ -1,28 +1,12 @@
 ---
 title: "[JS] 非同步處理"
-sidebar_label: "[JS] 非同步處理"
+author: "jeremy"
+date: "2026-02-17"
 tags: [javascript, callback, promise, async/await]
-keywords: [javascript, callback, promise, async/await]
+changelog: []
 ---
 
-:::note
-**Change Log**
-
-- 2023：Initial version
-- 2026/01/14：Update the whole article structure and content.
-- 2026/01/27：Update the info about call stack and callback queue.
-:::
-
-:::info
-關於非同步的概論，可以參考我在 2025 iThome 寫的[文章](https://jeremyho.tw/docs/series/iThome_2025/day_14)。  
-對於初次了解同步與非同步的人，該篇前半段會比較親民一點，因為我盡量以譬喻的方式講解同步與非同步。  
-
-該篇後半段的部分則是著重於說明：
-1. async/await
-2. macrotask 與 microtask
-
-本篇於 2026/01/14 更新後著重在 Event Loop、Callback Function、Promise、async/await 的介紹與範例。
-:::
+import YouTube from '@/components/ArticleRelated/YouTube.svelte'
 
 ## Event Loop
 為何 event loop 重要？因為 event loop 是 JS 非同步運作相當重要的一個環節。  
@@ -33,8 +17,8 @@ keywords: [javascript, callback, promise, async/await]
 初學 JS 的應該會很常聽到程式碼的運作是按著撰寫的順序執行，這就是單執行緒，也是我們所謂的「同步 (synchronous)」。
 
 但同步的缺點很明顯，遇到一行需要花比較多時間去執行的函式 (例如：網路請求、讀取檔案...) 時，整個程式碼的後續就會被卡住，必須等前面的函式執行完畢才能繼續往下執行。  
-很久以前的網頁就有這個問題，所以會 loading 很久都沒畫面，而現今因為非同步的出現，在一些內容需求負載比較大的 code 或任務運行時，我們仍得以看到其它部分的網頁內容。  
-但這種因為同步而產生的等待，我們稱為「阻塞 (blocking)」。
+很久以前的網頁就有這個問題，所以會 loading 很久都沒畫面，這種因為同步而產生的等待，我們稱為「阻塞 (blocking)」。  
+而現今因為非同步的出現，在一些內容需求負載比較大的 code 或任務運行時，我們仍得以看到其它部分的網頁內容而不至於在那邊乾等。
 
 整個非同步的流程有三個必須記得的專有名詞：
 1. Call stack
@@ -48,7 +32,7 @@ Call stack 其實是 JS engine 的一部分，所以在非同步誕生之前它�
 當函式內部有再調用其他函式時，新的執行上下文會依序被 push 進 stack。  
 最後被 pop 出來的執行上下文，會是最先被 push 進 stack 的那一個。
 
-![Call stack](./img/04_call_stack.png)
+![Call stack](https://cdn.jsdelivr.net/gh/ChungYingHo/Jeremy-Assets@master/jeremy-and-aira/languages/javascript/call-stack.png)
 
 :::info
 這是一個關於 JS 運行機制的題外話。  
@@ -126,13 +110,7 @@ Promise.resolve().then(() => {
 那麼即使 `setTimeout` 的延遲時間是 0，`Promise` 的 callback 還是會先被執行，因為它屬於 microtask，而 `setTimeout` 屬於 macrotask。
 :::
 
-![async flow](./img/04_async.png)
-
-:::tip
-我相當相當強烈推薦大家看一下這段 Philip Roberts 在 JSConf EU 2014 的演講影片。
-
-<iframe width="100%" height="500" src="https://www.youtube.com/embed/8aGhZQkoFbQ?si=7V9jd4iQRVPrGkAt" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-:::
+![async flow](https://cdn.jsdelivr.net/gh/ChungYingHo/Jeremy-Assets@master/jeremy-and-aira/languages/javascript/async-flow.png)
 
 ### 實際例子看非同步
 Philip Roberts 在 JSConf EU 介紹 event loop 的例子：
@@ -163,6 +141,16 @@ console.log('JSConfEU')
 :::info
 那 `setTimeout(func, 0)` 呢？  
 輸出結果順序依然相同，因為即使延遲時間為 0，`setTimeout` 的 callback 仍然會被排入佇列中，必須等到目前的同步程式碼執行完畢，並且 Call stack 為空時，才有機會被 event loop 安排執行。
+:::
+
+:::tip
+我相當相當強烈推薦大家看一下這段 Philip Roberts 在 JSConf EU 2014 的演講影片。
+
+<YouTube 
+  client:visible 
+  videoId="8aGhZQkoFbQ" 
+  title="所以說event loop到底是什麼玩意兒？| Philip Roberts | JSConf EU" 
+/>
 :::
 
 
@@ -256,8 +244,6 @@ fetchDataPromise()
 ```
 
 ## async/await
-基於我在 iThome 2025 [文章](https://jeremyho.tw/docs/series/iThome_2025/day_14#asyncawait)裡對 async/await 做了很詳細的說明，這裡只節錄重點。  
-
 Promise 雖然相當程度地幫助了工程師脫離非同步流程下的 callback hell，但在實際使用上，仍然會因為過多的 `then` 與 `catch` 而讓程式碼看起來不夠直覺。  
 因此 async/await 這個基於 Promise 的語法糖就這樣誕生了。  
 這裡要特別注意，它是語法糖語法糖語法糖，很重要，說三次，底層邏輯還是 Promise。
