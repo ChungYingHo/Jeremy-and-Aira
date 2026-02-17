@@ -10,6 +10,7 @@ export type MenuPage = {
   title: string;
   href: string;
   date?: string | Date;
+  sameDateSort?: number;
 }
 
 export type MenuGroup = {

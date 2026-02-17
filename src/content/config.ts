@@ -9,6 +9,7 @@ const commonSchema = z.object({
   date: z.date().or(z.string()).optional(),
   tags: z.array(z.string()).optional().default([]),
   changelog: z.array(z.date().or(z.string())).optional().default([]),
+  sameDateSort: z.number().optional().default(0),
 })
 
 // 定義各個 Collection

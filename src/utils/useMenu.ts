@@ -59,9 +59,6 @@ function getOrCreateGroup(
 /**
  * 將 Entry 插入樹狀結構
  */
-/**
- * 將 Entry 插入樹狀結構
- */
 function insertEntryIntoTree(
   menuTree: MenuItem[],
   entry: CollectionEntry<CollectionType>,
@@ -80,6 +77,7 @@ function insertEntryIntoTree(
         title: resolveEntryTitle(entry),
         href: href,
         date: entry.data.date,
+        sameDateSort: entry.data.sameDateSort,
       } as any)
     } else {
       const groupTitle = (SERIES_LABELS as Record<string, string>)[segment] || humanizeSegment(segment)
@@ -95,30 +93,41 @@ function insertEntryIntoTree(
  */
 function sortMenuTree(menuItems: MenuItem[]): void {
   menuItems.sort((a, b) => {
+    // 1. 如果兩者都是 page，進入日期與同日排序邏輯
     if (a.type === 'page' && b.type === 'page') {
-      const pageA = a
-      const pageB = b
+      const pageA = a as any
+      const pageB = b as any
       
+      // 先比較日期
       if (pageA.date && pageB.date) {
         const timeA = new Date(pageA.date).getTime()
         const timeB = new Date(pageB.date).getTime()
         
-        // 舊的文章在上面。
+        // 如果日期不同，直接依時間排序 (時間小的，也就是舊文章在上面)
         if (timeA !== timeB) {
           return timeA - timeB 
         }
       }
       
-      // 若沒有日期，或日期同一天，退回字母排序
+      // 如果日期完全相同 (或是沒寫日期)，則比較 sameDateSort
+      // 預設給 0，數字越小排越前面 (例如 1 排在 2 前面)
+      const sortA = pageA.sameDateSort ?? 0
+      const sortB = pageB.sameDateSort ?? 0
+      
+      if (sortA !== sortB) {
+        return sortA - sortB
+      }
+      
+      // 若日期跟 sameDateSort 都一模一樣，最後退回標題字母排序
       return a.title.localeCompare(b.title)
     }
 
-    // 1. Page 優先，其次 Group
+    // 2. Page 優先，其次 Group
     if (a.type !== b.type) {
       return a.type === 'page' ? -1 : 1
     }
 
-    // 2. 處理 Group 的權重
+    // 3. 處理 Group 的權重
     if (a.type === 'group' && b.type === 'group') {
       const getWeight = (title: string) => {
         const t = title.toLowerCase()
@@ -135,7 +144,7 @@ function sortMenuTree(menuItems: MenuItem[]): void {
       }
     }
 
-    // 3. Fallback: 標題字母排序
+    // 4. Fallback: Group 標題字母排序
     return a.title.localeCompare(b.title)
   })
 
