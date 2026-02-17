@@ -1,11 +1,14 @@
 ---
 title: "[Java] OOP 概論"
-sidebar_label: "[Java] OOP 概論"
+author: Jeremy
+date: "2026-02-17"
 tags: [java, oop, object-oriented]
-keywords: [java, oop, object-oriented]
+changelog: []
 ---
 
 :::note
+再複習一下模組化的概念，模組化的兩大指標：
+
 1. 內聚性 (Cohesion)：模組本身的功能強度，意即模組的完整性。
 2. 耦合性 (Coupling)：模組與模組之間的依賴關係，意即模組之間的關聯性。
 
@@ -15,7 +18,7 @@ keywords: [java, oop, object-oriented]
 所以高內聚、低耦合是相對且主觀的概念，必須視情況而定。
 :::
 
-## OOP (Object-Oriented)
+## OOP (Object-Oriented Programming)
 
 OOP 的核心組成基本是以**類別 (class)** 為基礎。  
 以 class 做為藍圖 (Blueprint)，來建立具有特徵與行為的**物件 (Object)**。
@@ -250,6 +253,7 @@ class Fighter extends Airplane {
 這裡要注意，如果類別內沒手動定義「無參數」的建構子，只定義了「含參數」的建構子，這寫法在當這個 class 沒任何子輩關係時是沒問題的。  
 但若是要做為父類別，因為子類別實體化時會預設呼叫父類別的無參數建構子，這時就會因為找不到無參數建構子而報錯。  
 所以撰寫 Java 的良好習慣是，不管有沒有子類別，都建議手動定義一個無參數建構子，以避免這種問題發生。
+:::
 
 :::note
 在多層繼承的情況下，在這裡假設有三層繼承關係：GrandParent → Parent → Child。  
@@ -353,7 +357,7 @@ class Dog extends Animal {
 ```
 
 ### 方法多載 (Method Overloading)
-前一篇在講 [Java 語法的文章](https://jeremyho.tw/docs/languages/Java/java_syntax#overloading-%E5%A4%9A%E8%BC%89)亦提到過多載，但這裡還是提出重點說明多載有三項條件，都必須符合才算是方法多載：
+多載有三項條件，都必須符合才算是方法多載：
 1. 方法名稱必須相同。
 2. 參數個數、型態或順序必須不同。
 3. 回傳型別的不同不能單獨作為判斷依據，必須配合參數差異
