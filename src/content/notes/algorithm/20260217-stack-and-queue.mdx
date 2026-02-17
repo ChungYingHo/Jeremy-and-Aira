@@ -1,7 +1,9 @@
 ---
 title: "[Data Structure] 堆疊 & 佇列"
+author: "Jeremy"
+date: "2026-02-17"
 tags: [data structure, stack, queue]
-keywords: [data structure, stack, queue]
+changelog: []
 ---
 
 :::info
@@ -55,7 +57,7 @@ public class stackInJava {
 使用 Linked List 實作 Stack 時，會將鏈結串列的開頭 (head) 作為堆疊頂端 (top)。  
 每次入堆疊 (push) 時，會在鏈結串列的開頭插入新節點；每次出堆疊 (pop)時，則從開頭移除節點。
 
-由於在鏈結串列的開頭插入或刪除節點只需調整指標，時間複雜度為 `O(1)`，不需要像陣列那樣搬移資料，因此效率很高。  
+由於在鏈結串列的開頭插入或刪除節點只需調整指標，時間複雜度為 $O(1)$，不需要像陣列那樣搬移資料，因此效率很高。  
 同時，鏈結串列可以動態擴充節點，非常適合實作可自由增減元素的堆疊結構。
 
 
