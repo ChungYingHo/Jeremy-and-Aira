@@ -22,6 +22,11 @@ export const AUTHORS = [
         name: 'Env Aligner',
         link: 'https://www.npmjs.com/package/env-aligner',
         summary: 'Env Aligner is a lightweight CLI tool that helps you validate and align environment variables between .env and .env.example files.\n\nIt checks for missing keys, empty values, and extra variables, and optionally formats .env files to match the schema.'
+      },
+      {
+        name: 'English Stack',
+        link: 'https://english-stack.vercel.app/',
+        summary: 'A site I built to level up our English skills together. We use it to practice reading and listening while keeping track of the most common vocabulary we encounter.'
       }
     ]
   },
