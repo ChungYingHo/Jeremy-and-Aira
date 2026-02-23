@@ -1,0 +1,177 @@
+---
+title: '[Vue] Component 基礎介紹'
+author: 'jeremy'
+date: "2026-02-22"
+tags: ['vue', 'component']
+changelog: []
+---
+
+[Vue](https://vuejs.org/) 自己其實把 component 的章節放在滿後面的，大概十二章左右吧。  
+但我在寫這篇時剛好有在教學 vue，我覺得其實以教學來講，先講 component 的概念會更有利於新手前端對框架，不論是 vue、react 還是 svelte 的理解。  
+因為本質上，前端框架改變前端開發甚遠的其中一點就是 component 的概念。
+
+## What is Component?
+
+如同前述所說，玩任何一個前端框架，99.99% 一定會聽到 component 的大名。  
+其實 component 基本就是 computer science 裡 module (模組化) 跟 abstraction (抽象化) 的概念在前端的實踐。  
+所以 component 說穿了就是一個可以複用的 UI 邏輯結構，裡面封裝了一整組的 HTML、CSS 跟 JavaScript。  
+其實更具體來講，是封裝了 UI 結構、資料狀態以及行為模式。  
+Vue 對於 component 敘述也是在說這樣一件事：
+
+> Components allow us to split the UI into independent and reusable pieces, and think about each piece in isolation.
+
+Vue 官方有一張結構圖我覺得闡釋 component 是個可複用、獨立的 UI 結構的概念非常好：
+
+![Vue Component Structure](https://cdn.jsdelivr.net/gh/ChungYingHo/Jeremy-Assets@master/jeremy-and-aira/notes/web-development/components-vue.png)
+
+但這終歸是結構圖，我認為對一次觸碰 component 概念的人來說可能看過實際例子，我指，真的在網路上常見的例子，會更有助於理解。  
+所以我從 Apple 官網截了他們畫面：
+
+![Apple Website](https://cdn.jsdelivr.net/gh/ChungYingHo/Jeremy-Assets@master/jeremy-and-aira/notes/web-development/component-example.png)
+
+雖然蘋果官網是用 react 做的，但這不影響我們透過它來了解 component。  
+圖中我用紅框圈選處，是蘋果展示產品的區塊，裡面有產品圖片、產品名稱、產品價格，這樣的東西你看光是圖裡那一列蘋果就排了六個區塊，難道蘋果的工程師要為此撰寫六次 (or 以上) 的重複性結構嗎？  
+答案是否定的，雖然我不是蘋果工程師，但以前端開發角度而言，用紅框框起來的區塊大可以就獨立成一個 component，比如 component `ProductCard` (名字我自己取的 www)，這個 `ProductCard` 內部就可以先寫好共用的 HTML、CSS 跟 JavaScript，然後把需要變動的資料抽成 props，如果目前還不知道 props 是什麼，就先把它當成是一個從外部丟進來的變數即可，這樣蘋果的前端工程師只要在主要這樣寫就好了：
+
+```xml
+<ProductCard
+  img=""
+  name=""
+  price=""
+/>
+<ProductCard
+  img=""
+  name=""
+  price=""
+/>
+```
+
+當然，他們因為是 react 寫的，所以真要較真的話寫起來可能類似：
+
+```jsx
+export default function MainPage() {
+  // 應該要來自 API 啦，但這裡做個範例而已
+  const products = [
+    {
+      img: '',
+      name: '',
+      price: '',
+    },
+    {
+      img: '',
+      name: '',
+      price: '',
+    },
+  ]
+
+  return (
+    <div>
+      {products.map((product) => (
+        <ProductCard
+          img={product.img}
+          name={product.name}
+          price={product.price}
+        />
+      ))}
+    </div>
+  )
+}
+```
+
+不過這篇文章畢竟是放在 vue 的分類裡的，所以用 vue 改寫一下會是：
+
+```vue
+<template>
+  <ProductCard
+    v-for="product in products"
+    :key="product.id"
+    :img="product.img"
+    :name="product.name"
+    :price="product.price"
+  />
+</template>
+
+<script setup>
+const products = [
+  {
+    id: 1,
+    img: '',
+    name: '',
+    price: '',
+  },
+  {
+    id: 2,
+    img: '',
+    name: '',
+    price: '',
+  },
+]
+</script>
+```
+
+但無論寫法是什麼啦，反正這裡揭示的是透過 component 的概念，我們就可以把重複性的 UI 結構抽象化與模組化，這樣就可以大幅減少重複性結構的撰寫，讓我們的程式碼更乾淨、可維護性更高。  
+這就像是我們在撰寫邏輯時會把重複性邏輯抽成 function 或 method 一樣。
+
+:::info
+`props` 是 component 的一個重要概念。  
+如同 function 會需要參數，component 也會需要 `props` 來接受外部傳入的資料，這樣 component 才能根據不同的 `props` 來渲染不同的內容。  
+以上述的 `ProductCard` 為例，`img`、`name`、`price` 就是 `props`，這些 `props` 會從外部丟進來，然後 `ProductCard` 內部就可以根據這些 `props` 來渲染對應的產品圖片、名稱和價格。
+
+所以 `ProductCard` 這個 component 內部結構可以長這樣：
+
+```jsx
+export default function ProductCard({ img, name, price }) {
+  return (
+    <div className="product-card">
+      <img src={img} alt={name} />
+      <h2>{name}</h2>
+      <p>{price}</p>
+    </div>
+  )
+}
+```
+
+改成 vue 的話會是：
+
+```vue
+<template>
+  <div class="product-card">
+    <img :src="img" :alt="name" />
+    <h2>{{ name }}</h2>
+    <p>{{ price }}</p>
+  </div> 
+</template>
+
+<script setup>
+defineProps({
+  img: String,
+  name: String,
+  price: String,
+})
+</script>
+```
+:::
+
+## 什麼是好的 Component？
+因為自己是前端的 System Design Writer (或是 Architect)，所以我日常工作比起寫 code，設計 component 的架構的機會更多一點。  
+小有一些對於 component 的設計見解可以分享~
+
+想先說的是，雖然 component 的概念是「可複用的獨立 UI 結構」，所以很多人會照著設計師給的稿直接去做切分，未考量到與外部資料的耦合性、side effect 到處飛、或是 props 設計得意義不明... 等，雖然的確搞出了一個 component，但那絕對不是一個優秀的 component。
+
+雖然軟體圈一直有個說法 (?) 是：程式會動就好。  
+Well... 很趕的時候確實會先這樣做，但絕多數時候我們會希望兼顧未來的維護性與可擴充性。  
+這裡面涉及的層面就很多了，包括我們不會希望以後因為要改一個功能而變動 N 個 file 的 code、或是需要一堆注解才看得懂在幹嘛的 code... 諸如此類。  
+
+所以一個好的 component，我覺得最基本要做到幾點：
+1. 命名明確：component 的命名應該要能清楚表達它的功能或用途，這樣其他開發者在使用或維護時才能快速理解它的作用。比如很多 UI framework 都會有的 `<Button />`。
+2. 單一職責：一個 component 負責的事越單一越好，這樣易於維護也易於複用。比如說一個 `ProductCard` 就專注在展示產品資訊，不要同時還負責處理購物車邏輯。
+    - 但好幾個 component 可以組成一個更大的 component，我們稱其為 parent component，對它來說負責的就是統籌各個 child component 形成一個更大的功能區塊。
+3. `props` 的設計 & 命名要明確：我們必須很清楚知道 component 需要哪些資料才能運作，來設計必要的 `props`，同時 `props` 的命名也要能清楚表達它的用途。
+4. `props` 要盡量與外界資料低耦合：通常因為希望 component 是可複用的，所以我們會希望它的 `props` 的結構設計是由 component 自己定義的，而不是直接把外界資料的結構丟進來，這樣就算外界資料結構改了，我們也只要在 parent component 那邊做一次轉換就好了，不需要改到 child component。
+    - 有兩種情況例外：
+      1. 團隊協商外界資料結構 (一般都是 API response) 是穩定幾乎不會改的。
+      2. 這個 component 所屬層級很中間，在它後面還有更多更小的 component，有時這種情景直接把整包 API response 作為 props 丟進來會是比較方便的做法。
+5. 明確資料的控制權 (避免不必要的 side effect)：就像寫 function 也會希望盡量 pure，設計 component 也要盡量避免其可能修改外部資料。Vue 跟 React 針對這種情境都有特別設計，以 vue 來說，component 如果需要修改由 parent component 傳入的資料 (`props`)，則必須透過 emit event 的方式來通知 parent component 來修改；React 則是由 parent component 傳入一個 function 作為 `props`，然後 child component 需要修改資料時就呼叫這個 function，這樣就可以確保資料的修改是由 parent component 來控制的，而不是 child component 直接修改外部資料。當然啦，如果 component 設計本來就是要打 API 的就還是乖乖這樣設計，不要覺得說要降低 side effect 所以就把職責丟給 parent component，這樣只是把單一職責的事情破壞而已。
+
+但當然啦，實際上常會因為各種原因，在 component 的設計上難免會做出一些妥協而無法完全符合上述的觀點，但這 never mind~  
+只要在開發時有認知到重複的 UI 邏輯結構是可以抽 component 這點，對於 reviewer 而言是非常值得感激的事。
