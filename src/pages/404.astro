@@ -1,0 +1,485 @@
+---
+// Standalone page — no Layout
+---
+
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>404 — Page Not Found | Jeremy × Aira</title>
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      :root { color-scheme: dark; }
+
+      body {
+        min-height: 100dvh;
+        background: #0e0c12;
+        color: #cbd5e1;
+        font-family: 'Inter', system-ui, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1.25rem;
+        overflow-x: hidden;
+      }
+
+      .blob {
+        position: fixed;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 0;
+        filter: blur(120px);
+      }
+      .blob-1 {
+        width: 500px; height: 500px;
+        top: -15%; left: -10%;
+        background: rgba(99, 102, 241, 0.12);
+      }
+      .blob-2 {
+        width: 500px; height: 500px;
+        bottom: -15%; right: -5%;
+        background: rgba(168, 85, 247, 0.09);
+      }
+
+      .page {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 820px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+      }
+
+      .label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        color: rgba(244, 114, 182, 0.45);
+        margin-bottom: 0.6rem;
+        position: relative;
+      }
+
+      .heading {
+        font-size: clamp(2.4rem, 8vw, 5rem);
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        line-height: 1;
+        background: linear-gradient(135deg, #fce7f3 0%, #c4b5fd 50%, #818cf8 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+        position: relative;
+      }
+
+      .sub {
+        font-size: 0.9rem;
+        color: rgba(148, 163, 184, 0.7);
+        margin-bottom: 1.75rem;
+        letter-spacing: 0.01em;
+        position: relative;
+      }
+
+      .game-card {
+        width: 100%;
+        background: rgba(14, 12, 18, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 18px;
+        padding: 14px;
+        position: relative;
+        overflow: hidden;
+      }
+      .game-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(244,114,182,0.03) 0%, transparent 60%);
+        pointer-events: none;
+        border-radius: 18px;
+      }
+
+      #game-canvas {
+        display: block;
+        width: 100%;
+        aspect-ratio: 800 / 250;
+        border-radius: 10px;
+        cursor: pointer;
+        image-rendering: pixelated;
+        touch-action: none;
+      }
+
+      .hint {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: rgba(148, 163, 184, 0.35);
+        text-align: center;
+        margin-top: 0.9rem;
+      }
+
+      .home-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        margin-top: 1.75rem;
+        padding: 0.6rem 1.4rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: rgba(203, 213, 225, 0.75);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 9999px;
+        text-decoration: none;
+        transition: color 0.25s, background 0.25s, border-color 0.25s, box-shadow 0.25s;
+      }
+      .home-link:hover {
+        color: #fce7f3;
+        background: rgba(244, 114, 182, 0.08);
+        border-color: rgba(244, 114, 182, 0.22);
+        box-shadow: 0 0 20px rgba(244, 114, 182, 0.08);
+      }
+      .home-link svg {
+        transition: transform 0.25s;
+        flex-shrink: 0;
+      }
+      .home-link:hover svg { transform: translateX(-2px); }
+
+      @media (max-width: 480px) {
+        .game-card { padding: 10px; border-radius: 14px; }
+        #game-canvas { border-radius: 7px; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="page">
+      <p class="label">Error &middot; 404</p>
+      <h1 class="heading">Page Not Found</h1>
+      <p class="sub">迷路了？來玩個小遊戲放鬆一下吧。</p>
+
+      <div class="game-card">
+        <canvas id="game-canvas" width="800" height="250"></canvas>
+      </div>
+
+      <p class="hint" id="game-hint">Space / ↑ to jump &nbsp;·&nbsp; Double jump supported</p>
+
+      <a href="/" class="home-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>
+        </svg>
+        返回首頁
+      </a>
+    </div>
+
+    <script>
+      // Mobile hint
+      if ('ontouchstart' in window) {
+        const hint = document.getElementById('game-hint')
+        if (hint) hint.textContent = 'Tap to jump  ·  Double jump supported'
+      }
+
+      const canvas = document.getElementById('game-canvas') as HTMLCanvasElement
+      const ctx = canvas.getContext('2d')!
+
+      // Logical canvas size (CSS aspect-ratio scales it)
+      const W = 800
+      const H = 250
+      const GY = 200 // ground y
+
+      // Colours
+      const BG    = '#0d0b10'
+      const DINO  = '#e2d9f3'
+      const CACT  = '#f472b6'
+      const CACTS = '#9d174d'
+      const GND   = 'rgba(255,255,255,0.1)'
+      const TXT2  = 'rgba(167,139,250,0.65)'
+
+      type State = 'idle' | 'running' | 'dead'
+
+      let state: State = 'idle'
+      let score  = 0
+      let hiScore = 0
+      let tick   = 0
+      let speed  = 0
+      let spawnIn = 0
+
+      const dino = {
+        y: GY, vy: 0, grounded: true,
+        jumps: 0,  // tracks double jump (max 2)
+        dead: false,
+        leg: 0, legTimer: 0,
+      }
+
+      type Obstacle = { x: number; w: number; h: number }
+      type Cloud    = { x: number; y: number; w: number }
+
+      let obs: Obstacle[] = []
+      let clouds: Cloud[] = [
+        { x: 180, y: 44, w: 80 },
+        { x: 480, y: 32, w: 64 },
+        { x: 680, y: 52, w: 56 },
+      ]
+
+      function jump() {
+        if (state === 'idle' || state === 'dead') { resetGame(); return }
+        if (dino.jumps < 2) {
+          dino.vy = dino.jumps === 0 ? -16 : -13
+          dino.grounded = false
+          dino.jumps++
+        }
+      }
+
+      function resetGame() {
+        state = 'running'
+        score = 0; tick = 0; speed = 4; spawnIn = 80
+        obs = []
+        dino.y = GY; dino.vy = 0; dino.grounded = true
+        dino.jumps = 0; dino.dead = false; dino.leg = 0; dino.legTimer = 0
+        requestAnimationFrame(loop)
+      }
+
+      function update() {
+        tick++; score++
+        speed = 4 + (score / 1000) * 0.8
+
+        // Dino physics
+        if (!dino.grounded) {
+          dino.vy += 0.75
+          dino.y  += dino.vy
+          if (dino.y >= GY) {
+            dino.y = GY; dino.vy = 0
+            dino.grounded = true; dino.jumps = 0
+          }
+        }
+
+        // Leg animation
+        if (dino.grounded) {
+          dino.legTimer++
+          if (dino.legTimer > 7) { dino.leg = 1 - dino.leg; dino.legTimer = 0 }
+        }
+
+        // Clouds (slow scroll)
+        clouds.forEach(c => { c.x -= 0.6 })
+        clouds = clouds.filter(c => c.x + c.w > -20)
+        if (clouds.length < 3) {
+          clouds.push({ x: W + 20, y: 28 + Math.random() * 56, w: 50 + Math.random() * 50 })
+        }
+
+        // Spawn obstacles
+        spawnIn--
+        if (spawnIn <= 0) {
+          const h = 44 + Math.random() * 52
+          const w = 18 + Math.random() * 14
+          obs.push({ x: W + 10, w, h })
+          // Occasionally spawn a pair
+          if (Math.random() > 0.55 && score > 400) {
+            obs.push({ x: W + 10 + w + 10 + Math.random() * 18, w: 14 + Math.random() * 10, h: 36 + Math.random() * 36 })
+          }
+          const base = Math.max(32, 80 - Math.floor(score / 300) * 4)
+          spawnIn = base + Math.floor(Math.random() * 40)
+        }
+
+        obs.forEach(o => { o.x -= speed })
+        obs = obs.filter(o => o.x + o.w > -10)
+
+        // Collision (tighter hitbox than visual)
+        const dx1 = 75 + 8, dy1 = dino.y - 46
+        const dx2 = 75 + 32, dy2 = dino.y - 4
+        for (const o of obs) {
+          if (dx2 > o.x + 3 && dx1 < o.x + o.w - 3 && dy2 > GY - o.h + 4 && dy1 < GY) {
+            dino.dead = true
+            state = 'dead'
+            hiScore = Math.max(hiScore, score)
+            return
+          }
+        }
+      }
+
+      function drawCloud(c: Cloud) {
+        ctx.fillStyle = 'rgba(255,255,255,0.03)'
+        ctx.beginPath()
+        ctx.ellipse(c.x + c.w * 0.25, c.y,      c.w * 0.28, 9,  0, 0, Math.PI * 2)
+        ctx.ellipse(c.x + c.w * 0.55, c.y - 6,  c.w * 0.22, 11, 0, 0, Math.PI * 2)
+        ctx.ellipse(c.x + c.w * 0.82, c.y,      c.w * 0.18, 7,  0, 0, Math.PI * 2)
+        ctx.fill()
+      }
+
+      function drawDino() {
+        const x = 75, y = dino.y, f = dino.leg, dead = dino.dead
+
+        ctx.fillStyle = DINO
+
+        // Tail
+        ctx.fillRect(x - 12, y - 28, 14, 7)
+        ctx.fillRect(x - 18, y - 23, 8,  5)
+
+        // Body
+        ctx.fillRect(x + 2,  y - 38, 28, 20)
+
+        // Neck
+        ctx.fillRect(x + 20, y - 48, 12, 14)
+
+        // Head
+        ctx.fillRect(x + 17, y - 53, 22, 16)
+
+        // Jaw
+        ctx.fillRect(x + 30, y - 41, 10, 5)
+
+        // Arm
+        ctx.fillRect(x + 19, y - 22, 9, 5)
+
+        // Eye
+        if (dead) {
+          ctx.fillStyle = '#f87171'
+          ctx.fillRect(x + 30, y - 51, 3, 3)
+          ctx.fillRect(x + 34, y - 51, 3, 3)
+          ctx.fillRect(x + 32, y - 49, 3, 3)
+        } else {
+          ctx.fillStyle = '#0d0b10'
+          ctx.fillRect(x + 32, y - 50, 4, 4)
+          ctx.fillStyle = '#fff'
+          ctx.fillRect(x + 33, y - 50, 2, 2)
+        }
+
+        // Legs
+        ctx.fillStyle = DINO
+        if (dino.grounded && !dead) {
+          if (f === 0) {
+            ctx.fillRect(x + 6,  y - 18, 9, 18)
+            ctx.fillRect(x + 19, y - 18, 9, 11)
+            // Foot forward
+            ctx.fillRect(x + 6, y - 2, 13, 4)
+          } else {
+            ctx.fillRect(x + 6,  y - 18, 9, 11)
+            ctx.fillRect(x + 19, y - 18, 9, 18)
+            ctx.fillRect(x + 19, y - 2, 13, 4)
+          }
+        } else {
+          ctx.fillRect(x + 6,  y - 18, 9, 14)
+          ctx.fillRect(x + 19, y - 18, 9, 9)
+        }
+      }
+
+      function drawCactus(o: Obstacle) {
+        const tw = Math.max(5, Math.round(o.w * 0.28))
+        const tx = o.x + Math.round((o.w - tw) / 2)
+        const gy = GY
+
+        ctx.fillStyle = CACT
+
+        // Trunk
+        ctx.fillRect(tx, gy - o.h, tw, o.h)
+        // Cap
+        ctx.fillRect(tx - 2, gy - o.h, tw + 4, Math.round(tw * 0.8))
+
+        // Left arm
+        const laY = gy - Math.round(o.h * 0.55)
+        ctx.fillRect(o.x, laY, tx - o.x, tw)
+        ctx.fillRect(o.x, laY - Math.round(o.h * 0.22), tw, Math.round(o.h * 0.22))
+        ctx.fillRect(o.x - 2, laY - Math.round(o.h * 0.22), tw + 4, Math.round(tw * 0.8))
+
+        // Right arm
+        const raX = tx + tw
+        ctx.fillRect(raX, laY, o.x + o.w - raX, tw)
+        ctx.fillRect(o.x + o.w - tw, laY - Math.round(o.h * 0.22), tw, Math.round(o.h * 0.22))
+        ctx.fillRect(o.x + o.w - tw - 2, laY - Math.round(o.h * 0.22), tw + 4, Math.round(tw * 0.8))
+
+        // Shade stripe
+        ctx.fillStyle = CACTS
+        ctx.fillRect(tx, gy - o.h, Math.round(tw * 0.35), o.h)
+        ctx.fillRect(o.x, laY - Math.round(o.h * 0.22), Math.round(tw * 0.35), Math.round(o.h * 0.22))
+        ctx.fillRect(o.x + o.w - tw, laY - Math.round(o.h * 0.22), Math.round(tw * 0.35), Math.round(o.h * 0.22))
+      }
+
+      function draw() {
+        ctx.fillStyle = BG
+        ctx.fillRect(0, 0, W, H)
+
+        clouds.forEach(drawCloud)
+
+        // Ground
+        ctx.fillStyle = GND
+        ctx.fillRect(0, GY + 2, W, 1)
+        ctx.fillStyle = 'rgba(255,255,255,0.03)'
+        ctx.fillRect(0, GY + 3, W, 1)
+
+        obs.forEach(drawCactus)
+        drawDino()
+
+        // Score
+        ctx.font = 'bold 13px "JetBrains Mono", monospace'
+        ctx.textAlign = 'right'
+        ctx.fillStyle = 'rgba(255,255,255,0.2)'
+        ctx.fillText(`HI ${String(hiScore).padStart(5, '0')}`, W - 86, 26)
+        ctx.fillStyle = 'rgba(255,255,255,0.55)'
+        ctx.fillText(String(score).padStart(5, '0'), W - 18, 26)
+        ctx.textAlign = 'left'
+
+        if (state === 'idle') {
+          ctx.fillStyle = TXT2
+          ctx.font = 'bold 12px "JetBrains Mono", monospace'
+          ctx.textAlign = 'center'
+          ctx.fillText('— PRESS SPACE OR TAP TO START —', W / 2, H / 2 + 5)
+          ctx.textAlign = 'left'
+        }
+
+        if (state === 'dead') {
+          ctx.fillStyle = 'rgba(0,0,0,0.45)'
+          ctx.fillRect(0, 0, W, H)
+
+          ctx.fillStyle = 'rgba(255,255,255,0.88)'
+          ctx.font = 'bold 18px "JetBrains Mono", monospace'
+          ctx.textAlign = 'center'
+          ctx.fillText('G A M E  O V E R', W / 2, H / 2 - 10)
+
+          ctx.fillStyle = TXT2
+          ctx.font = '11px "JetBrains Mono", monospace'
+          ctx.fillText('PRESS SPACE OR TAP TO RESTART', W / 2, H / 2 + 14)
+          ctx.textAlign = 'left'
+        }
+      }
+
+      function loop() {
+        update()
+        draw()
+        if (state === 'running') requestAnimationFrame(loop)
+      }
+
+      draw() // initial idle frame
+
+      // Keyboard
+      document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' || e.code === 'ArrowUp') {
+          e.preventDefault()
+          jump()
+        }
+      })
+
+      // Touch (tap anywhere except links)
+      document.addEventListener('touchstart', (e) => {
+        if ((e.target as HTMLElement).closest('a')) return
+        e.preventDefault()
+        jump()
+      }, { passive: false })
+
+      // Click on canvas
+      canvas.addEventListener('click', () => jump())
+    </script>
+  </body>
+</html>
