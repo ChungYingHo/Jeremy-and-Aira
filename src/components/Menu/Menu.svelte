@@ -6,7 +6,6 @@
   import SearchPanel from "@/components/Search/SearchPanel.svelte"
   import { fade, slide } from "svelte/transition"
   
-  // 🌟 引入我們剛剛抽出的共用函數
   import { normalizePath } from "@/utils/readPath"
 
   export let rootItems: MenuItem[] = []
@@ -20,7 +19,6 @@
   let isSearchOpen = false
   let isMobileMenuOpen = false
 
-  // --- Navbar Scroll Logic ---
   let scrollY = 0
   let lastScrollY = 0
   let showMenu = true

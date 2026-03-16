@@ -1,6 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { AUTHORS } from '@/constants/authors';
+import { formatDisplayDate } from '@/utils/date';
 import Layout from '@/layouts/Layout.astro';
 
 interface Props {
@@ -16,16 +17,11 @@ const authorData = AUTHORS.find(a => a.name.toLowerCase() === authorKey.toLowerC
 const publishDate = entry.data.date ? new Date(entry.data.date) : new Date();
 const tags: string[] = entry.data.tags || [];
 
-// Process Changelog: Sort descending & take top 3
+// Sort changelog descending, keep top 3
 const changelog = (entry.data.changelog || [])
   .map(date => new Date(date))
   .sort((a, b) => b.getTime() - a.getTime())
   .slice(0, 3);
-
-const formatDate = (d: Date) => {
-  if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '.');
-};
 ---
 
 <Layout title={entry.data.title} description={entry.data.title}>
@@ -67,7 +63,7 @@ const formatDate = (d: Date) => {
         </a>
         <div class="w-px h-4 bg-white/10 hidden sm:block"></div>
         <div class="flex items-center gap-2" title="Published Date">
-          <span class="text-slate-500">{formatDate(publishDate)}</span>
+          <span class="text-slate-500">{formatDisplayDate(publishDate)}</span>
         </div>
       </div>
     </header>
@@ -84,7 +80,7 @@ const formatDate = (d: Date) => {
               {changelog.map(date => (
                 <li class="flex items-center gap-4 text-xs text-slate-500 group">
                   <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 group-hover:bg-indigo-400 transition-colors"></span>
-                  <span class="font-mono text-slate-400">{formatDate(date)}</span>
+                  <span class="font-mono text-slate-400">{formatDisplayDate(date)}</span>
                   <span class="text-slate-600 group-hover:text-slate-400 transition-colors">Content updated</span>
                 </li>
               ))}
@@ -160,7 +156,6 @@ const formatDate = (d: Date) => {
 </Layout>
 
 <script>
-// === 1. Progress Bar ===
 const progressBar = document.getElementById('progress-bar')
 window.addEventListener('scroll', () => {
   if(progressBar) {
@@ -171,7 +166,6 @@ window.addEventListener('scroll', () => {
   }
 })
 
-// === 2. TOC Highlight ===
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
@@ -189,7 +183,6 @@ const observer = new IntersectionObserver((entries) => {
 }, { rootMargin: '-100px 0px -70% 0px' })
 document.querySelectorAll('.md-content h2, .md-content h3').forEach(h => observer.observe(h))
 
-// === 3. Mobile TOC Toggle ===
 const toggleBtn = document.getElementById('toc-toggle')
 const container = document.getElementById('mobile-toc-container')
 const icon = document.getElementById('toc-icon')
@@ -214,7 +207,6 @@ const toggle = (force?: boolean) => {
 toggleBtn?.addEventListener('click', () => toggle())
 document.querySelectorAll('.mobile-toc-link').forEach(l => l.addEventListener('click', () => toggle(false)))
 
-// === 4. Code Block Copy Button ===
 document.addEventListener('DOMContentLoaded', () => {
   const preElements = document.querySelectorAll('pre')
 
@@ -252,7 +244,6 @@ document.addEventListener('DOMContentLoaded', () => {
     wrapper.appendChild(copyBtn)
   })
 
-  // === 5. Heading Anchor Links ===
   const headings = document.querySelectorAll('.md-content h1, .md-content h2, .md-content h3')
   headings.forEach(heading => {
     const anchor = document.createElement('a')
@@ -277,8 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
     heading.appendChild(anchor)
   })
 
-  // === 6. External Links in MDX ===
-  // 找出所有在文章內容裡的連結，並排除那些作為頁面內跳轉用的錨點（href 以 # 開頭的）
+  // Open external links in new tab (skip anchor links)
   const contentLinks = document.querySelectorAll('.md-content a')
   contentLinks.forEach(link => {
     const href = link.getAttribute('href')
@@ -291,12 +281,11 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <style is:global>
-  /* Base Typography */
-  .md-content { 
-    color: #e2e8f0; 
-    font-size: 1.05rem; 
-    line-height: 1.8; 
-    letter-spacing: 0.01em; 
+  .md-content {
+    color: #e2e8f0;
+    font-size: 1.05rem;
+    line-height: 1.8;
+    letter-spacing: 0.01em;
   }
   
   @media (min-width: 768px) { 
@@ -304,9 +293,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   .md-content strong { color: #fff; font-weight: 600; }
-  
-  /* Heading Styles - 包含 Anchor 定位 */
-  .md-content h1, .md-content h2, .md-content h3, .md-content h4 { 
+
+  .md-content h1, .md-content h2, .md-content h3, .md-content h4 {
     color: #fff; 
     font-weight: 700; 
     line-height: 1.3; 
@@ -314,7 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
     position: relative; 
   }
   
-  /* Anchor Link Styles */
   .heading-anchor {
     display: inline-flex;
     align-items: center;
@@ -336,9 +323,8 @@ document.addEventListener('DOMContentLoaded', () => {
   .heading-anchor:hover { color: #fff; }
   .heading-anchor.copied { color: #4ade80; transform: scale(1.1); }
 
-  /* [修正] H1: 文章內標題 (通常隱藏，但這裡開啟樣式以備不時之需) */
-  .md-content h1 { 
-    display: block; /* 開啟顯示 */
+  .md-content h1 {
+    display: block;
     font-size: 2.25rem;
     text-align: center;
     margin-top: 4rem;
@@ -348,56 +334,48 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   @media (min-width: 768px) { .md-content h1 { font-size: 3rem; } }
   
-  /* [修正] H2: 章節標題 - 加上明顯的底線 (Divider) */
-  .md-content h2 { 
-    font-size: 1.75rem; 
-    margin-top: 5rem; /* 大間距 */
-    margin-bottom: 1.5rem; 
-    padding-bottom: 0.5rem; 
-    
-    /* 章節分隔線：稍微亮一點的線條 */
-    border-bottom: 1px solid rgba(255,255,255,0.2); 
+  .md-content h2 {
+    font-size: 1.75rem;
+    margin-top: 5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
   }
-  @media (min-width: 768px) { 
-    .md-content h2 { 
-      font-size: 2rem; 
-      margin-top: 7rem; /* Desktop 更大的間距，約 112px */
-      margin-bottom: 2rem; 
-    } 
+  @media (min-width: 768px) {
+    .md-content h2 {
+      font-size: 2rem;
+      margin-top: 7rem;
+      margin-bottom: 2rem;
+    }
   }
   
-  /* [修正] H3: 子章節 - 加上左側飾條 (Left Border) */
-  .md-content h3 { 
-    font-size: 1.35rem; 
-    margin-top: 3.5rem; 
-    margin-bottom: 1rem; 
-    color: #f1f5f9; 
-    
-    /* 左側飾條：使用粉色或強調色 */
+  .md-content h3 {
+    font-size: 1.35rem;
+    margin-top: 3.5rem;
+    margin-bottom: 1rem;
+    color: #f1f5f9;
     padding-left: 0.75rem;
-    border-left: 4px solid #f472b6; /* Pink-400 */
-    border-bottom: none; /* 移除底線，改用左側強調 */
+    border-left: 4px solid #f472b6;
+    border-bottom: none;
   }
-  @media (min-width: 768px) { 
-    .md-content h3 { 
-      font-size: 1.5rem; 
-      margin-top: 4.5rem; 
-      margin-bottom: 1.25rem; 
+  @media (min-width: 768px) {
+    .md-content h3 {
+      font-size: 1.5rem;
+      margin-top: 4.5rem;
+      margin-bottom: 1.25rem;
       padding-left: 1rem;
-    } 
+    }
   }
 
-  /* [修正] H4: 小標題 - 顯眼但層級較低 */
-  .md-content h4 { 
-    font-size: 1.15rem; 
-    font-weight: 700; 
-    margin-top: 2.5rem; 
-    margin-bottom: 0.75rem; 
-    color: #cbd5e1; /* Slate-300 */
+  .md-content h4 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    color: #cbd5e1;
   }
   @media (min-width: 768px) { .md-content h4 { font-size: 1.25rem; } }
 
-  /* Paragraphs & Lists */
   .md-content p { margin-bottom: 1.5rem; }
   
   .md-content ul { list-style: disc; }
@@ -414,12 +392,10 @@ document.addEventListener('DOMContentLoaded', () => {
   .md-content li { margin: 0.5rem 0; padding-left: 0.25rem; }
   .md-content li::marker { color: #94a3b8; }
 
-  /* Links */
   .md-content a { color: #60a5fa; text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
   .md-content a:hover { border-bottom-color: #60a5fa; }
-  
-  /* Inscription Blockquote Styles */
-  .md-content blockquote { 
+
+  .md-content blockquote {
     margin: 3rem 0; 
     padding: 2rem; 
     text-align: center;
@@ -445,7 +421,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   .md-content blockquote a:hover { color: #fff !important; }
 
-  /* Code Block Styles */
   .md-content :not(pre) > code { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.85em; color: #ff79c6; background: #282a36; padding: 0.2em 0.4em; border-radius: 0.3em; vertical-align: 1px; border: 1px solid rgba(255,255,255,0.05); }
   
   .md-content pre { padding: 1rem; background: #1e1e1e; overflow-x: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.85rem; }
@@ -456,7 +431,6 @@ document.addEventListener('DOMContentLoaded', () => {
   @media (min-width: 768px) { .md-content img { border-radius: 0.75rem; margin: 3.5rem auto; } }
   .md-content hr { border: 0; height: 1px; background: rgba(255,255,255,0.1); margin: 4rem 0; }
   
-  /* Table Styles */
   .md-content table { display: block; width: 100%; overflow-x: auto; border-collapse: collapse; margin: 2rem 0; font-size: 0.95rem; white-space: nowrap; }
   @media (min-width: 768px) { .md-content table { display: table; white-space: normal; } }
   .md-content th { text-align: left; padding: 0.75rem 1rem; font-weight: 600; color: #fff; background: rgba(255, 255, 255, 0.03); border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
@@ -464,8 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
   .md-content tr:last-child td { border-bottom: none; }
   .md-content tr:hover td { background: rgba(255, 255, 255, 0.02); }
 
-  /* Admonitions Styles */
-  .admonition { 
+  .admonition {
     margin: 2rem 0; 
     padding: 0.75rem 1rem; 
     border-radius: 0.5rem; 
@@ -508,11 +481,6 @@ document.addEventListener('DOMContentLoaded', () => {
   .admonition p { margin: 0.5rem 0 0 0; }
   .admonition p:first-of-type { margin-top: 0; }
 
-  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
-
-  /* Copy Button Wrapper */
   .copy-btn {
     position: absolute;
     top: 0.5rem;
@@ -541,9 +509,4 @@ document.addEventListener('DOMContentLoaded', () => {
   .copy-btn.is-copied .icon-check { display: block; }
   .copy-btn.is-copied .icon-copy { display: none; }
 
-  @keyframes fade-in-up {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .animate-fade-in-up { animation: fade-in-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 </style>

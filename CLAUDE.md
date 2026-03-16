@@ -38,7 +38,7 @@ src/
 │   ├── CustomCursor.astro
 │   └── PostRenderer.astro  # 所有文章類型的統一渲染組件
 ├── constants/
-│   ├── authors.ts          # 作者資料（Jeremy、Aira Studio）
+│   ├── authors.ts          # 作者資料 + Author 型別（Jeremy、Aira Studio）
 │   └── seriesLabels.ts     # 系列名稱對應表
 ├── content/                # Astro Content Collections（MDX 文章）
 │   ├── blog/
@@ -57,10 +57,49 @@ src/
 │   └── main.scss
 └── utils/
     ├── content.ts          # generateCollectionPaths()
-    ├── date.ts             # formatDate()
+    ├── date.ts             # formatDate()、formatDisplayDate()
     ├── readPath.ts         # normalizePath()（路由比對用）
     └── useMenu.ts          # useMenu()（動態選單生成）
 ```
+
+---
+
+## 共用工具與樣式
+
+### 日期格式化
+
+`src/utils/date.ts` 提供兩種格式，**不要在元件裡自行定義 date formatter**：
+
+| 函式 | 輸出範例 | 使用場景 |
+| :--- | :--- | :--- |
+| `formatDate(date)` | `January 1, 2025` | 英文長格式（en-US） |
+| `formatDisplayDate(date)` | `2025.01.01` | 文章標頭、changelog（zh-TW） |
+
+### 共用樣式
+
+`src/styles/main.scss` 包含以下全站共用樣式，**不要在個別頁面或元件裡重複定義**：
+
+- `.animate-fade-in-up` — 頁面進場動畫
+- `.custom-scrollbar` — 覆蓋面板、TOC sidebar 等的細滑桿樣式
+  - 注意：`Menu.svelte` 以 Svelte scoped CSS 覆蓋為粉色版本，屬刻意設計
+
+### 型別
+
+- **`Author`** — 定義在 `src/constants/authors.ts`，新增作者欄位請先更新型別
+- **`CollectionType`**、`MenuItem` 等 — 定義在 `src/models/menu.ts`（SSOT）
+
+---
+
+## 注解規範
+
+- **不加無意義的分組注解**，例如 `// === 1. XXX ===`、`// --- Section ---`
+- **不加只是重複程式碼意圖的注解**，例如 `/* H2: 章節標題 */`（CSS 已自明）
+- **不加表情符號注解**，例如 `// 🌟 引入共用函式`
+- **不加修正歷程標記**，例如 `// [修正]`、`// [1]`；有必要說明的 workaround 用一行簡短英文說明，例如：
+  ```ts
+  // `as any` bypasses Astro's overloaded getCollection type — intentional workaround
+  ```
+- JSDoc 只在 public API 或邏輯不自明時才加，不要對每個私有 helper 都加
 
 ---
 

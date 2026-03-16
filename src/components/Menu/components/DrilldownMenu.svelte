@@ -3,7 +3,6 @@
   import { cubicOut } from "svelte/easing"
   import type { MenuItem, MenuGroup } from "@/models/menu"
   
-  // 🌟 引入我們剛剛抽出的共用函數
   import { normalizePath } from "@/utils/readPath"
 
   export let rootItems: MenuItem[] = []
@@ -18,19 +17,15 @@
   let items: MenuItem[] = [] 
   let direction = 1 
 
-  // --- 初始化邏輯 (Deep Linking) ---
-  
   function findPathStack(
     currentItems: MenuItem[], 
     targetPath: string, 
     currentStack: MenuItem[][]
   ): { found: boolean, stack: MenuItem[][], finalItems: MenuItem[] } {
     
-    // 🌟 將目標路徑正規化
     const normalizedTarget = normalizePath(targetPath);
 
     for (const item of currentItems) {
-      // 🌟 將每個選單項目的路徑也正規化，確保精準比對
       if (item.type === 'page' && normalizePath(item.href) === normalizedTarget) {
         return { found: true, stack: currentStack, finalItems: currentItems }
       }
@@ -67,8 +62,6 @@
   }
 
   init()
-
-  // ------------------------------
 
   function isGroup(item: MenuItem): item is MenuGroup {
     return item.type === "group"
@@ -111,7 +104,6 @@
     }
   }
 
-  // 為了在 Template 方便使用，我們先計算正規化後的當前路徑
   $: normalizedCurrentPath = normalizePath(currentPath);
 </script>
 

@@ -1,4 +1,16 @@
-export const AUTHORS = [
+export type Author = {
+  name: string
+  imgPath: string
+  isSecret: boolean
+  summary?: string
+  description?: string
+  currentRole?: string[]
+  programmingLanguages?: string[]
+  socialLinks?: Record<string, string>
+  portfolio?: Array<{ name: string; link: string; summary: string }>
+}
+
+export const AUTHORS: Author[] = [
   {
     name: 'Jeremy',
     imgPath: '/assets/authors/jeremy.png',
