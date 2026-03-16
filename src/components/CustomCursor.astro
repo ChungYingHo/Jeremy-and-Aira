@@ -63,7 +63,13 @@ const initCursor = () => {
     const target = e.target as HTMLElement
     
     const clickable = target.closest('a, button, [role="button"], input[type="submit"], input[type="button"], .hover-trigger')
-    const textable = target.closest('p, h1, h2, h3, h4, h5, h6, span, code, pre, blockquote, input[type="text"], textarea, label, li, td, th')
+    const textableRaw = clickable
+      ? null
+      : target.closest('p, h1, h2, h3, h4, h5, h6, span, code, pre, blockquote, input[type="text"], textarea, label, li, td, th')
+    const isClickableContainer = textableRaw
+      && ['LI', 'TD', 'TH'].includes(textableRaw.tagName)
+      && textableRaw.querySelector('a, button, [role="button"]')
+    const textable = isClickableContainer ? null : textableRaw
 
     // 更新全域狀態
     isHoveringText = !!textable
@@ -71,14 +77,14 @@ const initCursor = () => {
     if (clickable) {
       ring.classList.add('hovering')
       ring.classList.remove('text-mode')
-      dot.classList.add('hovering')
+      dot.classList.remove('text-mode')
     } else if (textable) {
       ring.classList.add('text-mode')
       ring.classList.remove('hovering')
       dot.classList.add('text-mode')
     } else {
       ring.classList.remove('hovering', 'text-mode')
-      dot.classList.remove('hovering', 'text-mode')
+      dot.classList.remove('text-mode')
     }
   }
 
@@ -126,8 +132,6 @@ document.addEventListener('DOMContentLoaded', initCursor)
     background: radial-gradient(circle, rgba(244, 114, 182, 0.1) 0%, transparent 70%);
     box-shadow: 0 0 10px rgba(244, 114, 182, 0.2);
     
-    mix-blend-mode: screen;
-    
     /* 初始縮小且透明，等待喚醒 */
     opacity: 0;
     transform: scale(0.5); 
@@ -141,11 +145,11 @@ document.addEventListener('DOMContentLoaded', initCursor)
     height: 8px;
     background-color: white;
     border-radius: 50%;
-    margin-left: -4px; 
+    margin-left: -4px;
     margin-top: -4px;
     mix-blend-mode: exclusion;
     opacity: 0;
-    transition: opacity 0.3s;
+    transition: opacity 0.3s, width 0.15s, height 0.15s, border-radius 0.15s, margin 0.15s;
   }
 
   /* === 啟動狀態 (Active) === */
@@ -172,25 +176,6 @@ document.addEventListener('DOMContentLoaded', initCursor)
       cursor: none !important;
     }
     
-    /* 在文字上：恢復系統 I-Beam 游標，方便精準選取，但同時保留背景的光圈 */
-    :global(body.custom-cursor-active) :global(p),
-    :global(body.custom-cursor-active) :global(h1),
-    :global(body.custom-cursor-active) :global(h2),
-    :global(body.custom-cursor-active) :global(h3),
-    :global(body.custom-cursor-active) :global(h4),
-    :global(body.custom-cursor-active) :global(h5),
-    :global(body.custom-cursor-active) :global(h6),
-    :global(body.custom-cursor-active) :global(span),
-    :global(body.custom-cursor-active) :global(code),
-    :global(body.custom-cursor-active) :global(pre),
-    :global(body.custom-cursor-active) :global(blockquote),
-    :global(body.custom-cursor-active) :global(li),
-    :global(body.custom-cursor-active) :global(td),
-    :global(body.custom-cursor-active) :global(th),
-    :global(body.custom-cursor-active) :global(input[type="text"]), 
-    :global(body.custom-cursor-active) :global(textarea) {
-      cursor: text !important;
-    }
   }
 
   @keyframes cursor-spawn {
@@ -224,10 +209,14 @@ document.addEventListener('DOMContentLoaded', initCursor)
     animation: none;
   }
 
-  /* 在 Hover 或 Text 模式隱藏中心點 */
-  .cursor-dot.hovering,
+  /* Text 模式：dot 變形為 I-beam 細條 */
   .cursor-dot.text-mode {
-    opacity: 0 !important;
+    width: 2px;
+    height: 18px;
+    border-radius: 1px;
+    margin-left: -1px;
+    margin-top: -9px;
+    opacity: 1 !important;
   }
   
   .cursor-ring.clicking {
