@@ -1,19 +1,20 @@
 ---
 import { generateCollectionPaths } from '@/utils/content';
+import type { NavLink } from '@/utils/content';
 import PostRenderer from '@/components/PostRenderer.astro';
 import type { CollectionEntry } from 'astro:content';
 
 export async function getStaticPaths() {
-  // [修改] 這裡改成 'blog'，會去抓 content/blog 資料夾的內容
   return generateCollectionPaths('blog');
 }
 
 type Props = {
-  // [修改] 型別也要改成 blog
   entry: CollectionEntry<'blog'>;
+  prev: NavLink;
+  next: NavLink;
 }
 
-const { entry } = Astro.props;
+const { entry, prev, next } = Astro.props;
 ---
 
-<PostRenderer entry={entry} />
+<PostRenderer entry={entry} prev={prev} next={next} />
