@@ -22,7 +22,9 @@
 │   ├── components/      # UI 組件 (Menu, PostRenderer, etc.)
 │   ├── content/         # Markdown/MDX 文章內容來源
 │   │   ├── blog/
-│   │   ├── notes/
+│   │   ├── notes/       # CS 筆記（含 languages/ 子資料夾）
+│   │   │   └── languages/
+│   │   ├── release-notes/  # Aira Studio release notes
 │   │   ├── series/
 │   │   └── config.ts    # 定義 Content Collections Schema
 │   ├── layouts/         # 頁面佈局 (Layout.astro)
@@ -55,6 +57,7 @@ export const collections = {
   'notes': notesCollection,
   'series': seriesCollection,
   'blog': blogCollection,
+  'release-notes': releaseNotesCollection,
   'project': projectCollection, // <--- 新增這一行
 };
 ```
@@ -66,7 +69,7 @@ export const collections = {
 // src/models/menu.ts
 
 // 1. 在 CollectionType 加入新的名稱
-export type CollectionType = 'notes' | 'series' | 'blog' | 'project'; // <--- 新增 'project'
+export type CollectionType = 'notes' | 'series' | 'blog' | 'release-notes' | 'project'; // <--- 新增 'project'
 
 // ... (省略中間程式碼)
 
@@ -93,7 +96,9 @@ src/content/project/
 ### 步驟 4：建立頁面路由
 Astro 使用檔案系統路由，需要在 `src/pages/` 建立對應的資料夾與檔案。
 
-#### A. 建立列表頁 (`src/pages/project/index.astro`)
+> **注意**：只有 `blog` 需要 `index.astro` 列表頁（它在選單中是直連頁面）。其他 collection 透過 drilldown 選單導覽，只需要 `[...slug].astro`。
+
+#### A. 建立列表頁 (`src/pages/project/index.astro`)（僅 blog 類型需要）
 負責列出該分類下的所有文章。
 
 ```
