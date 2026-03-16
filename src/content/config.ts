@@ -23,12 +23,12 @@ const seriesCollection = defineCollection({
   schema: commonSchema,
 })
 
-const languagesCollection = defineCollection({
+const blogCollection = defineCollection({
   type: 'content',
   schema: commonSchema,
 })
 
-const blogCollection = defineCollection({
+const releaseNotesCollection = defineCollection({
   type: 'content',
   schema: commonSchema,
 })
@@ -37,6 +37,6 @@ const blogCollection = defineCollection({
 export const collections = {
   'notes': notesCollection,
   'series': seriesCollection,
-  'languages': languagesCollection,
   'blog': blogCollection,
+  'release-notes': releaseNotesCollection,
 }

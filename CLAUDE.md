@@ -42,8 +42,9 @@ src/
 │   └── seriesLabels.ts     # 系列名稱對應表
 ├── content/                # Astro Content Collections（MDX 文章）
 │   ├── blog/
-│   ├── languages/
-│   ├── notes/
+│   ├── notes/              # CS 筆記（含 languages/ 子資料夾）
+│   │   └── languages/      # 程式語言筆記（原為獨立 collection，已合併入 notes）
+│   ├── release-notes/      # Aira Studio 作品 release notes（目前無內容）
 │   ├── series/
 │   └── config.ts           # Collection schema 定義
 ├── layouts/
@@ -88,12 +89,12 @@ sameDateSort?: number // 同日期文章排序微調，預設 0
 1. **`src/content/config.ts`** — 定義 schema 並加入 `export const collections`
 2. **`src/models/menu.ts`** — 在 `CollectionType` union type 加入新名稱，並在 `MENU_COLLECTIONS` 陣列加入設定
 3. **`src/content/<name>/`** — 建立 MDX 內容資料夾
-4. **`src/pages/<name>/index.astro`** — 列表頁
-5. **`src/pages/<name>/[...slug].astro`** — 內頁（使用 `generateCollectionPaths`）
-6. **`src/components/PostRenderer.astro`** — 在 Props 的 `CollectionEntry` union type 加入新類型
-7. 重新啟動 dev server（讓 Astro 重新產生 `.astro/types.d.ts`）
+4. **`src/pages/<name>/[...slug].astro`** — 內頁（使用 `generateCollectionPaths`）
+5. **`src/components/PostRenderer.astro`** — 在 Props 的 `CollectionEntry` union type 加入新類型
+6. 重新啟動 dev server（讓 Astro 重新產生 `.astro/types.d.ts`）
 
-> 選單會自動根據 `MENU_COLLECTIONS` 生成，無需修改 `Menu.svelte` 或 `useMenu.ts`。
+> - 選單會自動根據 `MENU_COLLECTIONS` 生成，無需修改 `Menu.svelte` 或 `useMenu.ts`。
+> - **Collection 若無內容，選單項目自動隱藏**（`useMenu` 會過濾空的 group）。Blog 是例外：它在 `useMenu.ts` 被特例處理為直連 `/blog` 的 page link，需要有 `src/pages/blog/index.astro`。其他 collection 使用 drilldown 選單，不需要 index 頁面。
 
 ---
 
@@ -103,6 +104,8 @@ sameDateSort?: number // 同日期文章排序微調，預設 0
 | :--- | :--- |
 | **Svelte for 互動組件** | Menu 與 Search 使用 Svelte，其餘為 Astro（zero-JS 優先） |
 | **`src/models/menu.ts` 是 SSOT** | 所有路由型別與選單資料集中於此，不要分散 |
+| **Languages 已合併入 Notes** | `src/content/notes/languages/` 是 notes collection 的子資料夾，路由為 `/notes/languages/...`，不再是獨立 collection |
+| **Aira 選單自動顯示/隱藏** | `release-notes` collection 目前無內容，`useMenu` 自動過濾空 group，Aira 按鈕不會出現；有內容才會出現 |
 | **Blog 排序特殊處理** | 排序邏輯（含從檔名解析日期）寫在 `src/pages/blog/index.astro`，非通用 utils |
 | **數學支援** | remark-math + rehype-katex，直接在 MDX 中寫 LaTeX |
 | **Admonition 語法** | remark-directive 支援 `:::note`、`:::warning`、`:::tip`、`:::danger`、`:::info` |

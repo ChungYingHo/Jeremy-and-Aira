@@ -4,11 +4,11 @@ import PostRenderer from '@/components/PostRenderer.astro';
 import type { CollectionEntry } from 'astro:content';
 
 export async function getStaticPaths() {
-  return generateCollectionPaths('languages');
+  return generateCollectionPaths('release-notes');
 }
 
 type Props = {
-  entry: CollectionEntry<'languages'>;
+  entry: CollectionEntry<'release-notes'>;
 }
 
 const { entry } = Astro.props;
