@@ -86,6 +86,13 @@
     onTitleChange?.("")
   }
 
+  function backToRoot() {
+    direction = -1
+    items = initialItems ?? rootItems
+    stack = []
+    onTitleChange?.("")
+  }
+
   function scrollToActive(node: HTMLElement, isActive: boolean) {
     if (isActive) {
       setTimeout(() => {
@@ -107,27 +114,38 @@
   $: normalizedCurrentPath = normalizePath(currentPath);
 </script>
 
-<div class="relative w-full grid grid-cols-1 grid-rows-1 transition-all duration-300 ease-out">
-  {#key items}
-    <ul
-      class="menu menu-vertical w-full col-start-1 row-start-1 p-0 gap-1"
-      in:fly={{ x: direction * 20, duration: 300, easing: cubicOut }}
-      out:fly={{ x: direction * -20, duration: 300, easing: cubicOut }}
-    >
-      {#if stack.length > 0}
-        <li class="mb-2 border-b border-white/5 pb-2">
-          <button
-            class="flex items-center gap-3 px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-white/40 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-300 group"
-            on:click={back}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-1">
-              <path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd" />
-            </svg>
-            Back
-          </button>
-        </li>
-      {/if}
+<div class="relative w-full">
+  {#if stack.length > 0}
+    <div class="flex items-center gap-1 mb-2 pb-2 border-b border-white/5">
+      <button
+        class="flex flex-1 items-center gap-3 px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-white/40 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-300 group"
+        on:click={back}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-1">
+          <path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd" />
+        </svg>
+        Back
+      </button>
+      <button
+        class="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-[0.15em] text-white/25 hover:text-white/70 hover:bg-white/5 rounded-xl transition-all duration-300 group shrink-0"
+        title="Back to top"
+        on:click={backToRoot}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 transition-transform duration-300 group-hover:-translate-y-0.5">
+          <path fill-rule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04L10.75 5.612V16.25A.75.75 0 0110 17z" clip-rule="evenodd" />
+        </svg>
+        Top
+      </button>
+    </div>
+  {/if}
 
+  <div class="grid grid-cols-1 grid-rows-1 transition-all duration-300 ease-out">
+    {#key items}
+      <ul
+        class="menu menu-vertical w-full col-start-1 row-start-1 p-0 gap-1"
+        in:fly={{ x: direction * 20, duration: 300, easing: cubicOut }}
+        out:fly={{ x: direction * -20, duration: 300, easing: cubicOut }}
+      >
       {#each items as item}
         <li>
           {#if isGroup(item)}
@@ -152,6 +170,7 @@
           {/if}
         </li>
       {/each}
-    </ul>
-  {/key}
+      </ul>
+    {/key}
+  </div>
 </div>
