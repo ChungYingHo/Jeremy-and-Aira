@@ -151,3 +151,12 @@ A: 嘗試重新啟動開發伺服器 (`Ctrl+C` 然後 `npm run dev`)。Astro 需
 
 Q: Blog 的排序邏輯在哪裡？
 A: Blog 的特殊排序（包含從檔名解析日期）邏輯寫在 `src/pages/blog/index.astro` 中。
+
+---
+
+## 📋 Changelog
+
+### 2026-03-16 — 導入 Claude Code
+
+從本日起，開始使用 [Claude Code](https://claude.ai/claude-code) 輔助開發。
+此日期之前的所有程式碼均為手寫（hand-crafted）。
