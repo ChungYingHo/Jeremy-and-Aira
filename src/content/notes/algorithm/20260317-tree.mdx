@@ -1,0 +1,272 @@
+---
+title: "[Data Structure] 樹"
+author: "Jeremy"
+date: "2026-03-17"
+tags: [data structure, tree, binary search tree, traversal]
+changelog: []
+sameDateSort: 1
+---
+
+import TreeDiagram from '@/components/ArticleRelated/TreeDiagram.svelte'
+
+前面介紹的陣列、鏈結串列、堆疊、佇列都屬於**線性資料結構**，資料排列成一條線。
+而**樹 (Tree)** 則是一種非線性資料結構，資料不再是一條線，而是像樹枝一樣向外延伸，形成層層相連的階層結構。
+
+想像一下公司的組織圖：最頂端有一位執行長 (CEO)，底下有幾位副總，每位副總底下又有各自的部門主管，部門主管底下還有員工。
+這種「一個人管多個人、每個人只有一個直屬上司」的層層關係，就是樹這種資料結構的核心概念。
+
+## 術語
+
+在介紹樹的種類之前，先認識幾個常用術語：
+
+| 術語 | 英文 | 說明 |
+|------|------|------|
+| 節點 | Node | 樹中每一個資料單元，就像組織圖裡的每一個人 |
+| 根節點 | Root | 樹的最頂端節點，是整棵樹的起點，就像公司的 CEO |
+| 子節點 | Child Node | 某個節點直接連接的下層節點 |
+| 父節點 | Parent Node | 某個節點直接連接的上層節點 |
+| 葉節點 | Leaf Node | 沒有子節點的節點，就像組織圖裡最底層的員工 |
+| 邊 | Edge | 連接兩個節點的線 |
+| 深度 | Depth | 某節點距離根節點的邊數，根節點的深度為 0 |
+| 高度 | Height | 某節點到其最遠葉節點的邊數，整棵樹的高度即為根節點的高度 |
+| 子樹 | Subtree | 某個節點與其所有後代節點所組成的樹 |
+
+:::info
+「深度」與「高度」很容易搞混：
+- **深度 (Depth)**：從上往下算，距離根節點多遠。
+- **高度 (Height)**：從下往上算，距離最遠的葉節點有多遠。
+
+根節點的深度是 0，葉節點的高度也是 0，整棵樹的高度就等於根節點的高度。
+:::
+
+## 二元樹 (Binary Tree)
+
+樹依照子節點數量的限制可以分為多種類型。其中最常見也最重要的是**二元樹 (Binary Tree)**：每個節點最多只有兩個子節點，分別稱為**左子節點 (Left Child)** 與**右子節點 (Right Child)**。
+
+二元樹又可以細分為幾種類型：
+
+| 類型 | 說明 |
+|------|------|
+| 完整二元樹 (Full Binary Tree) | 每個節點要麼沒有子節點，要麼就有恰好兩個子節點 |
+| 完全二元樹 (Complete Binary Tree) | 除了最後一層，每層都填滿；最後一層的節點盡量靠左排列 |
+| 完美二元樹 (Perfect Binary Tree) | 每一層都完全填滿，葉節點全部在同一層 |
+| 平衡二元樹 (Balanced Binary Tree) | 任意節點的左右子樹高度差不超過 1 |
+
+這裡重點介紹最常被使用的一種：**二元搜尋樹 (Binary Search Tree, BST)**。
+
+## 二元搜尋樹 (BST)
+
+二元搜尋樹是二元樹的一種特殊形式，排列上有一條核心規則：
+
+> **左子樹的所有節點值 < 根節點值 < 右子樹的所有節點值**
+
+這個規則讓 BST 可以非常快速地進行搜尋，有點像玩「猜數字」遊戲：心裡想一個 1 到 100 的數字，每次猜了一個數字，對方只告訴你「太大」或「太小」。
+根據這個回饋，每次都可以排除掉一半的範圍，最多猜 7 次就能找到答案。
+BST 的搜尋邏輯就是這樣：每次比較根節點，若目標比根小就往左走，比根大就往右走，直到找到或確認不存在為止。
+
+### 節點結構
+
+```java
+class TreeNode {
+    int value;
+    TreeNode left;
+    TreeNode right;
+
+    TreeNode(int value) {
+        this.value = value;
+    }
+}
+```
+
+### 插入與搜尋
+
+依照 BST 規則，插入時若新值比當前節點小就往左走，比當前節點大就往右走，直到找到空位再插入。
+搜尋時邏輯相同，直到找到目標值或碰到 `null` 為止。
+
+```java
+public class BST {
+    public static void main(String[] args) {
+        TreeNode root = null;
+        int[] values = {5, 3, 7, 1, 4, 6, 8};
+
+        for (int v : values) {
+            root = insert(root, v);
+        }
+
+        // 中序走訪 BST 會輸出排序後的結果
+        System.out.print("Inorder: ");
+        inorder(root); // 輸出：1 3 4 5 6 7 8
+        System.out.println();
+
+        System.out.println(search(root, 4)); // true
+        System.out.println(search(root, 9)); // false
+    }
+
+    static TreeNode insert(TreeNode node, int value) {
+        if (node == null) return new TreeNode(value);
+        if (value < node.value) node.left = insert(node.left, value);
+        else if (value > node.value) node.right = insert(node.right, value);
+        return node;
+    }
+
+    static boolean search(TreeNode node, int value) {
+        if (node == null) return false;
+        if (node.value == value) return true;
+        if (value < node.value) return search(node.left, value);
+        return search(node.right, value);
+    }
+
+    static void inorder(TreeNode node) {
+        if (node == null) return;
+        inorder(node.left);
+        System.out.print(node.value + " ");
+        inorder(node.right);
+    }
+}
+
+class TreeNode {
+    int value;
+    TreeNode left;
+    TreeNode right;
+
+    TreeNode(int value) {
+        this.value = value;
+    }
+}
+```
+
+## 樹的走訪 (Traversal)
+
+走訪是指依照某種順序拜訪樹中的每一個節點。常見的走訪方式分為兩大類：
+
+<TreeDiagram client:only="svelte" />
+
+### 深度優先搜尋 (DFS, Depth-First Search)
+
+DFS 的概念是「先走到底，再回頭」，就像在迷宮裡選了一條路就一直走到底，走不通了才回頭換另一條。
+DFS 在樹上有三種變形，差別只在於「什麼時候處理根節點」：
+
+| 走訪方式 | 順序 | 用途 |
+|----------|------|------|
+| 前序走訪 (Preorder) | 根 → 左 → 右 | 複製樹結構、序列化 |
+| 中序走訪 (Inorder) | 左 → 根 → 右 | BST 中序走訪可輸出排序結果 |
+| 後序走訪 (Postorder) | 左 → 右 → 根 | 刪除樹、計算子樹大小 |
+
+### 廣度優先搜尋 (BFS, Breadth-First Search)
+
+BFS 又稱為**層序走訪 (Level-order Traversal)**，概念是「先把同一層全部拜訪完，再進到下一層」。
+就像是往一個有隔層的玻璃杯倒水，水會先把最上層填滿，再流到下一層。
+BFS 使用佇列 (Queue) 來實作。
+
+```java
+import java.util.LinkedList;
+import java.util.Queue;
+
+public class TreeTraversal {
+    public static void main(String[] args) {
+        TreeNode root = null;
+        int[] values = {5, 3, 7, 1, 4, 6, 8};
+
+        for (int v : values) {
+            root = insert(root, v);
+        }
+
+        System.out.print("Preorder:  ");
+        preorder(root);
+        System.out.println();
+
+        System.out.print("Inorder:   ");
+        inorder(root);
+        System.out.println();
+
+        System.out.print("Postorder: ");
+        postorder(root);
+        System.out.println();
+
+        System.out.print("BFS:       ");
+        bfs(root);
+        System.out.println();
+    }
+
+    static TreeNode insert(TreeNode node, int value) {
+        if (node == null) return new TreeNode(value);
+        if (value < node.value) node.left = insert(node.left, value);
+        else if (value > node.value) node.right = insert(node.right, value);
+        return node;
+    }
+
+    // 前序：根 → 左 → 右
+    static void preorder(TreeNode node) {
+        if (node == null) return;
+        System.out.print(node.value + " ");
+        preorder(node.left);
+        preorder(node.right);
+    }
+
+    // 中序：左 → 根 → 右
+    static void inorder(TreeNode node) {
+        if (node == null) return;
+        inorder(node.left);
+        System.out.print(node.value + " ");
+        inorder(node.right);
+    }
+
+    // 後序：左 → 右 → 根
+    static void postorder(TreeNode node) {
+        if (node == null) return;
+        postorder(node.left);
+        postorder(node.right);
+        System.out.print(node.value + " ");
+    }
+
+    // BFS：逐層走訪
+    static void bfs(TreeNode root) {
+        if (root == null) return;
+        Queue<TreeNode> queue = new LinkedList<>();
+        queue.offer(root);
+
+        while (!queue.isEmpty()) {
+            TreeNode node = queue.poll();
+            System.out.print(node.value + " ");
+            if (node.left != null) queue.offer(node.left);
+            if (node.right != null) queue.offer(node.right);
+        }
+    }
+}
+
+class TreeNode {
+    int value;
+    TreeNode left;
+    TreeNode right;
+
+    TreeNode(int value) {
+        this.value = value;
+    }
+}
+```
+
+以上述範例（插入順序 5, 3, 7, 1, 4, 6, 8）為例，各走訪的輸出結果為：
+
+| 走訪方式 | 輸出結果 | 說明 |
+|----------|----------|------|
+| Preorder | `5 3 1 4 7 6 8` | 根節點 5 最先輸出 |
+| Inorder | `1 3 4 5 6 7 8` | BST 中序走訪即為排序結果 |
+| Postorder | `1 4 3 6 8 7 5` | 根節點 5 最後輸出 |
+| BFS | `5 3 7 1 4 6 8` | 由上到下逐層輸出 |
+
+## BST 的時間複雜度
+
+BST 的效能取決於樹的高度。若樹保持平衡，高度約為 $\log n$，因此：
+
+| 操作 | 平均情況 | 最差情況 |
+|------|----------|----------|
+| 搜尋 | $O(\log n)$ | $O(n)$ |
+| 插入 | $O(\log n)$ | $O(n)$ |
+| 刪除 | $O(\log n)$ | $O(n)$ |
+
+:::info
+最差情況 $O(n)$ 發生在樹退化為「斜樹」的時候。
+例如依序插入 `1, 2, 3, 4, 5`，每個新節點都比前一個大，就會形成一條向右傾斜的直線，樹的高度等於 $n$，搜尋效能退化為等同鏈結串列的 $O(n)$。
+
+為了避免這種情況，實務上會採用**自平衡樹**（如 AVL Tree 或 Red-Black Tree），在插入或刪除後自動調整結構，維持 $O(\log n)$ 的效能。Java 的 `TreeMap` 底層就是用 Red-Black Tree 實作的。
+:::

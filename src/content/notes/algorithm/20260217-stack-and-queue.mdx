@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 2
 ---
 
+import StackQueueVisualizer from '@/components/ArticleRelated/StackQueueVisualizer.svelte'
+
 :::info
 Stack 與 Queue 基本實做方式會用陣列或鏈結串列來實做。  
 但在這裡，用陣列實做時不會用傳統 Java array，其原因是傳統陣列大小是固定的，無法動態增減元素。  
@@ -19,6 +21,8 @@ Stack 與 Queue 基本實做方式會用陣列或鏈結串列來實做。
 :::
 
 ## 堆疊 (Stack)
+
+<StackQueueVisualizer client:only="svelte" />
 
 Stack 是一種依循後進先出 (LIFO, Last In First Out) 原則來存取資料的線性資料結構。  
 Stack 可以存取多筆資料，但跟 array 不同，他不能用索引值來直接存取資料。  

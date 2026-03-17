@@ -1,0 +1,258 @@
+---
+title: "[Data Structure] 圖"
+author: "Jeremy"
+date: "2026-03-17"
+tags: [data structure, graph, dfs, bfs]
+changelog: []
+sameDateSort: 2
+---
+
+import GraphDiagram from '@/components/ArticleRelated/GraphDiagram.svelte'
+
+**圖 (Graph)** 是一種非線性資料結構，由**頂點 (Vertex)** 與**邊 (Edge)** 所組成，用來描述現實世界中各種「物件與物件之間的關係」，是資料結構裡表達能力最強的一種。
+
+說到圖，最直觀的生活例子就是**捷運路線圖**：每一站是一個頂點，站與站之間的鐵路是一條邊，整張路線圖就是一個圖。
+社群媒體的好友關係、Google Maps 的導航路徑、電腦網路中的連線拓樸，都可以用圖來表示與分析。
+
+:::info
+樹其實是圖的一種特例——「無環的連通圖」。
+兩者最大的差別在於：樹有嚴格的層次結構（只能由父節點連向子節點，不能形成環），而圖的邊沒有這些限制，節點之間可以任意相連、形成環，也可以彼此不相連。
+:::
+
+## 術語
+
+| 術語 | 英文 | 說明 |
+|------|------|------|
+| 頂點 | Vertex | 圖中每一個資料單元 |
+| 邊 | Edge | 連接兩個頂點的線 |
+| 相鄰 | Adjacent | 兩個頂點之間有邊相連 |
+| 度 | Degree | 某頂點連接的邊數 |
+| 路徑 | Path | 從某頂點到另一頂點，經過一連串邊所形成的序列 |
+| 環 | Cycle | 路徑的起點與終點相同 |
+| 連通圖 | Connected Graph | 圖中任意兩個頂點之間都存在路徑 |
+
+## 圖的分類
+
+### 無向圖 vs 有向圖
+
+最基本的分類是依照邊是否有方向性：
+
+- **無向圖 (Undirected Graph)**：邊沒有方向，A 連 B 代表 A 可以到 B、B 也可以到 A。就像捷運，台北車站到中山站可以雙向搭乘。
+- **有向圖 (Directed Graph / Digraph)**：邊有方向，只能從箭頭的起點走向終點。就像 Instagram 的追蹤功能：你追蹤了某人，不代表對方也追蹤你。
+
+### 有權圖 (Weighted Graph)
+
+邊上帶有數值（**權重 Weight**），通常代表距離、成本或時間。
+Google Maps 的導航就是典型的有權圖：每條路線的邊有對應的距離或預估時間，演算法會找出總權重最小的路徑。
+
+## 圖的表示方式
+
+有兩種主流的方式在程式裡儲存圖的結構：
+
+### 鄰接矩陣 (Adjacency Matrix)
+
+用一個二維陣列表示頂點之間的連接關係。`matrix[i][j] = 1` 表示頂點 $i$ 與頂點 $j$ 之間有邊，`0` 則表示沒有邊。
+
+```java
+public class AdjacencyMatrix {
+    public static void main(String[] args) {
+        int n = 5; // 5 個頂點 (0 ~ 4)
+        int[][] matrix = new int[n][n];
+
+        addEdge(matrix, 0, 1);
+        addEdge(matrix, 0, 3);
+        addEdge(matrix, 1, 2);
+        addEdge(matrix, 2, 4);
+        addEdge(matrix, 3, 4);
+
+        System.out.println("Adjacency Matrix:");
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                System.out.print(matrix[i][j] + " ");
+            }
+            System.out.println();
+        }
+    }
+
+    static void addEdge(int[][] matrix, int u, int v) {
+        matrix[u][v] = 1;
+        matrix[v][u] = 1; // 無向圖，兩個方向都設定
+    }
+}
+```
+
+### 鄰接串列 (Adjacency List)
+
+讓每個頂點對應到一個串列，存放它的所有相鄰頂點。
+實務中更常見，因為大多數的圖「邊的數量遠少於頂點的平方」，使用鄰接串列可以節省大量記憶體。
+
+```java
+import java.util.*;
+
+public class AdjacencyList {
+    public static void main(String[] args) {
+        Map<Integer, List<Integer>> graph = new HashMap<>();
+
+        for (int i = 0; i <= 4; i++) graph.putIfAbsent(i, new ArrayList<>());
+
+        addEdge(graph, 0, 1);
+        addEdge(graph, 0, 3);
+        addEdge(graph, 1, 2);
+        addEdge(graph, 2, 4);
+        addEdge(graph, 3, 4);
+
+        System.out.println("Adjacency List:");
+        for (Map.Entry<Integer, List<Integer>> entry : graph.entrySet()) {
+            System.out.println("Vertex " + entry.getKey() + " -> " + entry.getValue());
+        }
+    }
+
+    static void addEdge(Map<Integer, List<Integer>> graph, int u, int v) {
+        graph.get(u).add(v);
+        graph.get(v).add(u); // 無向圖
+    }
+}
+```
+
+### 兩種方式的比較
+
+|  | 鄰接矩陣 | 鄰接串列 |
+|--|----------|----------|
+| 空間複雜度 | $O(V^2)$ | $O(V + E)$ |
+| 查詢兩點是否相鄰 | $O(1)$ | $O(\text{degree})$ |
+| 走訪所有相鄰頂點 | $O(V)$ | $O(\text{degree})$ |
+| 適合使用時機 | 邊很多（稠密圖） | 邊較少（稀疏圖） |
+
+其中 $V$ 是頂點數，$E$ 是邊數。
+
+## 圖的走訪 (Traversal)
+
+圖的走訪和樹一樣，也分為 DFS 與 BFS 兩種。但因為圖可能存在「環」，需要額外記錄**已拜訪的節點**，避免無限迴圈。
+
+<GraphDiagram client:only="svelte" />
+
+### 深度優先搜尋 (DFS)
+
+DFS 的思路是「一條路走到底，走不通再回頭」。
+就像在百貨公司找人，先搭電梯到最頂層，把那層逐間店找完，再下一層，直到每一層每一間都找過為止。
+
+DFS 通常用**遞迴**來實作。
+
+```java
+import java.util.*;
+
+public class GraphDFS {
+    public static void main(String[] args) {
+        Map<Integer, List<Integer>> graph = new HashMap<>();
+
+        for (int i = 0; i <= 4; i++) graph.putIfAbsent(i, new ArrayList<>());
+
+        addEdge(graph, 0, 1);
+        addEdge(graph, 0, 3);
+        addEdge(graph, 1, 2);
+        addEdge(graph, 2, 4);
+        addEdge(graph, 3, 4);
+
+        System.out.print("DFS from vertex 0: ");
+        dfs(graph, 0, new HashSet<>());
+        System.out.println();
+    }
+
+    static void addEdge(Map<Integer, List<Integer>> graph, int u, int v) {
+        graph.get(u).add(v);
+        graph.get(v).add(u);
+    }
+
+    static void dfs(Map<Integer, List<Integer>> graph, int vertex, Set<Integer> visited) {
+        visited.add(vertex);
+        System.out.print(vertex + " ");
+
+        for (int neighbor : graph.getOrDefault(vertex, new ArrayList<>())) {
+            if (!visited.contains(neighbor)) {
+                dfs(graph, neighbor, visited);
+            }
+        }
+    }
+}
+```
+
+### 廣度優先搜尋 (BFS)
+
+BFS 的思路是「先把附近的都看完，再往遠處走」。
+就像在廣場上找人，先搜尋半徑 10 公尺內的，找完再擴大到 20 公尺，一圈一圈往外搜尋。
+
+BFS 使用**佇列 (Queue)** 來實作，確保「先進來的鄰居先被處理」。
+
+```java
+import java.util.*;
+
+public class GraphBFS {
+    public static void main(String[] args) {
+        Map<Integer, List<Integer>> graph = new HashMap<>();
+
+        for (int i = 0; i <= 4; i++) graph.putIfAbsent(i, new ArrayList<>());
+
+        addEdge(graph, 0, 1);
+        addEdge(graph, 0, 3);
+        addEdge(graph, 1, 2);
+        addEdge(graph, 2, 4);
+        addEdge(graph, 3, 4);
+
+        System.out.print("BFS from vertex 0: ");
+        bfs(graph, 0);
+        System.out.println();
+    }
+
+    static void addEdge(Map<Integer, List<Integer>> graph, int u, int v) {
+        graph.get(u).add(v);
+        graph.get(v).add(u);
+    }
+
+    static void bfs(Map<Integer, List<Integer>> graph, int start) {
+        Set<Integer> visited = new HashSet<>();
+        Queue<Integer> queue = new LinkedList<>();
+
+        visited.add(start);
+        queue.offer(start);
+
+        while (!queue.isEmpty()) {
+            int vertex = queue.poll();
+            System.out.print(vertex + " ");
+
+            for (int neighbor : graph.getOrDefault(vertex, new ArrayList<>())) {
+                if (!visited.contains(neighbor)) {
+                    visited.add(neighbor);
+                    queue.offer(neighbor);
+                }
+            }
+        }
+    }
+}
+```
+
+### 走訪的時間複雜度
+
+兩種走訪方式在鄰接串列表示下，時間複雜度相同：
+
+|  | 時間複雜度 | 空間複雜度 |
+|--|------------|------------|
+| DFS | $O(V + E)$ | $O(V)$（遞迴呼叫堆疊） |
+| BFS | $O(V + E)$ | $O(V)$（佇列） |
+
+每個頂點和每條邊各被拜訪一次，所以是 $O(V + E)$，其中 $V$ 是頂點數，$E$ 是邊數。
+
+:::tip
+DFS 與 BFS 不只是走訪方式，也是解決許多圖相關問題的核心工具：
+- **BFS** 天然保證「最少步數」，適合求最短路徑（無權重時）。
+- **DFS** 適合偵測環、找連通分量、解決迷宮等需要深入探索的問題。
+:::
+
+## 實際應用
+
+| 場景 | 用到的概念 |
+|------|-----------|
+| Google Maps 路徑規劃 | 有權圖 + 最短路徑演算法（如 Dijkstra） |
+| 社群媒體好友推薦 | 無向圖 + BFS（找朋友的朋友） |
+| 網頁排名 (PageRank) | 有向圖 + 連通性分析 |
+| 任務排程 / 相依分析 | 有向無環圖 (DAG) + 拓樸排序 |
+| 電腦網路連線偵測 | 無向圖 + 連通性偵測 |

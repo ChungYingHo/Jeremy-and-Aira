@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 3
 ---
 
+import BubbleSortVisualizer from '@/components/ArticleRelated/BubbleSortVisualizer.svelte'
+
 :::note
 之後會把其他排序補在這篇~
 :::
@@ -38,6 +40,8 @@ sameDateSort: 3
 取名「泡泡排序」就是因為這種把較大元素逐漸移動到序列末端的過程，類似於水中的氣泡上升的過程，呃，就一種程式開發者的浪漫。
 
 以 array 舉例，泡泡排序會從陣列的第一個元素開始，依次比較相鄰的兩個元素，如果前一個元素大於後一個元素，則交換它們的位置。這樣一來，經過一輪比較後，最大的元素就會被移動到陣列的最後一個位置。接著，對剩下的元素重複這個過程，直到整個陣列排序完成。
+
+<BubbleSortVisualizer client:only="svelte" />
 
 以陣列 `[4, 1, 3, 1, 5, 2]` 為例，使用泡泡排序的過程如下 (僅記錄交換位置的步驟)：
 1. 第一輪比較：
