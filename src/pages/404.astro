@@ -114,7 +114,7 @@
       #game-canvas {
         display: block;
         width: 100%;
-        aspect-ratio: 800 / 250;
+        aspect-ratio: 800 / 300;
         border-radius: 10px;
         cursor: pointer;
         image-rendering: pixelated;
@@ -175,7 +175,7 @@
       <p class="sub">迷路了？來玩個小遊戲放鬆一下吧。</p>
 
       <div class="game-card">
-        <canvas id="game-canvas" width="800" height="250"></canvas>
+        <canvas id="game-canvas" width="800" height="300"></canvas>
       </div>
 
       <p class="hint" id="game-hint">Space / ↑ to jump &nbsp;·&nbsp; Double jump supported</p>
@@ -200,8 +200,8 @@
 
       // Logical canvas size (CSS aspect-ratio scales it)
       const W = 800
-      const H = 250
-      const GY = 200 // ground y
+      const H = 300
+      const GY = 240 // ground y
 
       // Colours
       const BG    = '#0d0b10'
@@ -257,10 +257,10 @@
 
       function update() {
         tick++; score++
-        speed = 4 + (score / 1000) * 0.8
+        speed = Math.min(14, 4 + Math.pow(score / 400, 0.8))
 
         // Dino physics
-        const CEILING = 10
+        const CEILING = 58 // dino head top is at y-53; keep 5px buffer
         if (!dino.grounded) {
           dino.vy += 0.75
           dino.y  += dino.vy
