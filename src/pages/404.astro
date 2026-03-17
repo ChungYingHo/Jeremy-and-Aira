@@ -260,7 +260,7 @@
         speed = Math.min(13, 3 + Math.pow(score / 600, 0.85))
 
         // Dino physics
-        const CEILING = 63 // dino head top is at y-53; keep 10px buffer from canvas top
+        const CEILING = 66 // cat ear tips at y-56; keep 10px buffer from canvas top
         if (!dino.grounded) {
           dino.vy += 0.75
           dino.y  += dino.vy
@@ -326,59 +326,83 @@
         ctx.fill()
       }
 
-      function drawDino() {
+      function drawCat() {
         const x = 75, y = dino.y, f = dino.leg, dead = dino.dead
+        const PINK = '#f472b6'
 
         ctx.fillStyle = DINO
 
-        // Tail
-        ctx.fillRect(x - 12, y - 28, 14, 7)
-        ctx.fillRect(x - 18, y - 23, 8,  5)
+        // Tail (S-curve from body-right going up)
+        ctx.fillRect(x + 32, y - 20, 6, 10)   // tail base
+        ctx.fillRect(x + 36, y - 34, 6, 16)   // tail going up
+        ctx.fillRect(x + 38, y - 42, 8, 10)   // tail curving right
+        ctx.fillRect(x + 42, y - 52, 6, 12)   // tail going up again
+        ctx.fillRect(x + 36, y - 56, 8, 6)    // tail tip curling left
+        ctx.fillRect(x + 30, y - 58, 8, 4)    // tail tip end
 
         // Body
-        ctx.fillRect(x + 2,  y - 38, 28, 20)
-
-        // Neck
-        ctx.fillRect(x + 20, y - 48, 12, 14)
+        ctx.fillRect(x + 1, y - 28, 33, 18)
 
         // Head
-        ctx.fillRect(x + 17, y - 53, 22, 16)
+        ctx.fillRect(x + 3, y - 46, 24, 18)
+        ctx.fillRect(x + 1, y - 42, 2,  12)   // left side round
+        ctx.fillRect(x + 27, y - 42, 2, 12)   // right side round
+        ctx.fillRect(x + 5, y - 48, 20, 2)    // head top round
 
-        // Jaw
-        ctx.fillRect(x + 30, y - 41, 10, 5)
+        // Ears
+        ctx.fillRect(x + 3,  y - 56, 7, 10)   // left ear
+        ctx.fillRect(x + 19, y - 56, 7, 10)   // right ear
 
-        // Arm
-        ctx.fillRect(x + 19, y - 22, 9, 5)
+        // Inner ears (pink)
+        ctx.fillStyle = PINK
+        ctx.fillRect(x + 5,  y - 54, 3, 7)
+        ctx.fillRect(x + 21, y - 54, 3, 7)
 
-        // Eye
+        // Nose (pink)
+        ctx.fillRect(x + 13, y - 37, 4, 3)
+
+        // Eyes
         if (dead) {
           ctx.fillStyle = '#f87171'
-          ctx.fillRect(x + 30, y - 51, 3, 3)
-          ctx.fillRect(x + 34, y - 51, 3, 3)
-          ctx.fillRect(x + 32, y - 49, 3, 3)
+          ctx.fillRect(x + 6,  y - 43, 3, 3)
+          ctx.fillRect(x + 11, y - 38, 3, 3)
+          ctx.fillRect(x + 11, y - 43, 3, 3)
+          ctx.fillRect(x + 6,  y - 38, 3, 3)
+          ctx.fillRect(x + 18, y - 43, 3, 3)
+          ctx.fillRect(x + 23, y - 38, 3, 3)
+          ctx.fillRect(x + 23, y - 43, 3, 3)
+          ctx.fillRect(x + 18, y - 38, 3, 3)
         } else {
           ctx.fillStyle = '#0d0b10'
-          ctx.fillRect(x + 32, y - 50, 4, 4)
+          ctx.fillRect(x + 6,  y - 43, 5, 5)   // left eye
+          ctx.fillRect(x + 18, y - 43, 5, 5)   // right eye
           ctx.fillStyle = '#fff'
-          ctx.fillRect(x + 33, y - 50, 2, 2)
+          ctx.fillRect(x + 8,  y - 43, 2, 2)   // left shine
+          ctx.fillRect(x + 20, y - 43, 2, 2)   // right shine
         }
+
+        // Whiskers
+        ctx.fillStyle = 'rgba(255,255,255,0.4)'
+        ctx.fillRect(x - 10, y - 36, 12, 1)
+        ctx.fillRect(x - 10, y - 33, 12, 1)
+        ctx.fillRect(x + 30, y - 36, 12, 1)
+        ctx.fillRect(x + 30, y - 33, 12, 1)
 
         // Legs
         ctx.fillStyle = DINO
         if (dino.grounded && !dead) {
           if (f === 0) {
-            ctx.fillRect(x + 6,  y - 18, 9, 18)
-            ctx.fillRect(x + 19, y - 18, 9, 11)
-            // Foot forward
-            ctx.fillRect(x + 6, y - 2, 13, 4)
+            ctx.fillRect(x + 4,  y - 10, 8, 10)   // front left extended
+            ctx.fillRect(x + 4,  y,      11, 2)   // front paw
+            ctx.fillRect(x + 21, y - 10, 8, 5)    // back right tucked
           } else {
-            ctx.fillRect(x + 6,  y - 18, 9, 11)
-            ctx.fillRect(x + 19, y - 18, 9, 18)
-            ctx.fillRect(x + 19, y - 2, 13, 4)
+            ctx.fillRect(x + 4,  y - 10, 8, 5)    // front left tucked
+            ctx.fillRect(x + 21, y - 10, 8, 10)   // back right extended
+            ctx.fillRect(x + 21, y,      11, 2)   // back paw
           }
         } else {
-          ctx.fillRect(x + 6,  y - 18, 9, 14)
-          ctx.fillRect(x + 19, y - 18, 9, 9)
+          ctx.fillRect(x + 4,  y - 10, 8, 6)      // front legs (jumping)
+          ctx.fillRect(x + 21, y - 10, 8, 6)      // back legs (jumping)
         }
       }
 
@@ -426,7 +450,7 @@
         ctx.fillRect(0, GY + 3, W, 1)
 
         obs.forEach(drawCactus)
-        drawDino()
+        drawCat()
 
         // Score
         ctx.font = 'bold 13px "JetBrains Mono", monospace'
