@@ -1,4 +1,10 @@
-# CLAUDE.md — Jeremy & Aira Tech Blog
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+---
+
+# Jeremy & Aira Tech Blog
 
 技術部落格專案，基於 **Astro 5** 靜態網站生成器，搭配 **Svelte 5** 互動組件、**Tailwind CSS 4 + DaisyUI 5**，部署至 Vercel。
 
@@ -146,6 +152,9 @@ sameDateSort?: number // 同日期文章排序微調，預設 0
 | **Languages 已合併入 Notes** | `src/content/notes/languages/` 是 notes collection 的子資料夾，路由為 `/notes/languages/...`，不再是獨立 collection |
 | **Aira 選單自動顯示/隱藏** | `release-notes` collection 目前無內容，`useMenu` 自動過濾空 group，Aira 按鈕不會出現；有內容才會出現 |
 | **Blog 排序特殊處理** | 排序邏輯（含從檔名解析日期）寫在 `src/pages/blog/index.astro`，非通用 utils |
+| **Prev/Next 導覽限同層** | `generateCollectionPaths()` 的 prev/next 只含同一資料夾下的兄弟文章（相同 slug 前綴），不跨子資料夾 |
+| **Tailwind 4 無獨立設定檔** | 無 `tailwind.config.ts`，Tailwind 與 DaisyUI 直接在 `astro.config.mjs` 透過 Vite plugin 設定 |
+| **系列顯示名稱覆蓋** | `src/constants/seriesLabels.ts` 定義 slug → 顯示標題的對照表，drilldown 選單優先取用此名稱 |
 | **數學支援** | remark-math + rehype-katex，直接在 MDX 中寫 LaTeX |
 | **Admonition 語法** | remark-directive 支援 `:::note`、`:::warning`、`:::tip`、`:::danger`、`:::info` |
 | **搜尋** | Pagefind 靜態索引，build 時生成，無後端需求 |
