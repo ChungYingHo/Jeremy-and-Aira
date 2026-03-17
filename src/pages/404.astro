@@ -75,12 +75,13 @@
         font-size: clamp(2.4rem, 8vw, 5rem);
         font-weight: 900;
         letter-spacing: -0.04em;
-        line-height: 1;
+        line-height: 1.1;
         background: linear-gradient(135deg, #fce7f3 0%, #c4b5fd 50%, #818cf8 100%);
         -webkit-background-clip: text;
         background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 0.5rem;
+        padding: 0.05em 0.1em 0.1em;
+        margin: 0 -0.1em 0.5rem;
         position: relative;
       }
 
@@ -239,7 +240,7 @@
       function jump() {
         if (state === 'idle' || state === 'dead') { resetGame(); return }
         if (dino.jumps < 2) {
-          dino.vy = dino.jumps === 0 ? -16 : -13
+          dino.vy = dino.jumps === 0 ? -15 : -11
           dino.grounded = false
           dino.jumps++
         }
@@ -259,9 +260,14 @@
         speed = 4 + (score / 1000) * 0.8
 
         // Dino physics
+        const CEILING = 10
         if (!dino.grounded) {
           dino.vy += 0.75
           dino.y  += dino.vy
+          if (dino.y <= CEILING) {
+            dino.y = CEILING
+            if (dino.vy < 0) dino.vy = 0
+          }
           if (dino.y >= GY) {
             dino.y = GY; dino.vy = 0
             dino.grounded = true; dino.jumps = 0
