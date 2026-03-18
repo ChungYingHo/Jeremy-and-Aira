@@ -13,6 +13,21 @@ import vercel from '@astrojs/vercel'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 
+function rehypeWrapTables() {
+  return (/** @type {any} */ tree) => {
+    visit(tree, 'element', (node, index, parent) => {
+      if (node.tagName !== 'table' || !parent || index == null) return
+      const wrapper = {
+        type: 'element',
+        tagName: 'div',
+        properties: { className: ['table-wrapper'] },
+        children: [node],
+      }
+      parent.children.splice(index, 1, wrapper)
+    })
+  }
+}
+
 function remarkAdmonitions() {
   return (/** @type {any} */ tree) => {
     visit(tree, (node) => {
@@ -70,6 +85,7 @@ export default defineConfig({
     ],
     rehypePlugins: [
       rehypeKatex, // 將數學語法轉成 HTML
+      rehypeWrapTables,
     ],
   },
 
