@@ -88,7 +88,7 @@
 <div class="w-full max-w-3xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
   <div class="px-4 pt-4 pb-1">
     <p class="text-center text-xs text-slate-500 mb-2 font-mono">陣列 [4, 1, 3, 1, 5, 2] 的泡泡排序過程</p>
-    <div class="flex justify-center gap-4 text-xs">
+    <div class="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs">
       <span class="flex items-center gap-1.5">
         <span class="w-3 h-3 rounded-sm inline-block" style="background:#78350f;border:1px solid #d97706"></span>
         <span class="text-slate-400">比較中（不交換）</span>

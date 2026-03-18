@@ -42,17 +42,17 @@
 </script>
 
 <div class="w-full max-w-3xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
-  <div class="grid grid-cols-2 divide-x divide-slate-800">
+  <div class="grid grid-cols-1 sm:grid-cols-2">
 
     <!-- Stack -->
-    <div class="p-4 flex flex-col gap-3">
+    <div class="p-4 flex flex-col gap-3 border-b sm:border-b-0 sm:border-r border-slate-800">
       <div>
         <p class="text-center text-xs font-bold text-slate-300 font-mono">Stack</p>
         <p class="text-center text-xs text-slate-500">後進先出 (LIFO)</p>
       </div>
 
       <!-- visual: top at top, bottom at bottom -->
-      <div class="flex flex-col items-center gap-1 min-h-[168px] justify-end relative">
+      <div class="flex flex-col items-center gap-1 h-[240px] justify-end relative overflow-hidden">
         {#if !stack.length}
           <p class="text-slate-700 text-xs absolute inset-0 flex items-center justify-center">（空）</p>
         {/if}
@@ -95,7 +95,7 @@
       </div>
 
       <!-- visual: front on left, rear on right -->
-      <div class="flex flex-col justify-center gap-2 min-h-[168px]">
+      <div class="flex flex-col justify-center gap-2 h-[240px]">
         <!-- direction labels -->
         <div class="flex justify-between text-xs text-slate-600 px-1">
           <span>front</span>

@@ -4,80 +4,73 @@
 -->
 
 <div class="w-full max-w-3xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
-  <svg viewBox="0 0 500 268" class="w-full px-2 pt-2" xmlns="http://www.w3.org/2000/svg">
+  <svg viewBox="0 0 320 234" class="w-full px-2 pt-2" xmlns="http://www.w3.org/2000/svg">
 
     <!-- ── Array section ── -->
-    <text x="250" y="18" text-anchor="middle" font-size="11" font-weight="bold"
+    <text x="160" y="18" text-anchor="middle" font-size="11" font-weight="bold"
       font-family="sans-serif" fill="#94a3b8">Array（陣列）— 連續記憶體</text>
 
-    <!-- 5 adjacent boxes -->
+    <!-- 5 adjacent boxes, 44px wide each, x_start=50 -->
     {#each [1,2,3,4,5] as val, i}
-      <!-- box -->
-      <rect x={90 + i * 64} y="28" width="64" height="44"
+      <rect x={50 + i * 44} y="28" width="44" height="42"
         fill="#0f172a" stroke="#334155" stroke-width="1.5" />
-      <!-- value -->
-      <text x={90 + i * 64 + 32} y="55" text-anchor="middle"
-        font-size="18" font-weight="bold" font-family="'JetBrains Mono', monospace"
+      <text x={50 + i * 44 + 22} y="54" text-anchor="middle"
+        font-size="15" font-weight="bold" font-family="'JetBrains Mono', monospace"
         fill="#94a3b8">{val}</text>
-      <!-- address -->
-      <text x={90 + i * 64 + 32} y="88" text-anchor="middle"
-        font-size="9" font-family="'JetBrains Mono', monospace" fill="#475569">
+      <text x={50 + i * 44 + 22} y="80" text-anchor="middle"
+        font-size="8" font-family="'JetBrains Mono', monospace" fill="#475569">
         {`0x${(0x100 + i * 4).toString(16).toUpperCase().padStart(3,'0')}`}
       </text>
     {/each}
 
     <!-- bracket showing contiguous -->
-    <line x1="90" y1="100" x2="410" y2="100" stroke="#1e40af" stroke-width="1" stroke-dasharray="3,3"/>
-    <text x="250" y="112" text-anchor="middle" font-size="9"
+    <line x1="50" y1="88" x2="270" y2="88" stroke="#1e40af" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="160" y="100" text-anchor="middle" font-size="8.5"
       font-family="sans-serif" fill="#3b82f6">連續分配，相鄰元素位址相差固定（此例為 4 bytes）</text>
 
     <!-- ── Divider ── -->
-    <line x1="20" y1="122" x2="480" y2="122" stroke="#1e293b" stroke-width="1"/>
+    <line x1="10" y1="110" x2="310" y2="110" stroke="#1e293b" stroke-width="1"/>
 
     <!-- ── Linked List section ── -->
-    <text x="250" y="140" text-anchor="middle" font-size="11" font-weight="bold"
+    <text x="160" y="128" text-anchor="middle" font-size="11" font-weight="bold"
       font-family="sans-serif" fill="#94a3b8">Linked List（鏈結串列）— 非連續記憶體</text>
 
-    <!-- scattered addresses for each node -->
+    <!--
+      5 nodes × 36px wide + 4 arrows × 18px gap = 252px total
+      x_start = (320 - 252) / 2 = 34 → symmetric margins
+      nx = 34 + i * 54
+    -->
     {#each [
-      { val: 1, addr: '1A4', next: '08C' },
-      { val: 2, addr: '08C', next: '33C' },
-      { val: 3, addr: '33C', next: '1F8' },
-      { val: 4, addr: '1F8', next: '268' },
-      { val: 5, addr: '268', next: null  },
+      { val: 1, next: true },
+      { val: 2, next: true },
+      { val: 3, next: true },
+      { val: 4, next: true },
+      { val: 5, next: false },
     ] as node, i}
-      {@const nx = 14 + i * 94}
-      {@const ny = 152}
+      {@const nx = 34 + i * 54}
+      {@const ny = 138}
 
       <!-- node outer box -->
-      <rect x={nx} y={ny} width="70" height="44"
+      <rect x={nx} y={ny} width="36" height="42"
         fill="#0c1a2e" stroke="#1e3a5f" stroke-width="1.5" rx="2"/>
       <!-- divider between value and pointer halves -->
-      <line x1={nx + 35} y1={ny} x2={nx + 35} y2={ny + 44}
+      <line x1={nx + 18} y1={ny} x2={nx + 18} y2={ny + 42}
         stroke="#1e3a5f" stroke-width="1"/>
       <!-- value -->
-      <text x={nx + 17} y={ny + 26} text-anchor="middle"
-        font-size="16" font-weight="bold" font-family="'JetBrains Mono', monospace"
+      <text x={nx + 9} y={ny + 25} text-anchor="middle"
+        font-size="13" font-weight="bold" font-family="'JetBrains Mono', monospace"
         fill="#93c5fd">{node.val}</text>
-      <!-- pointer symbol -->
+      <!-- pointer -->
       {#if node.next}
-        <text x={nx + 52} y={ny + 26} text-anchor="middle"
-          font-size="12" font-family="'JetBrains Mono', monospace"
+        <text x={nx + 27} y={ny + 26} text-anchor="middle"
+          font-size="10" font-family="'JetBrains Mono', monospace"
           fill="#475569">→</text>
-      {:else}
-        <text x={nx + 52} y={ny + 26} text-anchor="middle"
-          font-size="11" font-family="'JetBrains Mono', monospace"
-          fill="#334155">null</text>
-      {/if}
-      <!-- address below node -->
-      <text x={nx + 35} y={ny + 58} text-anchor="middle"
-        font-size="9" font-family="'JetBrains Mono', monospace"
-        fill="#334155">0x{node.addr}</text>
-
-      <!-- arrow to next node -->
-      {#if node.next}
-        <line x1={nx + 70} y1={ny + 22} x2={nx + 88} y2={ny + 22}
+        <line x1={nx + 36} y1={ny + 21} x2={nx + 52} y2={ny + 21}
           stroke="#334155" stroke-width="1.5" marker-end="url(#arr)"/>
+      {:else}
+        <text x={nx + 27} y={ny + 26} text-anchor="middle"
+          font-size="9" font-family="'JetBrains Mono', monospace"
+          fill="#334155">∅</text>
       {/if}
     {/each}
 
@@ -90,14 +83,14 @@
     </defs>
 
     <!-- note about non-contiguity -->
-    <text x="250" y="232" text-anchor="middle" font-size="9"
+    <text x="160" y="202" text-anchor="middle" font-size="8.5"
       font-family="sans-serif" fill="#3b82f6">各節點位址不連續，透過指標（→）串接，可分散在記憶體任意位置</text>
 
     <!-- legend -->
-    <rect x="142" y="244" width="12" height="12" fill="#0f172a" stroke="#334155" stroke-width="1.5"/>
-    <text x="158" y="254" font-size="9" font-family="sans-serif" fill="#475569">Array 元素</text>
-    <rect x="242" y="244" width="12" height="12" fill="#0c1a2e" stroke="#1e3a5f" stroke-width="1.5"/>
-    <text x="258" y="254" font-size="9" font-family="sans-serif" fill="#475569">Linked List 節點（值 | 指標）</text>
+    <rect x="54" y="214" width="10" height="10" fill="#0f172a" stroke="#334155" stroke-width="1.5"/>
+    <text x="67" y="223" font-size="8.5" font-family="sans-serif" fill="#475569">Array 元素</text>
+    <rect x="158" y="214" width="10" height="10" fill="#0c1a2e" stroke="#1e3a5f" stroke-width="1.5"/>
+    <text x="171" y="223" font-size="8.5" font-family="sans-serif" fill="#475569">Linked List 節點（值 | 指標）</text>
 
   </svg>
 </div>
