@@ -286,6 +286,13 @@ document.addEventListener('DOMContentLoaded', () => {
     wrapper.appendChild(copyBtn)
   })
 
+  document.querySelectorAll('.md-content table').forEach(table => {
+    const wrapper = document.createElement('div')
+    wrapper.className = 'table-wrapper'
+    table.parentNode?.insertBefore(wrapper, table)
+    wrapper.appendChild(table)
+  })
+
   const headings = document.querySelectorAll('.md-content h1, .md-content h2, .md-content h3')
   headings.forEach(heading => {
     const anchor = document.createElement('a')
@@ -473,8 +480,9 @@ document.addEventListener('DOMContentLoaded', () => {
   @media (min-width: 768px) { .md-content img { border-radius: 0.75rem; margin: 3.5rem auto; } }
   .md-content hr { border: 0; height: 1px; background: rgba(255,255,255,0.1); margin: 4rem 0; }
   
-  .md-content table { display: block; width: 100%; overflow-x: auto; border-collapse: collapse; margin: 2rem 0; font-size: 0.95rem; white-space: nowrap; }
-  @media (min-width: 768px) { .md-content table { display: table; white-space: normal; } }
+  .table-wrapper { width: 100%; overflow-x: auto; margin: 2rem 0; }
+  .md-content table { border-collapse: collapse; font-size: 0.95rem; white-space: nowrap; }
+  @media (min-width: 768px) { .md-content table { white-space: normal; } }
   .md-content th { text-align: left; padding: 0.75rem 1rem; font-weight: 600; color: #fff; background: rgba(255, 255, 255, 0.03); border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
   .md-content td { padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #e2e8f0; transition: background-color 0.2s; }
   .md-content tr:last-child td { border-bottom: none; }

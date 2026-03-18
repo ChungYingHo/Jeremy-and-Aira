@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 1
 ---
 
+import MemoryLayoutDiagram from '@/components/ArticleRelated/MemoryLayoutDiagram.svelte'
+
 :::info
 對於 Java 而言，其實有更方便的 ArrayList class 可用來取代傳統陣列 (Array)，同時也有 LinkedList class 可用來取代手動實作的鏈結串列 (Linked List)。
 但因為這裡紀錄的是「資料結構」的基本觀念與實作方式，所以還是會以最原始的陣列與鏈結串列來說明其概念與操作。
@@ -22,6 +24,8 @@ sameDateSort: 1
 2. 動態資料結構，又稱**鏈結串列** (Linked List)。其特性為將有序的資料，使用不連續記憶體空間儲存。動態資料結構的記憶體配置是在執行時才發生，所以不需要事先宣告記憶體空間大小。
     - 優勢：插入與刪除元素時，只需調整指標 (Pointer) 即可，不需要搬移其他元素，節省時間與空間。
     - 劣勢：設計較為複雜，無法直接存取任意元素 (只能從頭節點開始逐一遍歷)。
+
+<MemoryLayoutDiagram client:only="svelte" />
 
 ## 陣列 (Array)
 陣列是線性資料結構，其將**相同的資料型別**元素儲存在連續的記憶體空間中。  
