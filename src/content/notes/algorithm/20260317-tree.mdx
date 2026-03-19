@@ -7,7 +7,8 @@ changelog: []
 sameDateSort: 1
 ---
 
-import TreeDiagram from '@/components/ArticleRelated/TreeDiagram.svelte'
+import TreeDiagram from '@/components/ArticleRelated/tree/TreeDiagram.svelte'
+import BinaryTreeTypesDiagram from '@/components/ArticleRelated/tree/BinaryTreeTypesDiagram.svelte'
 
 前面介紹的陣列、鏈結串列、堆疊、佇列都屬於**線性資料結構**，資料排列成一條線。
 而**樹 (Tree)** 則是一種非線性資料結構，資料不再是一條線，而是像樹枝一樣向外延伸，形成層層相連的階層結構。
@@ -44,6 +45,8 @@ import TreeDiagram from '@/components/ArticleRelated/TreeDiagram.svelte'
 樹依照子節點數量的限制可以分為多種類型。其中最常見也最重要的是**二元樹 (Binary Tree)**：每個節點最多只有兩個子節點，分別稱為**左子節點 (Left Child)** 與**右子節點 (Right Child)**。
 
 二元樹又可以細分為幾種類型：
+
+<BinaryTreeTypesDiagram />
 
 | 類型 | 說明 |
 |------|------|

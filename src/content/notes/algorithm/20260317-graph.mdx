@@ -7,7 +7,9 @@ changelog: []
 sameDateSort: 2
 ---
 
-import GraphDiagram from '@/components/ArticleRelated/GraphDiagram.svelte'
+import GraphDiagram from '@/components/ArticleRelated/graph/GraphDiagram.svelte'
+import AdjacencyDiagram from '@/components/ArticleRelated/graph/AdjacencyDiagram.svelte'
+import DirectedGraphDiagram from '@/components/ArticleRelated/graph/DirectedGraphDiagram.svelte'
 
 **圖 (Graph)** 是一種非線性資料結構，由**頂點 (Vertex)** 與**邊 (Edge)** 所組成，用來描述現實世界中各種「物件與物件之間的關係」，是資料結構裡表達能力最強的一種。
 
@@ -39,6 +41,38 @@ import GraphDiagram from '@/components/ArticleRelated/GraphDiagram.svelte'
 
 - **無向圖 (Undirected Graph)**：邊沒有方向，A 連 B 代表 A 可以到 B、B 也可以到 A。就像捷運，台北車站到中山站可以雙向搭乘。
 - **有向圖 (Directed Graph / Digraph)**：邊有方向，只能從箭頭的起點走向終點。就像 Instagram 的追蹤功能：你追蹤了某人，不代表對方也追蹤你。
+
+<DirectedGraphDiagram client:only="svelte" />
+
+在程式建立圖時，差別只在 `addEdge` 是否雙向設定：
+
+```java
+// 無向圖：兩個方向都設定
+static void addEdge(int[][] matrix, int u, int v) {
+    matrix[u][v] = 1;
+    matrix[v][u] = 1;
+}
+
+// 有向圖：只設定 u → v 單一方向
+static void addEdge(int[][] matrix, int u, int v) {
+    matrix[u][v] = 1;
+}
+```
+
+鄰接串列的有向圖寫法同理：
+
+```java
+// 無向圖
+static void addEdge(Map<Integer, List<Integer>> graph, int u, int v) {
+    graph.get(u).add(v);
+    graph.get(v).add(u);
+}
+
+// 有向圖：只把 v 加入 u 的串列
+static void addEdge(Map<Integer, List<Integer>> graph, int u, int v) {
+    graph.get(u).add(v);
+}
+```
 
 ### 有權圖 (Weighted Graph)
 
@@ -113,6 +147,8 @@ public class AdjacencyList {
     }
 }
 ```
+
+<AdjacencyDiagram client:only="svelte" />
 
 ### 兩種方式的比較
 

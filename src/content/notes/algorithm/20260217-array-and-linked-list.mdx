@@ -7,7 +7,8 @@ changelog: []
 sameDateSort: 1
 ---
 
-import MemoryLayoutDiagram from '@/components/ArticleRelated/MemoryLayoutDiagram.svelte'
+import MemoryLayoutDiagram from '@/components/ArticleRelated/array/MemoryLayoutDiagram.svelte'
+import Array2DDiagram from '@/components/ArticleRelated/array/Array2DDiagram.svelte'
 
 :::info
 對於 Java 而言，其實有更方便的 ArrayList class 可用來取代傳統陣列 (Array)，同時也有 LinkedList class 可用來取代手動實作的鏈結串列 (Linked List)。
@@ -33,11 +34,15 @@ import MemoryLayoutDiagram from '@/components/ArticleRelated/MemoryLayoutDiagram
 
 陣列又有三種類型：
 
-| 類型 | 語法範例 | 說明 | 生活化例子 |
-|------|-----------|------|-------------|
-| 一維陣列 (1D Array) | `int[] numbers = {1, 2, 3, 4, 5};` | 最基本的陣列形式，元素排成一列。可以想成一排座位，每個位置放一個資料。 | 一整排學生的座號：`[1, 2, 3, 4, 5]` |
-| 二維陣列 (2D Array) | `int[][] matrix = {{1, 2}, {3, 4}};` | 元素排列成表格或矩陣，有「行」與「列」的概念。 | 教室座位表（2 行 2 列）：<br/>`[ [1, 2], [3, 4] ]` |
-| 多維陣列 (Multi-dimensional Array) | `int[][][] cube = {{{1}, {2}}, {{3}, {4}}};` | 超過兩個維度的陣列，可以想成堆疊起來的立體結構。 | 多間教室的座位表（每間都有 2x2 座位）：<br/>`[ [ [1], [2] ], [ [3], [4] ] ]` |
+| 類型 | 宣告語法 | 說明 |
+|------|----------|------|
+| 一維陣列 (1D) | `int[]` | 最基本的陣列，元素排成一列，如一排學生座號。 |
+| 二維陣列 (2D) | `int[][]` | 元素排成表格，有行與列的概念，如教室座位表。 |
+| 多維陣列 (nD) | `int[][][]` | 三個以上維度，可想像成多間教室堆疊的立體結構。 |
+
+二維陣列的本質是「陣列的陣列」，用 `matrix[列][行]` 的方式存取每一格：
+
+<Array2DDiagram client:only="svelte" />
 
 ### 走訪、隨機走訪元素
 ```java
@@ -565,10 +570,10 @@ class Node {
 ## Array vs Linked List — CRUD 時間複雜度比較
 
 
-| 資料結構     | 讀取 (Access) | 搜尋 (Search) | 插入 (Insert) | 刪除 (Delete) | 存放方式 | 擴展性 | 記憶體效率 |
-|--------------|---------------|---------------|---------------|---------------|----------|--------|------------|
-| Array        | $O(1)$          | $O(n)$          | $O(n)$          | $O(n)$          | 連續記憶體 | 良好   | 佔用少，但易浪費       |
-| Linked List  | $O(n)$          | $O(n)$          | $O(1)$          | $O(1)$          | 不連續記憶體 | 較差   | 佔用多       |
+| 資料結構 | 讀取 | 搜尋 | 插入 | 刪除 | 存放方式 |
+|----------|:----:|:----:|:----:|:----:|----------|
+| Array | $O(1)$ | $O(n)$ | $O(n)$ | $O(n)$ | 連續記憶體 |
+| Linked List | $O(n)$ | $O(n)$ | $O(1)$ | $O(1)$ | 不連續記憶體 |
 
 :::info
 Linked list 的插入與刪除為 $O(1)$ 的前提是「已經持有該節點的參考 (reference)」，只需調整指標即可。  
