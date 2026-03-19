@@ -36,11 +36,12 @@
 </script>
 
 <div class="w-full max-w-3xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
-  <div class="grid grid-cols-2">
+  <div class="grid grid-cols-1 sm:grid-cols-2">
     {#each panels as panel, i}
-      <div class="p-4 flex flex-col items-center gap-2
-        {i % 2 === 0 ? 'border-r border-slate-800' : ''}
-        {i < 2       ? 'border-b border-slate-800' : ''}">
+      <div class="p-4 flex flex-col items-center gap-2 border-slate-800
+        {i < 3 ? 'border-b' : ''}
+        {i === 2 ? 'sm:border-b-0' : ''}
+        {i % 2 === 0 ? 'sm:border-r' : ''}">
         <p class="text-xs font-bold text-slate-300 font-mono text-center leading-snug">{panel.title}</p>
         <p class="text-xs text-slate-500 text-center leading-relaxed">{panel.desc}</p>
         <svg viewBox="0 0 150 125" class="w-full max-w-[140px]" xmlns="http://www.w3.org/2000/svg">

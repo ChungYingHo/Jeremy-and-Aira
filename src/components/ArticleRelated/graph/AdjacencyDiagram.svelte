@@ -83,8 +83,12 @@
             cx={v.x} cy={v.y} r="20"
             fill={vertFill(v.id)} stroke={vertStroke(v.id)} stroke-width="2"
             style="transition: fill 0.2s, stroke 0.2s; cursor: pointer"
+            role="button"
+            tabindex="0"
             on:mouseenter={() => hovered = v.id}
             on:mouseleave={() => hovered = null}
+            on:focus={() => hovered = v.id}
+            on:blur={() => hovered = null}
           />
           <text x={v.x} y={v.y + 5} text-anchor="middle"
             font-size="14" font-weight="bold" font-family="'JetBrains Mono', monospace"
@@ -122,6 +126,8 @@
                           : 'bg-[#0f172a] border-slate-800 text-slate-600'}"
                       on:mouseenter={() => hovered = r}
                       on:mouseleave={() => hovered = null}
+                      on:focus={() => hovered = r}
+                      on:blur={() => hovered = null}
                     >{val}</td>
                   {/each}
                 </tr>
@@ -135,10 +141,14 @@
         <div class="flex flex-col gap-1.5">
           {#each adjList as neighbors, v}
             <div
+              role="button"
+              tabindex="0"
               class="flex items-center gap-2 px-3 py-2 rounded border transition-all font-mono text-xs
                 {hovered === v ? 'bg-slate-800/80 border-blue-800/60' : 'bg-[#0f172a] border-slate-800'}"
               on:mouseenter={() => hovered = v}
               on:mouseleave={() => hovered = null}
+              on:focus={() => hovered = v}
+              on:blur={() => hovered = null}
             >
               <span class="font-bold w-4 {hovered === v ? 'text-blue-300' : 'text-slate-400'}">{v}</span>
               <span class="text-slate-700 mx-1">→</span>
