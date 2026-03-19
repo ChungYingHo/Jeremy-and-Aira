@@ -4,4 +4,5 @@ export const SERIES_LABELS = {
   'algorithm': 'Data Structure & Algorithm',
   'data-structure': 'Data Structure',
   'algorithms': 'Algorithm',
+  'leetcode': 'LeetCode',
 }
