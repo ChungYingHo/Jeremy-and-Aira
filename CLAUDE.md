@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **審核規則：每次的調整都將由 antigravity 與 codex 進行審核。**
+> **摘要規則：每次回答的最後，須以繁體中文撰寫一次摘要，並以「親愛的 AIra 」作為開頭。**
+
 ---
 
 # Jeremy & Aira Tech Blog
