@@ -61,7 +61,7 @@
       {queueMsg || ''}
     </p>
 
-    <div class="flex gap-2 justify-center">
+    <div class="flex flex-wrap gap-2 justify-center">
       <button
         on:click={enqueue}
         class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors
