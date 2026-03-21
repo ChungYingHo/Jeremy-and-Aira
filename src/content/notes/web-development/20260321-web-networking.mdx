@@ -1,0 +1,146 @@
+---
+title: '[Web] 網路基礎：IP、Domain、TCP/IP 與 CDN'
+author: 'jeremy'
+date: '2026-03-21'
+tags: [web, network, dns, tcp/ip, http, cdn, domain]
+changelog: []
+---
+
+import TcpIpLayersDiagram from '@/components/ArticleRelated/web/TcpIpLayersDiagram.svelte'
+import DnsResolutionDiagram from '@/components/ArticleRelated/web/DnsResolutionDiagram.svelte'
+import CdnDiagram from '@/components/ArticleRelated/web/CdnDiagram.svelte'
+
+## 按下 Enter 之後，發生了什麼事？
+
+你每天都在做這件事：打開瀏覽器，輸入網址，按下 Enter，然後頁面就出現了。整個過程大概 0.幾秒，但在這段時間裡，你的電腦、幾台遠在世界各地的伺服器、還有一堆你從來沒聽說過的協定，全都默默配合完成了一套複雜的流程。
+
+這篇筆記想把這個流程拆開來講，從 IP 位址開始，一路走到 CDN，把這些名詞串成一個完整的故事。
+
+## IP 位址
+
+每台連上網路的裝置都有一個 IP 位址，你可以把它想成門牌號碼。沒有門牌，郵差不知道要把信送去哪裡；網路也一樣，沒有 IP，資料封包不知道要送去哪台機器。
+
+現在最常見的格式是 **IPv4**，長這樣：
+
+```
+93.184.216.34
+```
+
+四組數字，每組 0 到 255，用小數點隔開。IPv4 理論上能提供大約 43 億個位址，聽起來很多，但全球現在有幾十億台裝置在上網，早就不夠用了。
+
+所以後來出現了 **IPv6**，長這樣：
+
+```
+2606:2800:220:1:248:1893:25c8:1946
+```
+
+用十六進位加冒號，位址空間大到幾乎不可能耗盡。目前兩個版本並存，大部分的服務都同時支援。
+
+問題來了：人類記不住這串數字。你不會說「我去 `93.184.216.34` 查一下」，你會說「我去 `example.com` 查一下」。這就是 Domain 跟 DNS 出現的原因。
+
+## Domain 與 DNS
+
+Domain（網域）就是人類可以讀懂的名稱，像 `google.com`、`github.com`。DNS（Domain Name System）則是把這個名稱翻譯成 IP 位址的系統，它就是網路世界的翻譯官，或者說電話簿。
+
+一個 domain 的結構，從右到左讀比較好理解：
+
+- **TLD（頂級網域）**：最右邊，像 `.com`、`.org`、`.tw`
+- **二級網域**：你登記的名字，像 `google`、`github`
+- **子網域**：最左邊，像 `www`、`mail`、`api`
+
+所以 `mail.google.com` 裡，`.com` 是 TLD，`google` 是二級網域，`mail` 是子網域。
+
+### DNS 解析流程
+
+你輸入 `example.com` 之後，瀏覽器不是直接就知道它的 IP，要經過一連串的查詢：
+
+<DnsResolutionDiagram client:visible />
+
+整個過程大概分五步：瀏覽器先問 Recursive Resolver（通常是你的 ISP 或 Google 的 8.8.8.8），Resolver 再逐層往上問，從 Root Nameserver → TLD Nameserver → Authoritative Nameserver，最後拿到 IP 位址回傳給你。
+
+:::info
+這個過程聽起來很慢，但實際上通常只要幾毫秒，因為每一層都有快取。一旦查過一次，結果會被暫存一段時間（由 TTL 設定），下次直接用快取，不用重新跑完整個流程。
+:::
+
+快取的重要性很高。如果你改了網域的 DNS 設定（比如換了主機），全球各地的快取要過期才會生效，這段等待時間叫做 **DNS propagation**，可能需要幾小時到 48 小時。
+
+## TCP/IP
+
+光知道 IP 位址還不夠。資料要怎麼從你的電腦傳到遠端伺服器、怎麼確保不漏掉、怎麼處理大量同時連線，這些都需要一套規則，也就是**協定（Protocol）**。
+
+TCP/IP 是目前網路通訊的基礎協定組，它把網路通訊分成四層：
+
+<TcpIpLayersDiagram client:visible />
+
+每一層各司其職：
+
+- **應用層**：你直接碰到的那層，HTTP 請求、Email、DNS 查詢都在這裡
+- **傳輸層**：負責把資料切成封包、確保送達、處理流量控制
+- **網路層**：決定封包要走哪條路，IP 位址的邏輯在這層
+- **網路存取層**：最底下，負責實際的訊號傳輸，不管是電纜、Wi-Fi 還是光纖
+
+### TCP vs UDP
+
+傳輸層有兩個主要協定，個性截然不同：
+
+**TCP（Transmission Control Protocol）** 是可靠派。它會三次握手建立連線、確認每個封包都送到、封包丟了就重送。代價是比較慢，有額外的確認開銷。適合需要完整傳輸的情境，像載入網頁、下載檔案。
+
+**UDP（User Datagram Protocol）** 是快速派。它不管封包有沒有送到，丟了就丟了。好處是延遲極低。適合即時性優先的情境，像線上遊戲、視訊通話，一幀畫面掉了沒關係，但不能等重送。
+
+:::tip
+TCP 的「三次握手」是建立連線的確認儀式：Client 說「我想連」，Server 說「好，我在」，Client 說「收到，開始吧」——這三個步驟確保雙方都準備好了。
+:::
+
+## HTTP 與 HTTPS
+
+建立 TCP 連線之後，瀏覽器跟伺服器怎麼溝通？靠的是 **HTTP（HyperText Transfer Protocol）**。
+
+HTTP 就是一套語言規格：瀏覽器發出「請求（Request）」，伺服器回傳「回應（Response）」。請求裡有方法（GET、POST 等）、路徑、Header；回應裡有狀態碼（200 OK、404 Not Found 等）、Header、Body。
+
+問題是，HTTP 本身是明文傳輸。資料在網路上跑的時候，中間任何一個節點都能讀到內容。你登入帳號的密碼、信用卡號碼，全部都是裸奔狀態。
+
+**HTTPS** 在 HTTP 底下加了一層 **TLS（Transport Layer Security）** 加密。連線建立時，瀏覽器跟伺服器會協商一把只有彼此知道的金鑰，之後所有傳輸的內容都用這把金鑰加密，就算中途被攔截，對方看到的也是一堆亂碼。
+
+:::warning
+現在幾乎所有網站都應該用 HTTPS。瀏覽器會對 HTTP 網站顯示「不安全」警告，搜尋引擎也偏好 HTTPS 網站。如果你在架站，讓 TLS 憑證這件事盡早處理好。
+:::
+
+TLS 憑證可以從 Let's Encrypt 免費取得，大部分的主機平台（Vercel、Netlify、Cloudflare）都會自動幫你設定好。
+
+## CDN
+
+你的伺服器可能放在美國，但你的使用者可能在台灣、日本、德國。物理距離是客觀存在的，光速是有限的，資料要跑 2000 公里，延遲就是比較高。
+
+**CDN（Content Delivery Network）** 的解法是在全球各地部署快取節點（Edge Node）。使用者連線時，不是直接打去原始伺服器，而是打去離他最近的 Edge Node。
+
+<CdnDiagram client:visible />
+
+CDN 的核心概念是快取：
+
+- **Cache Hit**：Edge Node 已經有這份內容的副本，直接回傳，原始伺服器完全不需要介入
+- **Cache Miss**：Edge Node 沒有快取（第一次請求、或快取過期），才回去跟原始伺服器要，取得後再快取起來
+
+靜態資源（圖片、CSS、JS、字型）特別適合 CDN，因為這些檔案不常變動，快取命中率高。
+
+實際上你每天都在用 CDN，只是沒意識到：
+
+- **jsDelivr**、**unpkg**：npm 套件的免費 CDN
+- **Cloudflare**：除了 CDN，還提供 DDoS 防護、DNS 管理
+- **AWS CloudFront**：AWS 生態系的 CDN，跟 S3 整合緊密
+
+:::info
+CDN 不只是速度的問題。當流量突然暴增，CDN 的快取節點可以吸收大量請求，讓原始伺服器不至於被打爆。這也是很多人在網站上線前優先設定 CDN 的原因。
+:::
+
+## 串起來看
+
+把這些拼在一起，你輸入網址按下 Enter 之後發生的事，大概是這樣：
+
+1. **DNS 查詢**：瀏覽器問 Recursive Resolver，最終拿到 IP 位址
+2. **TCP 連線**：三次握手，與目標伺服器（或 CDN Edge Node）建立連線
+3. **TLS 握手**：如果是 HTTPS，協商加密金鑰
+4. **HTTP 請求**：瀏覽器發出 GET 請求，說明要哪個資源
+5. **CDN 回應**：如果是 Cache Hit，Edge Node 直接回傳；如果是 Cache Miss，Edge Node 先跟原始伺服器拿，再回傳
+6. **頁面渲染**：瀏覽器拿到 HTML，再繼續請求 CSS、JS、圖片，重複以上步驟
+
+整個流程在 0.幾秒內跑完，每個環節都有相應的技術在背後支撐。理解這個流程不只是知識層面的好奇，也能幫助你在遇到效能問題、網路錯誤的時候，更快判斷問題出在哪個環節。

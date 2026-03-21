@@ -1,0 +1,248 @@
+---
+title: '[Web] Cookie、Session、localStorage 與 sessionStorage'
+author: 'jeremy'
+date: '2026-03-21'
+tags: [web, cookie, session, localStorage, sessionStorage, http]
+changelog: []
+---
+
+## HTTP 是無狀態的
+
+在開始認識 cookie 或 session 之前，有一個 HTTP 的重要特性得先理解：**HTTP 是無狀態協定 (stateless protocol)**。
+
+什麼叫做無狀態？
+簡單說，就是 server 不會記住你。
+每一次的 HTTP 請求對 server 來說都是全新的，server 沒有辦法知道「現在發出請求的人」跟「上一次發出請求的人」是不是同一個人。
+
+這在很多場景下都是個問題。
+比如說你登入了一個購物網站，選了幾個商品加入購物車，然後點進某個商品頁面，這時 server 收到的是一個全新的請求，它根本不知道你剛才有沒有登入過、更不知道你購物車裡有什麼東西。
+如果沒有任何機制去解決這件事，那每次換個頁面就要重新登入一次，那購物網站大概活不過一天。
+
+為了解決這個問題，前端與後端發展出了幾種狀態管理的方式，其中最核心的兩個就是 **Cookie** 與 **Session**，而瀏覽器端的儲存方案 **localStorage** 和 **sessionStorage** 也是這個問題的延伸產物。
+
+## Cookie
+
+Cookie 是最早被設計出來解決 HTTP 無狀態問題的方案，由 Netscape 的工程師 Lou Montulli 在 1994 年發明。
+本質上，cookie 就是一小段由 server 寫入、存放在瀏覽器的文字資料。
+每次瀏覽器向同一個 server 發出請求時，會自動把對應的 cookie 附在 HTTP request header 裡帶過去，這樣 server 就能識別「這個請求是誰發出來的」。
+
+### Cookie 的運作流程
+
+1. 使用者登入，server 驗證帳密成功後，在 HTTP **response header** 寫入 `Set-Cookie`。
+2. 瀏覽器收到後，自動把 cookie 儲存起來。
+3. 之後每次對同一 domain 的請求，瀏覽器都會自動在 **request header** 帶上 `Cookie`。
+4. Server 讀取 cookie，識別使用者身份或取得需要的狀態資訊。
+
+### Cookie 的屬性
+
+Cookie 有幾個重要的屬性值得認識：
+
+| 屬性 | 說明 |
+| :--- | :--- |
+| `Expires` / `Max-Age` | 設定 cookie 的有效期限。未設定則為 session cookie，瀏覽器關掉就消失 |
+| `Domain` | 限制哪些 domain 可以存取這個 cookie |
+| `Path` | 限制哪些路徑下的請求會帶上這個 cookie |
+| `HttpOnly` | 設定後，JavaScript 無法透過 `document.cookie` 存取此 cookie |
+| `Secure` | 設定後，只有 HTTPS 連線才會傳送此 cookie |
+| `SameSite` | 控制 cookie 是否能在跨站請求中被帶上，可設定 `Strict`、`Lax`、`None` |
+
+:::danger
+`HttpOnly` 是一個非常重要的安全屬性，它能有效防範 **XSS (Cross-Site Scripting)** 攻擊。
+
+XSS 是指攻擊者想辦法把惡意的 JavaScript 程式碼注入到你的網頁裡執行，一旦成功，那段惡意程式碼就可以透過 `document.cookie` 把使用者的 cookie 全部偷走，拿去假冒使用者的身份。
+但設定了 `HttpOnly` 之後，JavaScript 就完全讀不到這個 cookie，惡意腳本也就無從下手。
+
+同理，`Secure` 屬性確保 cookie 只在加密連線 (HTTPS) 下傳送，避免在一般 HTTP 明文傳輸時被網路中間人攔截偷看。
+這兩個屬性在設計登入相關的 cookie 時，幾乎是必加的。
+:::
+
+### 前端到底需要操作 Cookie 嗎？
+
+答案是：**大多數情況下，前端不需要也不應該自己操作跟登入驗證相關的 cookie。**
+這類 cookie 應該由後端設定、由後端讀取，並且一律加上 `HttpOnly`，讓 JavaScript 根本碰不到。
+前端就算想動也動不了，這其實是刻意的安全設計。
+
+那前端什麼時候會需要操作 cookie 呢？
+少數情境，例如：
+- 紀錄使用者的語言偏好或主題設定（但這類東西其實更常放在 `localStorage`）
+- 一些第三方服務的 SDK（例如廣告追蹤、analytics）會在前端寫入自己的 cookie
+
+瀏覽器端可以透過 `document.cookie` 讀取或設定 cookie（前提是該 cookie 沒有 `HttpOnly`）：
+
+```js
+// 設定 cookie（expires 以 UTC 格式字串表示）
+document.cookie = 'username=Jeremy; expires=Fri, 31 Dec 2026 23:59:59 GMT; path=/'
+
+// 讀取所有 cookie（是一整個字串，需要自己解析）
+console.log(document.cookie) // "username=Jeremy; theme=dark"
+
+// 刪除 cookie（把 expires 設成過去的時間）
+document.cookie = 'username=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/'
+```
+
+:::info
+`document.cookie` 的 API 設計真的滿醜陋的，讀取時拿到的是一整條字串，要自己手動 parse。
+在現代專案裡如果前端真的需要操作 cookie，通常會用 [js-cookie](https://github.com/js-cookie/js-cookie) 這個輕量套件來簡化。
+當然，如果是 `HttpOnly` 的 cookie，JavaScript 根本讀不到，也不需要在前端操作它，那是後端的職責。
+:::
+
+## Session
+
+Session 是另一種解決 HTTP 無狀態的方案，但跟 cookie 的最大差別在於：**session 的資料存在 server 端，不是 client 端**。
+
+### Session 的運作流程
+
+1. 使用者登入，server 驗證成功後，在 server 的記憶體（或 Redis、資料庫）建立一筆 session 資料，並產生一個唯一的 **Session ID**。
+2. Server 把這個 Session ID 透過 `Set-Cookie` 傳給瀏覽器（是的，Session ID 通常就是存在 cookie 裡）。
+3. 之後每次請求，瀏覽器帶上這個 Session ID 的 cookie，server 就根據 Session ID 找到對應的 session 資料，藉此識別使用者。
+
+所以 session 跟 cookie 本身並不是完全分開的概念，你可以說「session 通常是用 cookie 來傳遞 session ID 的」。
+區別只是在：cookie 是把資料放在 client，session 是把真正的資料留在 server，client 只拿一把「鑰匙」（Session ID）。
+
+### JWT 的運作流程
+
+傳統的 server-side session 在早期的多頁式網頁 (MPA) 架構裡運作得很好，但隨著 SPA (Single Page Application) 與前後端分離的普及，它開始遇到一些麻煩。
+
+最主要的問題是**狀態集中在 server**。
+每個登入的使用者，server 都要在記憶體裡維護一筆 session 資料，使用者一多，記憶體就吃緊了。
+更麻煩的是當服務需要橫向擴展，也就是同時開多台 server 來分擔流量的時候，問題就來了——使用者第一次登入時，session 是建在 A server 上，但下一個請求可能被路由到 B server，B server 根本找不到這筆 session，使用者就這樣莫名其妙被登出了。
+要解決這個問題，要麼讓同一個使用者的請求永遠打到同一台 server（sticky session），要麼把所有 server 的 session 集中存到一個共享的地方（例如 Redis）。
+這些都是可行的，但都需要額外的架構成本。
+
+於是，**JWT (JSON Web Token)** 這種 token-based 的驗證方式應運而生，成為現代 Web 應用，尤其是前後端分離架構下的主流選擇。
+
+JWT 的核心概念跟 session 完全相反：**server 不儲存任何狀態。**
+流程是這樣的：
+
+1. 使用者登入，**server** 驗證帳密成功後，產生一個 JWT token，裡面用編碼的方式寫入使用者的基本資訊（例如使用者 ID、角色、token 有效時間等），再把這個 token 傳回給前端。
+2. **前端**拿到 token 後，負責把它存起來。存放位置有兩種主流做法：
+    - 存在 **`HttpOnly` cookie**：由瀏覽器自動管理，JavaScript 碰不到，安全性較高，但需要處理 CSRF 問題。
+    - 存在**記憶體**（例如框架的 state/store）：每次 refresh 頁面就消失，需要搭配 refresh token 機制自動續期，但完全不受 XSS 威脅竊取。
+3. 之後每次發出請求，前端把 token 放進 HTTP request header 的 `Authorization` 欄位帶過去（格式通常是 `Bearer <token>`）。
+4. **Server** 收到請求後，只需要驗證 token 的簽名是否合法，不需要查資料庫或記憶體，就能確認使用者身份。不管有幾台 server，每一台都能獨立驗證，不再需要共享 session store。
+
+:::info
+JWT 看起來像一串亂碼，但其實結構是三段 Base64 編碼用 `.` 串起來的：`header.payload.signature`。
+- **header**：說明這個 token 用的是什麼簽名演算法
+- **payload**：實際儲存的資訊，例如使用者 ID、角色等（這段是可以被解碼讀取的，所以不要放密碼或任何敏感資料）
+- **signature**：用 server 的 secret key 對前兩段做簽名，確保內容沒有被竄改
+
+所以 JWT 的安全性不在於「資料被隱藏了」，而在於「資料如果被竄改，簽名就會對不上，server 就會拒絕這個 token」。
+:::
+
+### Session vs. JWT 怎麼選
+
+Session 有個特性是 server 可以**主動讓它失效**——只要把那筆 session 從記憶體或 Redis 刪掉，使用者馬上就被登出。
+但 JWT 因為 server 不記狀態，沒辦法這樣做。
+Token 一旦發出去，在有效期間內根本沒辦法讓它失效，除非另外維護一個 token 黑名單，但那又繞回需要共享狀態的問題了。
+
+所以兩種方案各有取捨，沒有絕對的優劣：
+- 需要嚴格的即時登出控制（例如金融、醫療類應用）？Session 可能更合適。
+- 服務是前後端分離、多服務架構，或有 mobile app 要一起接？JWT 通常更方便。
+
+## localStorage 與 sessionStorage
+
+Cookie 其實在瀏覽器端儲存資料上有一個相當惱人的限制：**每個 cookie 大小最多 4KB**，而且每次 HTTP 請求都會自動帶上，對頻寬而言是個小負擔。
+
+HTML5 帶來了 **Web Storage API**，提供了兩個更現代的瀏覽器端儲存方案：`localStorage` 與 `sessionStorage`。
+兩者的 API 幾乎一模一樣，差別只在於**生命週期**與**範圍**。
+
+### localStorage
+
+`localStorage` 儲存的資料是**持久性**的，不會因為瀏覽器關閉而消失，除非手動清除或程式碼主動刪除。
+資料的範圍是以 **origin（protocol + domain + port）** 為單位，同一個 origin 下的所有頁面都可以讀取。
+
+```js
+localStorage.setItem('theme', 'dark')
+
+const theme = localStorage.getItem('theme') // "dark"
+
+localStorage.removeItem('theme')
+
+localStorage.clear()
+```
+
+### sessionStorage
+
+`sessionStorage` 跟 `localStorage` 的 API 完全相同，但生命週期只在**當前的瀏覽器分頁（tab）開著的期間**。
+關掉分頁或瀏覽器，資料就消失了。
+而且更嚴格的是，就算是同一個 origin，不同分頁之間的 `sessionStorage` 也是**各自獨立、互不共享**的。
+
+```js
+sessionStorage.setItem('step', '2')
+const step = sessionStorage.getItem('step') // "2"
+sessionStorage.removeItem('step')
+```
+
+### localStorage vs. sessionStorage vs. Cookie 比較
+
+| 特性 | Cookie | localStorage | sessionStorage |
+| :--- | :--- | :--- | :--- |
+| 容量上限 | ~4KB | ~5-10MB | ~5-10MB |
+| 生命週期 | 可自訂（或 session） | 永久，直到手動清除 | 當前分頁存活期間 |
+| 跨分頁共享 | 是（同 origin） | 是（同 origin） | 否 |
+| 隨 HTTP 請求傳送 | 是，自動帶上 | 否 | 否 |
+| JavaScript 可讀 | 可（除非 HttpOnly） | 是 | 是 |
+| 伺服器可設定 | 是 | 否 | 否 |
+
+:::danger
+**不要把 JWT 或任何 authentication token 存在 `localStorage`！**
+
+這是一個相當常見的誤區，尤其是網路上有很多教學直接示範把 JWT 塞進 `localStorage`，然後每次 request 再從裡面拿出來放進 header 帶走。
+問題在於，`localStorage` 可以被頁面上任何 JavaScript 存取，只要頁面有 XSS 漏洞，攻擊者就能輕鬆把 token 偷走，完整模擬使用者的身份，而且因為 JWT 本身 server 不記狀態，你也很難即時讓那個被盜的 token 失效。
+
+相對安全的做法是把 JWT 存在設有 `HttpOnly` 的 cookie 裡，讓 JavaScript 碰不到它，由瀏覽器自動附上，由後端讀取驗證。
+當然，用 cookie 傳遞 token 又要注意另一種攻擊：**CSRF (Cross-Site Request Forgery)**，也就是惡意網站誘騙瀏覽器發出帶有你 cookie 的請求。
+應對 CSRF 通常搭配 `SameSite` cookie 屬性或 CSRF token 機制來處理。
+
+說到底，Web 安全沒有銀彈，每種方案都有自己的攻擊面，重點是要清楚知道自己在用什麼、它保護了什麼、又暴露了什麼。
+:::
+
+### localStorage 適合存什麼？
+
+`localStorage` 和 `sessionStorage` 因為 JavaScript 可以直接讀寫，非常適合用來存放**不含敏感資訊的 UI 狀態**，例如：
+- 使用者的外觀偏好（深色/淺色主題）
+- 語言設定
+- 表單的暫存草稿
+- 使用者非敏感的個人設定
+
+說白了，就是「放這裡被偷走也沒什麼大不了」的東西。
+
+## Summary
+
+一個簡單的場景比喻，幫助記憶這幾個概念的差異：
+
+想像你去一家餐廳：
+- **Cookie** 就像餐廳給你一張會員卡，每次來都帶著，服務生一掃就知道你是誰（資料可能直接寫在卡上，或只是一個 ID）。
+- **Session** 就像餐廳只給你一個號碼牌，你的點餐記錄、座位偏好全都存在餐廳後台，號碼牌只是讓服務生查資料用的。
+- **localStorage** 就像你手機裡記的備忘錄，下次來餐廳前可以先查一下自己上次喜歡吃什麼，但餐廳本身不知道也不負責這份備忘錄。
+- **sessionStorage** 就像這頓飯吃完的點菜記錄，離開餐廳就清空了。
+
+### 後端怎麼把憑證交給前端？
+
+這個問題很多新手沒有搞清楚，常常以為「登入 API 回來就是登入完成」，但其實憑證（cookie、session ID、JWT）是透過**不同的管道**傳遞的，而不是都塞在 API 的 response body 裡。
+
+| 機制 | 後端怎麼傳 | 前端怎麼收 |
+| :--- | :--- | :--- |
+| **Cookie** | response header 的 `Set-Cookie` | 瀏覽器自動存入，前端完全不介入 |
+| **Session ID** | 同上，本質還是 `Set-Cookie` | 同上，瀏覽器自動處理 |
+| **JWT（cookie 方式）** | response header 的 `Set-Cookie`（含 `HttpOnly`） | 瀏覽器自動存入，前端完全不介入 |
+| **JWT（body 方式）** | response body 的 JSON，例如 `{ token: "..." }` | 前端從 response body 裡撈出來，自己決定存哪 |
+
+關鍵就在最後兩行：JWT 後端可以選擇兩種回傳方式，**行為完全不同**。
+用 `Set-Cookie` 傳的話，跟 cookie / session 一樣，前端感知不到、也不需要處理，瀏覽器自動把它存起來，之後每次請求也自動帶上。
+但如果後端選擇放在 response body 裡，前端就必須自己去讀取、自己決定存在哪（記憶體、`localStorage` 等），也要自己在之後的請求手動帶上 `Authorization` header。
+
+所以當你跟後端討論驗證機制時，要確認的不只是「我們用 JWT 還是 session」，還要確認「JWT 是從 header 來還是 body 來」——這直接決定了前端要不要自己處理存取邏輯。
+
+### 現代實務怎麼用？
+
+**登入驗證**：現代前後端分離的專案，主流是 JWT token-based 驗證。
+token 的存放方式有兩派，一派存 `HttpOnly` cookie（安全性較高，但要處理 CSRF），另一派存在框架的 state/store 記憶體裡，每次 refresh 頁面就消失，需要搭配 refresh token 機制來自動續期。
+這兩種方式各有取捨，不同團隊的選擇不同。
+
+**前端基本不碰跟驗證有關的 cookie**：正常的開發流程中，前端工程師幾乎不會需要直接操作 cookie 來處理登入相關的邏輯，這塊交給後端設定 `HttpOnly` cookie，前端感知不到也不需要感知。
+前端能碰的 cookie，通常只剩第三方 SDK 自己寫的追蹤或 analytics 類 cookie，或者極少數需要前端主動設定的偏好類資料（但這種情境現在也幾乎都改用 `localStorage` 了）。
+
+**UI 狀態的儲存**：深色模式、語言偏好、側欄展開收合狀態... 這類「跟使用者帳號無關的個人設定」，幾乎一律放 `localStorage`。
+如果是多步驟表單的暫存進度、或只需要在這次操作中保留的資料，則會考慮 `sessionStorage`。
