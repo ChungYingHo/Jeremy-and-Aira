@@ -1,0 +1,276 @@
+---
+title: "[Algorithm] 排序演算法"
+author: "Jeremy"
+date: "2026-03-22"
+tags: [排序, 泡泡排序, 選擇排序, 插入排序, 合併排序, 快速排序]
+changelog: []
+sameDateSort: 3
+---
+
+import BubbleSortVisualizer from '@/components/ArticleRelated/algorithm/BubbleSortVisualizer.svelte'
+import SelectionSortVisualizer from '@/components/ArticleRelated/algorithm/SelectionSortVisualizer.svelte'
+import InsertionSortVisualizer from '@/components/ArticleRelated/algorithm/InsertionSortVisualizer.svelte'
+import MergeSortVisualizer from '@/components/ArticleRelated/algorithm/MergeSortVisualizer.svelte'
+import QuickSortVisualizer from '@/components/ArticleRelated/algorithm/QuickSortVisualizer.svelte'
+
+排序演算法在電腦科學中相當常用，畢竟無論是誰都需要整理資料，因為有序的資料通常能更有效率地查詢、分析與處理。
+而排序演算法一般有幾項重要的評估指標：
+
+1. **執行效率**：一般期望排序演算法的時間複雜度能低，且操作總體次數能少，這點尤其體現在資料量大的時候。
+2. **就地性**：是否需要額外的儲存空間來進行排序。陣列排序若能就地（in-place）完成，就不需要額外開一個新陣列來存放結果，記憶體使用更省。
+3. **穩定性**：當兩個元素的排序鍵相同時，排序後它們的相對順序會不會被改變。
+
+```python
+# 原始資料（名字, 分數）
+students = [('Alice', 90), ('Bob', 80), ('Charlie', 90)]
+
+# 穩定排序後（依分數升序）：Alice 和 Charlie 同分，原本 Alice 在前，排序後仍在前
+# [('Bob', 80), ('Alice', 90), ('Charlie', 90)]
+```
+
+4. **適應性**：當輸入資料已經部分排序時，演算法是否能利用這個特性減少不必要的操作。
+5. **比較型排序**：大多數排序演算法透過比較元素大小來決定順序，這類排序的理論下界是 $O(n \log n)$。
+
+## 泡泡排序 (Bubble Sort)
+
+泡泡排序是最直觀的排序方式：反覆比較相鄰的兩個元素，如果順序錯了就交換，每輪結束最大的元素就會「冒泡」到最右邊。重複這個過程直到沒有交換發生為止。
+
+<BubbleSortVisualizer client:only="svelte" />
+
+以陣列 `[4, 1, 3, 1, 5, 2]` 為例（僅記錄有交換的步驟）：
+
+1. 第一輪：4 依序往右推，最終 5 到達最右邊 → `[1, 3, 1, 4, 2, 5]`
+2. 第二輪：4 到達定位 → `[1, 1, 3, 2, 4, 5]`
+3. 第三輪：3 到達定位 → `[1, 1, 2, 3, 4, 5]`
+
+```python
+def bubble_sort(arr):
+    n = len(arr)
+    for i in range(n):
+        swapped = False
+
+        # 內層：把本輪最大值冒泡到右邊
+        # n - 1 - i：最右邊 i 個已固定，不用再比
+        for j in range(n - 1 - i):
+            if arr[j] > arr[j + 1]:
+                arr[j], arr[j + 1] = arr[j + 1], arr[j]  # 交換相鄰兩數
+                swapped = True
+
+        if not swapped:
+            break  # 這輪沒有任何交換，代表已排序完成，提早結束
+
+
+arr = [4, 1, 3, 1, 5, 2]
+bubble_sort(arr)
+print(arr)  # [1, 1, 2, 3, 4, 5]
+```
+
+| | Best | Average | Worst | 空間 | 穩定 |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| Bubble Sort | $O(n)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ | ✓ |
+
+## 選擇排序 (Selection Sort)
+
+選擇排序的策略很直接：每輪從「還沒排好的部分」找出最小值，把它換到最前面，然後縮小未排序的範圍，重複直到全部排完。
+
+<SelectionSortVisualizer client:only="svelte" />
+
+可以想像你面前有一堆牌，每次從牌堆裡翻出最小的那張抽走，抽出來的牌依序疊成新的有序牌堆。
+
+以 `[4, 1, 3, 1, 5, 2]` 為例：
+
+- 第 1 輪：未排序 [4,1,3,1,5,2]，最小是 1（index 1），與 index 0 交換 → `[1, 4, 3, 1, 5, 2]`
+- 第 2 輪：未排序 [4,3,1,5,2]，最小是 1（index 3），與 index 1 交換 → `[1, 1, 3, 4, 5, 2]`
+- 第 3 輪：未排序 [3,4,5,2]，最小是 2（index 5），與 index 2 交換 → `[1, 1, 2, 4, 5, 3]`
+- …以此類推
+
+```python
+def selection_sort(arr):
+    n = len(arr)
+    for i in range(n):
+        min_idx = i  # 假設第 i 個是最小值
+
+        # 從 i+1 往後找，看有沒有更小的
+        for j in range(i + 1, n):
+            if arr[j] < arr[min_idx]:
+                min_idx = j
+
+        arr[i], arr[min_idx] = arr[min_idx], arr[i]  # 把最小值換到第 i 個位置
+
+
+arr = [4, 1, 3, 1, 5, 2]
+selection_sort(arr)
+print(arr)  # [1, 1, 2, 3, 4, 5]
+```
+
+選擇排序有個特點：不論輸入多麼接近有序，它一定要跑完所有輪次，因為每輪都要找最小值（沒有提前結束的機制）。好處是交換次數很少——每輪只交換一次。
+
+| | Best | Average | Worst | 空間 | 穩定 |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| Selection Sort | $O(n^2)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ | ✗ |
+
+:::info
+選擇排序是不穩定的。以 `[3a, 3b, 1]` 為例，第一輪選出 1 跟 3a 交換，3a 跑到 3b 後面，順序就變了。
+:::
+
+## 插入排序 (Insertion Sort)
+
+插入排序的直覺像整理手上的撲克牌：每次抽一張新牌，把它插入已排好的牌堆中的正確位置。
+
+<InsertionSortVisualizer client:only="svelte" />
+
+以 `[4, 1, 3, 1, 5, 2]` 為例，左邊是已排序部分：
+
+- 取 1，插入 [4] → `[1, 4]`
+- 取 3，插入 [1,4] → `[1, 3, 4]`
+- 取 1，插入 [1,3,4] → `[1, 1, 3, 4]`
+- 取 5，插入 [1,1,3,4] → `[1, 1, 3, 4, 5]`
+- 取 2，插入 [1,1,3,4,5] → `[1, 1, 2, 3, 4, 5]`
+
+```python
+def insertion_sort(arr):
+    for i in range(1, len(arr)):
+        key = arr[i]  # 手上這張牌
+        j = i - 1
+
+        # 把比 key 大的元素往右移，騰出插入位置
+        while j >= 0 and arr[j] > key:
+            arr[j + 1] = arr[j]
+            j -= 1
+
+        arr[j + 1] = key  # 把 key 插入正確位置
+
+
+arr = [4, 1, 3, 1, 5, 2]
+insertion_sort(arr)
+print(arr)  # [1, 1, 2, 3, 4, 5]
+```
+
+插入排序有個非常實用的特性：**對幾乎已排序的資料表現極好**。如果輸入本來就大致有序，while 迴圈每次只移動很少的元素，時間複雜度接近 $O(n)$。這也是為什麼很多實際的排序函式庫（包括 Python 的 Timsort）內部都結合了插入排序。
+
+| | Best | Average | Worst | 空間 | 穩定 |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| Insertion Sort | $O(n)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ | ✓ |
+
+## 合併排序 (Merge Sort)
+
+前面三種排序都是 $O(n^2)$，遇到大資料就很慢。合併排序用**分而治之**的概念突破這個瓶頸，把問題拆小再合併，做到穩定的 $O(n \log n)$。
+
+做法很直覺：把陣列從中間切成兩半，兩半各自遞迴排好，再把兩個已排序的陣列**合併**成一個。合併的過程就像把兩副已排好的牌合成一副——從兩堆各取一張，每次選小的那張，依序放入結果。
+
+<MergeSortVisualizer client:only="svelte" />
+
+以 `[4, 1, 3, 1, 5, 2]` 為例：
+
+```
+[4, 1, 3, 1, 5, 2]
+      ↙        ↘
+[4, 1, 3]   [1, 5, 2]
+  ↙    ↘      ↙    ↘
+[4]  [1,3]  [1]  [5,2]
+       ↙↘         ↙↘
+      [1][3]     [5][2]
+
+合併回去：
+[1,3] ← merge([1],[3])
+[4,1,3] ← merge([4],[1,3])
+[2,5] ← merge([5],[2])
+[1,2,5] ← merge([1],[2,5])
+[1,1,2,3,4,5] ← merge([1,3,4],[1,2,5])
+```
+
+```python
+def merge_sort(arr):
+    if len(arr) <= 1:
+        return arr
+
+    mid = len(arr) // 2
+    left  = merge_sort(arr[:mid])   # 左半遞迴排序
+    right = merge_sort(arr[mid:])   # 右半遞迴排序
+    return merge(left, right)
+
+def merge(left, right):
+    result = []
+    i = j = 0
+
+    # 兩邊各取最小，依序放入結果
+    while i < len(left) and j < len(right):
+        if left[i] <= right[j]:
+            result.append(left[i])
+            i += 1
+        else:
+            result.append(right[j])
+            j += 1
+
+    return result + left[i:] + right[j:]  # 把剩餘的直接接上
+
+
+arr = [4, 1, 3, 1, 5, 2]
+print(merge_sort(arr))  # [1, 1, 2, 3, 4, 5]
+```
+
+合併排序不管輸入是什麼，複雜度永遠是 $O(n \log n)$，這讓它在最壞情況下比 Quick Sort 穩定。代價是需要 $O(n)$ 的額外空間來存放合併過程的中間結果。
+
+| | Best | Average | Worst | 空間 | 穩定 |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| Merge Sort | $O(n \log n)$ | $O(n \log n)$ | $O(n \log n)$ | $O(n)$ | ✓ |
+
+## 快速排序 (Quick Sort)
+
+快速排序是實務上最常用的排序演算法，也是大多數語言標準函式庫的排序底層（包括 C++ 的 `std::sort`）。平均情況下它是最快的，因為常數係數小、cache 友好。
+
+核心想法：從陣列中選一個**基準值（pivot）**，把所有比它小的放左邊，比它大的放右邊，然後對左右兩側遞迴重複。
+
+<QuickSortVisualizer client:only="svelte" />
+
+以 `[4, 1, 3, 1, 5, 2]` 為例，選中間元素 3 為 pivot：
+
+- 比 3 小的：`[1, 1, 2]`
+- 等於 3 的：`[3]`
+- 比 3 大的：`[4, 5]`
+- 合併：`[1, 1, 2] + [3] + [4, 5]` → 再對兩側遞迴 → `[1, 1, 2, 3, 4, 5]`
+
+```python
+def quick_sort(arr):
+    if len(arr) <= 1:
+        return arr
+
+    pivot = arr[len(arr) // 2]  # 選中間元素為 pivot
+
+    left  = [x for x in arr if x < pivot]   # 比 pivot 小
+    mid   = [x for x in arr if x == pivot]  # 等於 pivot
+    right = [x for x in arr if x > pivot]   # 比 pivot 大
+
+    return quick_sort(left) + mid + quick_sort(right)
+
+
+arr = [4, 1, 3, 1, 5, 2]
+print(quick_sort(arr))  # [1, 1, 2, 3, 4, 5]
+```
+
+快速排序最大的風險是 worst case：如果每次選到的 pivot 都是最大或最小值，陣列每次只縮小一個元素，遞迴深度變 $O(n)$，整體退化成 $O(n^2)$。已排序的輸入用固定 pivot 策略（如永遠選第一個）時最容易觸發這個問題。
+
+:::tip
+實務上通常用「隨機選 pivot」或「三數取中（median-of-three）」來避免 worst case，讓平均情況的 $O(n \log n)$ 更穩定地成立。
+:::
+
+| | Best | Average | Worst | 空間 | 穩定 |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| Quick Sort | $O(n \log n)$ | $O(n \log n)$ | $O(n^2)$ | $O(\log n)$ | ✗ |
+
+## 總比較
+
+| 演算法 | Best | Average | Worst | 空間 | 穩定 | 適應性 |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| Bubble Sort | $O(n)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ | ✓ | ✓ |
+| Selection Sort | $O(n^2)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ | ✗ | ✗ |
+| Insertion Sort | $O(n)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ | ✓ | ✓ |
+| Merge Sort | $O(n \log n)$ | $O(n \log n)$ | $O(n \log n)$ | $O(n)$ | ✓ | ✗ |
+| Quick Sort | $O(n \log n)$ | $O(n \log n)$ | $O(n^2)$ | $O(\log n)$ | ✗ | ✗ |
+
+實務上怎麼選：
+
+- **資料量小或幾乎有序** → Insertion Sort，常數係數小、適應性強
+- **需要穩定排序且資料量大** → Merge Sort，保證 $O(n \log n)$ 且穩定
+- **一般情況下最快** → Quick Sort（搭配隨機 pivot），實際跑起來通常比 Merge Sort 快
+- **Bubble / Selection Sort** → 通常只用於教學，實務上幾乎不用
