@@ -7,7 +7,8 @@ changelog: []
 sameDateSort: 2
 ---
 
-import StackQueueVisualizer from '@/components/ArticleRelated/stack-queue/StackQueueVisualizer.svelte'
+import StackVisualizer from '@/components/ArticleRelated/data-structure/stack-queue/StackVisualizer.svelte'
+import QueueVisualizer from '@/components/ArticleRelated/data-structure/stack-queue/QueueVisualizer.svelte'
 
 :::info
 Stack 與 Queue 基本實做方式會用陣列或鏈結串列來實做。  
@@ -22,7 +23,7 @@ Stack 與 Queue 基本實做方式會用陣列或鏈結串列來實做。
 
 ## 堆疊 (Stack)
 
-<StackQueueVisualizer client:only="svelte" />
+<StackVisualizer client:only="svelte" />
 
 Stack 是一種依循後進先出 (LIFO, Last In First Out) 原則來存取資料的線性資料結構。  
 Stack 可以存取多筆資料，但跟 array 不同，他不能用索引值來直接存取資料。  
@@ -209,6 +210,9 @@ class StackArray {
 
 
 ## 佇列 (Queue)
+
+<QueueVisualizer client:only="svelte" />
+
 佇列與堆疊剛好相反，佇列的邏輯是依循先進先出 (FIFO, First In First Out) 原則來存取資料。  
 以一個生活中的常見例子來舉例說明佇列就是台灣人特別喜歡的排隊，即新來的人不斷地加入隊伍的尾端，而最早加入隊伍的人會則可以最優先買到東西離開隊伍。  
 對佇列來說，把元素加入佇列尾的動作稱為「入佇列 (enqueue)」，而從佇列頭移除元素的動作稱為「出佇列 (dequeue)」。

@@ -100,6 +100,9 @@ function sortMenuTree(menuItems: MenuItem[]): void {
         const t = title.toLowerCase()
         if (t === 'notes') return 1
         if (t === 'languages') return 2
+        if (t === 'data structure') return 3
+        if (t === 'algorithm') return 4
+        if (t === 'leetcode') return 5
         return 99
       }
       const weightDiff = getWeight(a.title) - getWeight(b.title)
