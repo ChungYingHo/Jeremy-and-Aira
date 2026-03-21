@@ -72,7 +72,7 @@ const changelog = (entry.data.changelog || [])
     </header>
 
     <div class="relative">
-      <article class="md-content min-w-0 break-words pb-24">
+      <article class="md-content min-w-0 break-words pb-24 overflow-x-hidden">
         <Content />
 
         {/* Changelog Section */}
@@ -284,6 +284,13 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     wrapper.appendChild(copyBtn)
+  })
+
+  document.querySelectorAll('.md-content table').forEach(table => {
+    const wrapper = document.createElement('div')
+    wrapper.className = 'table-wrapper'
+    table.parentNode?.insertBefore(wrapper, table)
+    wrapper.appendChild(table)
   })
 
   const headings = document.querySelectorAll('.md-content h1, .md-content h2, .md-content h3')
