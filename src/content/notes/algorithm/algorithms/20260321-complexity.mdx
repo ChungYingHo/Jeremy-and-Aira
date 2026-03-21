@@ -10,9 +10,6 @@ import BigOChart from '@/components/ArticleRelated/algorithm/BigOChart.svelte'
 import AsymptoticBoundsDiagram from '@/components/ArticleRelated/algorithm/AsymptoticBoundsDiagram.svelte'
 import MasterTheoremDiagram from '@/components/ArticleRelated/algorithm/MasterTheoremDiagram.svelte'
 
-## 這篇在講什麼
-
-之前在[概論](/notes/algorithm/20260215-algorithm-intro)裡已經介紹過什麼是時間複雜度、Big O 是什麼意思，這篇不重複那些入門說明。這篇要往更清晰的方向走——把 O、Ω、Θ 三個符號說清楚、把常見複雜度的特性說得更完整，最後深入講主定理（Master Theorem），讓你真的能拿來分析分治演算法的遞迴式。
 
 ## 漸進符號的直覺
 
@@ -136,7 +133,7 @@ $$T(n) = aT\!\left(\frac{n}{b}\right) + f(n), \quad a \geq 1,\; b > 1$$
 
 **定義關鍵值** $c = \log_b a$
 
-這個 $c$ 代表什麼？如果 $f(n) = 0$（沒有合併代價），遞迴展開到底就是 $a^{\log_b n} = n^{\log_b a} = n^c$ 個葉節點，所以 $n^c$ 是「純遞迴展開」的天然代價。主定理的核心就是比較 $f(n)$ 跟 $n^c$，看誰主導整體複雜度。
+這個 $c$ 代表什麼？若暫時忽略合併代價，整棵遞迴樹展開到底共有 $n^c$ 個葉節點，所以 $n^c$ 是「純遞迴展開」的天然代價。主定理的核心就是比較 $f(n)$ 跟 $n^c$，看誰主導整體複雜度。
 
 <MasterTheoremDiagram client:visible />
 
