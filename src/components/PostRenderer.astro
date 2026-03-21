@@ -286,13 +286,6 @@ document.addEventListener('DOMContentLoaded', () => {
     wrapper.appendChild(copyBtn)
   })
 
-  document.querySelectorAll('.md-content table').forEach(table => {
-    const wrapper = document.createElement('div')
-    wrapper.className = 'table-wrapper'
-    table.parentNode?.insertBefore(wrapper, table)
-    wrapper.appendChild(table)
-  })
-
   const headings = document.querySelectorAll('.md-content h1, .md-content h2, .md-content h3')
   headings.forEach(heading => {
     const anchor = document.createElement('a')
