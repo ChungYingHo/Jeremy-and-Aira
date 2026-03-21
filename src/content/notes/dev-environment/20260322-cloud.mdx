@@ -1,0 +1,116 @@
+---
+title: "[Cloud] 雲端運算介紹"
+author: "Jeremy"
+date: "2026-03-22"
+tags: [env, cloud, aws, gcp, azure]
+changelog: []
+sameDateSort: 1
+---
+
+import CloudServiceModelDiagram from '@/components/ArticleRelated/web/CloudServiceModelDiagram.svelte'
+
+「上雲」這個詞現在幾乎是每間公司 IT 規劃的標配，但「雲端」到底是什麼？這篇文章從頭解釋這個概念。
+
+## 雲端是什麼
+
+雲端運算（Cloud Computing）的核心概念很簡單：**把運算資源（伺服器、儲存空間、資料庫、網路等）從你自己管理，變成向雲端服務商租用。**
+
+以前想架一個網站，你需要：買一台伺服器 → 放到機房 → 申請固定 IP → 自己安裝作業系統和軟體 → 自己維護硬體。
+
+「上雲」之後：開一個帳號 → 幾個點擊（或幾行指令）就能得到一台虛擬伺服器，按使用量付費，不用時關掉就不再計費。
+
+## 三大雲端平台
+
+目前市場上有三大主要雲端服務商：
+
+| | AWS | Google Cloud (GCP) | Microsoft Azure |
+| :--- | :--- | :--- | :--- |
+| 市佔 | 最大，約 30% | 第三 | 第二 |
+| 強項 | 服務最完整、社群最大 | AI/ML 工具、資料分析 | 與 Microsoft 生態整合（Office 365、AD）|
+| 適合 | 幾乎所有場景 | AI 應用、大數據 | 企業已使用 Microsoft 技術棧的情況 |
+
+三家提供的服務大多互相對應，學會其中一家的概念，切換到另一家的學習成本不高。
+
+## 服務模型：IaaS、PaaS、SaaS
+
+雲端服務依照「你自己管多少」分成三個層次：
+
+<CloudServiceModelDiagram client:only="svelte" />
+
+對開發者來說最常接觸的是 **IaaS**（自己管伺服器）和 **PaaS**（只部署程式碼）。現在也有更新的 **Serverless** 模式，在這之上又進一步——連伺服器都不用管，只寫函式就好。
+
+## 常見的雲端服務類型
+
+### 運算
+
+- **虛擬機（VM）**：最基本的，就是一台你可以 SSH 進去的雲端電腦。AWS 叫 EC2，GCP 叫 Compute Engine，Azure 叫 Virtual Machine。
+- **容器服務**：跑 Docker Container，不用管底層 OS。AWS 有 ECS/EKS，GCP 有 Cloud Run/GKE，Azure 有 Container Apps/AKS。
+- **Serverless**：寫一個函式，觸發時才執行，沒有請求就不跑也不收費。AWS Lambda、Google Cloud Functions、Azure Functions。
+
+### 儲存
+
+- **物件儲存（Object Storage）**：用來存放圖片、影片、備份檔等非結構化資料。AWS S3 是這類服務的代名詞，GCP 叫 Cloud Storage，Azure 叫 Blob Storage。存進去就能透過 URL 存取，幾乎無限容量，便宜。
+- **區塊儲存**：掛載到 VM 上的虛擬硬碟（SSD/HDD），像一般硬碟一樣使用。AWS EBS、GCP Persistent Disk。
+- **檔案儲存**：可以被多台機器同時掛載的共享目錄。AWS EFS、Azure Files。
+
+### 資料庫
+
+雲端平台提供託管的資料庫，你不需要自己安裝、備份、管版本：
+
+- **關聯式資料庫**：AWS RDS（支援 PostgreSQL、MySQL 等）、Google Cloud SQL、Azure Database
+- **NoSQL**：AWS DynamoDB、Google Firestore、Azure Cosmos DB
+- **快取**：AWS ElastiCache（Redis/Memcached）、GCP Memorystore
+
+### 網路
+
+- **CDN（內容傳遞網路）**：把靜態資源（圖片、JS、CSS）分散存放在全球各地的節點，讓使用者從最近的節點取得，加快速度。AWS CloudFront、Cloudflare、GCP Cloud CDN。
+- **負載平衡器（Load Balancer）**：把流量分散到多台伺服器，避免單點過載。
+- **DNS**：AWS Route 53、GCP Cloud DNS。
+
+## 為什麼要上雲
+
+### 彈性與擴縮容
+
+流量突然暴增時，雲端可以快速開更多台機器分擔（水平擴展），流量退去再縮回去。自己買伺服器只能為尖峰流量備妥，平時閒置很浪費。
+
+### 按用量付費
+
+不用預先購買硬體。一個小專案可以從最小規格開始，長大了再升級；臨時性的任務跑完就刪掉。
+
+### 全球化
+
+雲端平台在全球各地都有資料中心（Region），要讓服務在台灣、美國、歐洲都有低延遲的回應，選對 Region 就好，不用自己在各地建機房。
+
+### 可靠性
+
+大型雲端平台有 SLA（服務等級協議）保障可用性，通常在 99.9% 以上。自己維護的伺服器壞了就壞了，雲端平台有備援機制。
+
+## 上雲不等於萬能
+
+雲端也有一些要注意的地方：
+
+- **成本不可預期**：如果沒有設好預算警報，流量突然暴增或設定錯誤，帳單可能嚇到人
+- **廠商鎖定（Vendor Lock-in）**：越深度使用某家平台的特有服務（例如 AWS Lambda + DynamoDB 的組合），之後要搬家成本越高
+- **學習曲線**：三大平台各自有幾百個服務，光是概念就要花時間搞清楚
+
+## Region 與 Availability Zone
+
+雲端平台的地理概念很重要：
+
+- **Region（區域）**：地理上的一個位置，例如 `ap-northeast-1`（AWS 東京）、`asia-east1`（GCP 台灣）
+- **Availability Zone（可用區，AZ）**：同一個 Region 內的多個獨立資料中心，互相有物理隔離。同一個 Region 通常有 3 個以上的 AZ，讓你把服務分散部署，即使一個 AZ 斷電也不影響服務
+
+選 Region 時主要考量兩件事：**使用者在哪**（越近延遲越低）和**法規要求**（某些行業要求資料必須存放在特定國家）。
+
+## 和 Docker 的關係
+
+Docker 讓你把應用程式打包成 Container Image，雲端則提供讓這些 Container 跑起來的基礎設施。
+
+兩者的常見組合：
+
+1. 在本機用 Docker 開發與測試
+2. 把 Image 推到雲端的 Container Registry（AWS ECR、GCP Artifact Registry）
+3. 用雲端的容器服務（ECS、Cloud Run）把它跑起來
+4. 搭配雲端的資料庫、儲存、CDN 等服務
+
+這樣從開發到部署，環境完全一致，也不用自己管伺服器的 OS 和安全性更新。

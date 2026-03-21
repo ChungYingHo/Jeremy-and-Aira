@@ -1,8 +1,8 @@
 ---
-title: '[JS] GraphQL 與 Apollo'
+title: '[JS] GraphQL 查詢語言介紹'
 author: 'jeremy'
 date: '2026-03-21'
-tags: [javascript, graphql, apollo, api]
+tags: [javascript, graphql, api]
 changelog: []
 ---
 
@@ -134,6 +134,43 @@ query GetCharacter($id: ID!) {
 }
 ```
 
+### Fragment
+
+當多個 Query 需要取相同的欄位組合時，可以用 **Fragment** 把那組欄位抽出來重複使用，避免複製貼上。
+
+例如角色的基本資訊可能在好幾個 Query 裡都會用到：
+
+```graphql
+fragment CharacterBasic on Character {
+  name
+  status
+  species
+  origin {
+    name
+  }
+}
+```
+
+定義好之後，在 Query 裡用 `...FragmentName` 展開：
+
+```graphql
+query GetCharacter($id: ID!) {
+  character(id: $id) {
+    ...CharacterBasic
+  }
+}
+
+query GetCharacters {
+  characters {
+    results {
+      ...CharacterBasic
+    }
+  }
+}
+```
+
+Fragment 在前端框架裡特別實用：每個元件可以定義自己需要的欄位 Fragment，由父元件的 Query 把所有 Fragment 組合起來一次請求，欄位需求就跟著元件走，不需要集中管理。
+
 ## 範例 API 與前置作業
 
 這篇使用 [Rick and Morty API](https://rickandmortyapi.com/graphql) 作為練習對象。
@@ -169,7 +206,7 @@ HTML 基本架構：
 不管用什麼工具，最終都是往 endpoint 送一個 JSON，裡面帶著 `query` 字串跟 `variables`。
 所以原生的 `fetch` 完全夠用：
 
-```js title='index.js - fetch'
+```js title='index.js'
 const endpoint = 'https://rickandmortyapi.com/graphql'
 const btn = document.getElementById('search-btn')
 const input = document.getElementById('char-id')
@@ -227,80 +264,6 @@ async function fetchCharacter() {
 GraphQL 的這個設計跟 RESTful 很不一樣，很多人第一次踩坑就是在這裡——看到 200 OK 以為成功了，結果 `data` 是 null，錯誤全在 `errors` 裡面。
 :::
 
-## 用 graphql-request
-
-`fetch` 雖然可以用，但每次都要手動組 `body`、手動處理 `errors`，稍微繁瑣。
-[graphql-request](https://github.com/graffle-js/graffle/tree/graphql-request) 是一個極輕量的 GraphQL client，把這些樣板封裝掉了，語法更乾淨。
-
-在 Node.js 專案裡安裝：
-
-```bash
-npm install graphql-request@5
-```
-
-:::info
-`graphql-request` 在 v7 後已更名為 `graffle` 並大幅改版，`GraphQLClient` 和 `gql` 這組 API 被標為 legacy。
-這裡安裝 v5 是為了使用仍然穩定的舊版 API，如果你的專案不在意版本較舊，用 v5 是最省事的做法。
-:::
-
-如果是直接在 HTML 裡用，可以透過 CDN 引入（ESM）：
-
-```xml title='index.html'
-<script type="module" src="index.js"></script>
-```
-
-```js title='index.js - graphql-request'
-import { GraphQLClient, gql } from 'https://esm.sh/graphql-request@5'
-
-const client = new GraphQLClient('https://rickandmortyapi.com/graphql')
-
-const btn = document.getElementById('search-btn')
-const input = document.getElementById('char-id')
-const result = document.getElementById('result')
-
-btn.addEventListener('click', fetchCharacter)
-
-const GET_CHARACTER = gql`
-  query GetCharacter($id: ID!) {
-    character(id: $id) {
-      name
-      status
-      species
-      origin {
-        name
-      }
-    }
-  }
-`
-
-async function fetchCharacter() {
-  const id = input.value
-
-  try {
-    const data = await client.request(GET_CHARACTER, { id })
-    result.textContent = JSON.stringify(data.character, null, 2)
-  } catch (error) {
-    result.textContent = error.message
-  }
-}
-```
-
-幾個與 `fetch` 版本的差異：
-1. `gql` 這個 tag function 沒有特別的魔法，主要是讓編輯器對 GraphQL 字串做語法高亮與提示用的。
-2. `client.request()` 直接回傳 `data`，不需要再手動處理 `errors`——有錯誤的話會直接丟出 exception，進 `catch` 就好。
-3. 建立一次 `GraphQLClient` instance 後可以重複使用，如果之後需要帶 auth header 也可以在 client 層統一設定。
-
-## 小結
-
-| 工具 | 適合場景 |
-| :--- | :--- |
-| `fetch` | 理解 GraphQL 底層原理、輕量需求、不想引入任何依賴 |
-| `graphql-request` | 需要比 fetch 更乾淨的語法，但不需要快取或框架整合 |
-
-GraphQL 的學習曲線主要在 Schema 設計跟查詢語法，一旦熟悉了，在需要彈性取資料的場景下會覺得比 RESTful 方便許多。
-
 ## 延伸：Apollo Client
 
-如果專案規模較大、需要自動快取、與 React 或 Vue 深度整合的宣告式查詢、或是 WebSocket Subscription 支援，可以進一步研究 [Apollo Client](https://www.apollographql.com/docs/react/)。
-它是目前生態系最完整的 GraphQL client 框架，React、Vue 都有對應的官方套件。
-但相對地 bundle size 也不小，評估是否引入時值得考量一下。
+GraphQL 生態系裡功能最完整的 client 框架是 [Apollo Client](https://www.apollographql.com/docs/react/)，提供自動快取、與 React / Vue 深度整合的宣告式查詢、以及 WebSocket Subscription 支援。但 bundle size 相對大，小型專案通常只需要 `fetch` 就夠用。
