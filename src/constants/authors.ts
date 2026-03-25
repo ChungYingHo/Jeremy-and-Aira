@@ -39,6 +39,11 @@ export const AUTHORS: Author[] = [
         name: 'English Stack',
         link: 'https://english-stack.vercel.app/',
         summary: 'A site I built to level up our English skills together. We use it to practice reading and listening while keeping track of the most common vocabulary we encounter.'
+      },
+      {
+        name: 'eslint-config-jeremy',
+        link: 'https://www.npmjs.com/package/eslint-config-jeremy',
+        summary: 'Shareable ESLint 9+/10 flat config with interactive CLI setup.'
       }
     ]
   },
