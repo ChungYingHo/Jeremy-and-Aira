@@ -1,0 +1,321 @@
+---
+title: '[Algorithm] 前端開發者的資料結構、演算法與資料庫'
+author: 'jeremy'
+date: '2026-03-26'
+tags: [algorithm, data structure, database, big-o, frontend, vue]
+changelog: []
+---
+
+你每天都在用資料結構和演算法，只是你可能不知道。
+
+```js
+const ids = new Set(list.map(item => item.id))
+const unique = items.filter(item => !ids.has(item.id))
+```
+
+這兩行 JavaScript，一行用了 Hash Set，一行做了線性掃描。前者讓查找的時間複雜度是 $O(1)$，後者整段程式的複雜度是 $O(n)$。如果不用 `Set`，直接寫成兩層 `filter`，複雜度就會變成 $O(n^2)$——資料量一大，效能差異會讓你很有感。
+
+這篇文章不是學術教材，是想讓你看見你已經在做的事背後藏著什麼概念，然後在需要的時候能判斷自己的選擇是不是合理的。
+
+---
+
+## 資料結構（Data Structure）
+
+### 你已經在用的資料結構
+
+前端的日常程式裡，其實到處都是資料結構：
+
+| 你寫的 | 背後的資料結構 | 查找代價 |
+| :--- | :--- | :--- |
+| `array[]` | Array（連續記憶體） | $O(n)$ 線性搜尋，$O(1)$ 索引存取 |
+| `{}` / `Map` | Hash Table | $O(1)$ 平均 |
+| `Set` | Hash Set | $O(1)$ 平均 |
+| DOM tree | Tree | 視操作而定 |
+| `router.push()` 的歷史紀錄 | Stack | $O(1)$ push/pop |
+
+重點不是背表格，而是理解為什麼同樣是「查某個東西存不存在」，用 `Array.includes()` 跟用 `Set.has()` 的代價不一樣。
+
+### Array vs Set：去重的代價
+
+假設要從一個清單裡移除重複的 tag：
+
+```js
+// O(n²)：對每個 tag，都要掃一遍已見到的 tags
+function dedupeNaive(tags) {
+  const result = []
+  for (const tag of tags) {
+    if (!result.includes(tag)) { // O(n) 在這裡
+      result.push(tag)
+    }
+  }
+  return result
+}
+
+// O(n)：Set 的 has() 是 O(1)
+function dedupeWithSet(tags) {
+  return [...new Set(tags)]
+}
+```
+
+`Array.includes()` 每次都要從頭掃整個陣列——有 1000 個 tag 就要跑最多 1000 次比較。`Set.has()` 透過 hash 直接定位，不管資料多大都是固定的代價。
+
+在 Vue 中，這個差異通常出現在 `computed` 裡：
+
+```vue
+<script setup>
+import { computed } from 'vue'
+
+const props = defineProps({
+  items: Array,
+  selectedIds: Array,
+})
+
+// 不要這樣：selectedIds 是陣列，includes 是 O(n)
+// 當 items 很多、selectedIds 也很多，這是 O(n²)
+const selected = computed(() =>
+  props.items.filter(item => props.selectedIds.includes(item.id))
+)
+
+// 這樣更好：先建一個 Set，查找變 O(1)
+// 整體複雜度降為 O(n)
+const selectedSet = computed(() => new Set(props.selectedIds))
+const selected = computed(() =>
+  props.items.filter(item => selectedSet.value.has(item.id))
+)
+</script>
+```
+
+### Hash Table 的內部：為什麼是 O(1)？
+
+`{}` 和 `Map` 的快速查找背後是 hash function：輸入一個 key，計算出一個數字（hash），用這個數字當作陣列的 index 直接存取，不需要逐一比較。
+
+理想情況下，這讓存取代價固定在 $O(1)$，無論資料有多少。但如果多個 key 算出了相同的 hash（碰撞），就需要額外處理，退化情況下可能到 $O(n)$——這就是為什麼 `Map` 在規格書裡寫的是「平均 $O(1)$」而非「保證 $O(1)$」。
+
+:::info
+JavaScript 的 `{}` 物件跟 `Map` 都是 hash table，但有一些實作差異：`Map` 保持插入順序、允許任何型別當 key、在頻繁增刪的場景下效能更穩定。`{}` 在存取速度上 V8 引擎有很多最佳化，一般場景下不需要特別在意。
+:::
+
+---
+
+## 演算法（Algorithm）與 Big O
+
+### 複雜度是什麼感覺
+
+Big O 不是一個數學考試的概念，而是一個「資料量大起來，這段程式還撐得住嗎」的估算工具。
+
+幾個你會感受到差異的數字：
+
+| Big O | n = 100 | n = 10,000 | n = 1,000,000 |
+| :--- | :--- | :--- | :--- |
+| $O(1)$ | 1 | 1 | 1 |
+| $O(\log n)$ | 7 | 14 | 20 |
+| $O(n)$ | 100 | 10,000 | 1,000,000 |
+| $O(n \log n)$ | 664 | 132,877 | 約 20,000,000 |
+| $O(n^2)$ | 10,000 | 100,000,000 | **根本跑不完** |
+
+前端開發者最常碰到 $O(n)$ 和 $O(n^2)$——渲染一個清單是線性的，但如果在渲染的過程中對每個 item 都再做一次線性搜尋，就升級成 $O(n^2)$。
+
+### 前端常見的複雜度陷阱
+
+**陷阱一：迴圈裡的迴圈**
+
+```js
+// 這段 computed 是 O(n²)
+const enrichedItems = computed(() =>
+  props.items.map(item => ({
+    ...item,
+    category: props.categories.find(c => c.id === item.categoryId) // O(n) 在這
+  }))
+)
+
+// 改成先建 Map，整體降為 O(n)
+const categoryMap = computed(() =>
+  new Map(props.categories.map(c => [c.id, c]))
+)
+
+const enrichedItems = computed(() =>
+  props.items.map(item => ({
+    ...item,
+    category: categoryMap.value.get(item.categoryId) // O(1)
+  }))
+)
+```
+
+**陷阱二：不必要的排序**
+
+`Array.sort()` 的複雜度是 $O(n \log n)$。如果你在一個每次 props 更新都會重新計算的 `computed` 裡呼叫 `sort()`，就要注意它是否真的每次都需要重排。
+
+```vue
+<script setup>
+import { computed } from 'vue'
+
+const props = defineProps({
+  items: Array,
+  sortBy: String,
+})
+
+// 如果 sortBy 不常變，這沒問題
+// 但如果父層頻繁更新 items（例如即時搜尋），每次都重排可能是多餘的
+const sorted = computed(() =>
+  [...props.items].sort((a, b) => a[props.sortBy] > b[props.sortBy] ? 1 : -1)
+)
+</script>
+```
+
+**陷阱三：watch 裡的重複計算**
+
+```js
+// 不好：每次 list 變化都重新建整個 lookup
+watch(list, (newList) => {
+  lookupMap = {}
+  newList.forEach(item => {
+    lookupMap[item.id] = item // 這本身是 O(n)，但如果 list 很大且頻繁變，注意代價
+  })
+})
+```
+
+### `Array.filter()` 和 `Array.map()` 的複雜度
+
+```js
+const filtered = items.filter(item => item.active)     // O(n)
+const mapped   = items.map(item => item.name)           // O(n)
+const chained  = items.filter(...).map(...).filter(...) // O(n)，不是 O(n³)
+```
+
+`filter().map().filter()` 的鏈式呼叫只是對陣列跑了三遍，每遍是 $O(n)$，合計還是 $O(n)$——因為三次的 $n$ 只差常數倍，Big O 忽略常數。
+
+:::tip
+如果有效能顧慮，可以用 `reduce()` 把多個步驟合成一次遍歷，但可讀性會下降。通常資料量沒有到百萬級，不需要這樣優化——先把程式寫清楚，有需要再測量再改。
+:::
+
+---
+
+## 資料庫（Database）
+
+### 前端工程師為什麼要懂資料庫
+
+前端開發的日常很難完全不碰資料庫。API 回來的資料格式不對、搜尋功能很慢、列表翻頁有問題——這些問題的根源很多時候都在資料庫這一層。了解資料庫的基本觀念，讓你在跟後端溝通的時候能對話，也能在前端做出更合理的設計決策。
+
+### SQL vs NoSQL
+
+這兩個詞常常被拿出來比較，但其實它們解決的是不同的問題：
+
+**SQL（關聯式資料庫，如 PostgreSQL、MySQL）**
+
+資料存在表格（table）裡，每張表有固定的欄位（schema）。不同表之間可以透過 `JOIN` 組合。適合：有明確關聯關係、資料結構穩定的場合。
+
+```sql
+SELECT users.name, orders.total
+FROM users
+JOIN orders ON users.id = orders.user_id
+WHERE orders.status = 'paid'
+```
+
+**NoSQL（如 MongoDB、Firebase Firestore）**
+
+資料存成 document，每筆資料是一個 JSON 物件，不需要固定 schema。適合：資料結構彈性、需要快速迭代的場合。
+
+```js
+// MongoDB 的查詢長得很像 JavaScript
+db.orders.find({ status: 'paid', userId: currentUser.id })
+```
+
+:::info
+前端工程師比較常接觸 NoSQL，特別是 Firebase 這類 BaaS（Backend as a Service）。但 SQL 的思維在分析問題的時候很有用——「這兩份資料要怎麼關聯」其實是個通用問題，不管用哪種資料庫都要思考。
+:::
+
+### Index：資料庫版的「建 Map 後再查」
+
+資料庫查詢的速度問題，其實跟前面說的資料結構是同一個概念。
+
+沒有 index 的情況下，`WHERE email = 'xxx'` 這個查詢需要掃整張表——$O(n)$，資料量愈大愈慢。加上 index 之後，資料庫會在背後維護一個類似 B-tree 的資料結構，讓查詢降到 $O(\log n)$。
+
+這就是為什麼後端工程師在設計資料表時，會對常用的查詢欄位加上 index，而不是等查詢慢了再補救。
+
+前端工程師對 index 最直觀的類比，就是你把 `categories` 陣列轉成 `Map` 之後再查：
+
+```js
+// 相當於「沒有 index」的查找
+const category = categories.find(c => c.id === item.categoryId) // O(n)
+
+// 相當於「有 index」的查找
+const categoryMap = new Map(categories.map(c => [c.id, c]))
+const category = categoryMap.get(item.categoryId) // O(1)
+```
+
+### N+1 問題：資料庫版的 O(n²)
+
+N+1 問題是後端開發裡很經典的效能坑，但前端其實也會踩到。
+
+假設要渲染一個文章列表，每篇文章要顯示作者資訊。如果每篇文章都各自打一支 API 去取作者：
+
+```js
+// N+1：取 N 篇文章，再打 N 次 API 取作者
+const posts = await fetchPosts()            // 1 次
+const postsWithAuthors = await Promise.all(
+  posts.map(post => fetchAuthor(post.authorId)) // N 次
+)
+```
+
+這就是前端版本的 N+1——總共打了 $N+1$ 支 API，本質是 $O(n)$ 次網路請求。
+
+更好的做法是一次批次取回需要的資料：
+
+```js
+// 批次取回：1 次取文章，1 次取所有作者
+const posts = await fetchPosts()
+const authorIds = [...new Set(posts.map(p => p.authorId))]
+const authors = await fetchAuthorsByIds(authorIds) // 1 次，帶多個 id
+const authorMap = new Map(authors.map(a => [a.id, a]))
+
+const postsWithAuthors = posts.map(post => ({
+  ...post,
+  author: authorMap.get(post.authorId)
+}))
+```
+
+在 Vue 的場景下，這通常要搭配 Pinia store 的快取機制來處理，避免同一份資料重複請求：
+
+```js
+// stores/author.js
+export const useAuthorStore = defineStore('author', () => {
+  const cache = ref(new Map())
+
+  async function fetchByIds(ids) {
+    const missing = ids.filter(id => !cache.value.has(id))
+    if (missing.length === 0) return
+
+    const authors = await api.getAuthors(missing)
+    authors.forEach(author => cache.value.set(author.id, author))
+  }
+
+  function getById(id) {
+    return cache.value.get(id)
+  }
+
+  return { fetchByIds, getById }
+})
+```
+
+:::warning
+N+1 不只發生在 REST API。GraphQL 的 dataloader、Pinia 裡的 action 設計、甚至 `v-for` 裡頭觸發的 `watch`，都可能造成類似的連鎖效應。看到「對一個陣列的每個元素做一件非同步的事」，就要多留意。
+:::
+
+---
+
+## 把三個概念串起來
+
+資料結構、演算法、資料庫，其實回答的是同一個問題：**資料量大起來，我的程式還行嗎？**
+
+- 選對**資料結構**，讓查找代價從 $O(n)$ 降到 $O(1)$
+- 注意**演算法複雜度**，避免迴圈裡藏迴圈讓代價爆成 $O(n^2)$
+- 理解**資料庫 index** 的原理，就是把「從頭掃」變成「直接定位」
+
+這三件事本質上是同一個觀念的不同層次，而這個觀念的核心工具，就是 Big O。
+
+```js
+// 這兩行，現在你知道它在說什麼了
+const ids = new Set(list.map(item => item.id))    // 建一個 O(1) 查找的 Hash Set
+const unique = items.filter(item => !ids.has(item.id)) // O(n) 線性掃描，查找 O(1)
+// 整體：O(n)，而不是 O(n²)
+```
