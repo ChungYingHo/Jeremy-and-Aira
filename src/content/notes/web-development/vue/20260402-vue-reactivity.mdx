@@ -1,0 +1,360 @@
+---
+title: '[Vue] 響應式系統 — ref、reactive、computed、watch 一次搞懂'
+author: 'jeremy'
+date: '2026-04-02'
+tags: ['vue', 'reactivity', 'ref', 'reactive', 'computed', 'watch']
+changelog: []
+---
+
+## 什麼是「響應式」？
+
+學 Vue 一定會聽到「響應式」這三個字。但什麼是響應式？
+
+其實概念很簡單：**資料變了，畫面自動跟著變**。
+
+想像你在 Google Sheets 寫了一個公式 `=A1+B1`，當你改了 A1 的數字，結果會自動更新對吧？這就是響應式。你不需要手動按「重新計算」，試算表自己知道要更新。
+
+Vue 的響應式也是這個概念 — 你改了資料，Vue 自動幫你更新畫面上對應的 DOM，不用你自己去操作 `document.querySelector` 再手動改 `innerHTML`。
+
+### 底層原理（知道就好）
+
+Vue 3 的響應式是靠 JavaScript 的 `Proxy` 實現的。簡單來說，Vue 會把你的資料「包一層」，當你讀取或修改資料時，Vue 就知道了，然後去更新相關的畫面。
+
+```js
+// 概念上大概長這樣（不是真正的原始碼）
+const data = new Proxy({ count: 0 }, {
+  get(target, key) {
+    // 記錄：誰在讀這個資料
+    track(target, key)
+    return target[key]
+  },
+  set(target, key, value) {
+    target[key] = value
+    // 通知：這個資料被改了，去更新畫面
+    trigger(target, key)
+    return true
+  }
+})
+```
+
+Vue 2 用的是 `Object.defineProperty`，但它有個致命缺點 — 沒辦法偵測到「新增屬性」和「刪除屬性」。所以 Vue 2 才會需要 `Vue.set()` 這種 API。Vue 3 改用 `Proxy` 之後這些問題就消失了。
+
+好啦，底層原理知道這樣就夠了，我們來看實際怎麼用。
+
+---
+
+## ref — 最常用的響應式 API
+
+`ref` 是你在 Vue 3 Composition API 裡最常用的東西，沒有之一。
+
+```vue
+<script setup>
+import { ref } from 'vue'
+
+const count = ref(0)
+
+function increment() {
+  count.value++
+}
+</script>
+
+<template>
+  <button @click="increment">{{ count }}</button>
+</template>
+```
+
+### 重點筆記
+
+1. **在 JS 裡要加 `.value`**：`ref` 回傳的是一個「包裝物件」，真正的值存在 `.value` 裡面。所以在 `<script>` 裡要用 `count.value`。
+2. **在 template 裡不用加**：Vue 會自動幫你解包（unwrap），所以直接寫 `{{ count }}` 就好。
+3. **什麼都能包**：字串、數字、布林、陣列、物件，通通可以用 `ref`。
+
+```js
+const name = ref('Jeremy')        // 字串
+const isLoading = ref(false)      // 布林
+const items = ref([1, 2, 3])      // 陣列
+const user = ref({ name: 'Aira' }) // 物件
+```
+
+### 為什麼需要 `.value`？
+
+這是很多新手的疑問。原因是 JavaScript 的基本型別（string、number、boolean）是「傳值」的，沒辦法被追蹤。所以 Vue 需要把它包成一個物件，用 `.value` 來存取，這樣才能透過 Proxy 去偵測變化。
+
+用生活來比喻的話，`ref` 就像一個「信封」。信封裡面裝的才是你的信（值），你要看信就得打開信封（`.value`）。但收件人（template）Vue 會幫你自動拆信封，所以收件人可以直接看到信的內容。
+
+---
+
+## reactive — 物件的響應式
+
+`reactive` 是另一種宣告響應式資料的方式，專門給物件用的。
+
+```vue
+<script setup>
+import { reactive } from 'vue'
+
+const state = reactive({
+  count: 0,
+  name: 'Jeremy'
+})
+
+function increment() {
+  state.count++ // 不用 .value！
+}
+</script>
+
+<template>
+  <p>{{ state.count }} - {{ state.name }}</p>
+</template>
+```
+
+看到了嗎？用 `reactive` 不需要 `.value`，直接存取屬性就好。感覺很方便對吧？
+
+### 那到底用 ref 還是 reactive？
+
+這是 Vue 社群裡爭論已久的話題。先說結論：
+
+> **Vue 官方推薦優先使用 `ref`。**
+
+為什麼？因為 `reactive` 有幾個坑：
+
+**坑 1：不能整個替換**
+
+```js
+let state = reactive({ count: 0 })
+
+// ❌ 這樣會失去響應式！
+state = reactive({ count: 1 })
+
+// 因為你把變數指向了一個新的物件，
+// 舊的 Proxy 連結就斷了
+```
+
+**坑 2：解構會失去響應式**
+
+```js
+const state = reactive({ count: 0, name: 'Jeremy' })
+
+// ❌ 解構出來的值不是響應式的！
+const { count } = state
+// count 現在只是一個普通的數字 0，改它不會觸發更新
+```
+
+**坑 3：不能用在基本型別**
+
+```js
+// ❌ 這不行，reactive 只接受物件
+const count = reactive(0)
+```
+
+`ref` 就沒有這些問題。所以實務上大部分情境直接用 `ref` 就對了。
+
+### 什麼時候用 reactive？
+
+當你有一組「相關的狀態」想放在一起，而且你確定不會整個替換掉它的時候：
+
+```js
+// 表單資料很適合用 reactive
+const form = reactive({
+  username: '',
+  email: '',
+  password: ''
+})
+```
+
+但老實說，你用 `ref` 包一個物件也完全沒問題：
+
+```js
+const form = ref({
+  username: '',
+  email: '',
+  password: ''
+})
+
+// 只是要多一個 .value
+form.value.username = 'jeremy'
+```
+
+---
+
+## computed — 計算屬性
+
+`computed` 就是那個 Google Sheets 的公式。它會根據其他響應式資料「算出一個新值」，而且有快取。
+
+```vue
+<script setup>
+import { ref, computed } from 'vue'
+
+const price = ref(100)
+const quantity = ref(3)
+
+// 總價 = 單價 × 數量，自動算
+const total = computed(() => price.value * quantity.value)
+</script>
+
+<template>
+  <p>總價：{{ total }}</p>
+</template>
+```
+
+### computed vs method — 差在哪？
+
+這是面試很愛考的題目。
+
+```js
+// computed
+const fullName = computed(() => `${firstName.value} ${lastName.value}`)
+
+// method
+function getFullName() {
+  return `${firstName.value} ${lastName.value}`
+}
+```
+
+用起來好像差不多？差別在於**快取**。
+
+- `computed` 有快取：只有當依賴的資料變了才會重新計算。如果 `firstName` 和 `lastName` 都沒變，不管你在 template 裡用幾次 `{{ fullName }}`，都只會算一次。
+- `method` 沒快取：每次 template 重新渲染，函式都會被執行一次。
+
+用生活比喻：`computed` 就像冰箱裡的便當，做好了就放著，要吃的時候直接拿。`method` 就像現點現做的餐廳，每次都要重新煮。
+
+所以如果計算成本比較高（比如要 filter 一個很大的陣列），用 `computed` 效能會好很多。
+
+### computed 也可以寫入
+
+預設的 `computed` 是唯讀的，但你也可以給它 getter 和 setter：
+
+```js
+const firstName = ref('Jeremy')
+const lastName = ref('Ho')
+
+const fullName = computed({
+  get: () => `${firstName.value} ${lastName.value}`,
+  set: (val) => {
+    const [first, last] = val.split(' ')
+    firstName.value = first
+    lastName.value = last
+  }
+})
+
+fullName.value = 'Aira Chen' // 會觸發 setter
+```
+
+不過實務上可寫的 `computed` 比較少見，大部分時候用唯讀就夠了。
+
+---
+
+## watch — 監聽資料變化
+
+`watch` 讓你在資料變化的時候「做一些事」。跟 `computed` 不同的是，`watch` 不是要算出新值，而是要**執行副作用**（side effect），比如打 API、更新 localStorage、console.log 之類的。
+
+```js
+import { ref, watch } from 'vue'
+
+const keyword = ref('')
+
+// 當 keyword 改變時，打搜尋 API
+watch(keyword, (newVal, oldVal) => {
+  console.log(`從 "${oldVal}" 變成 "${newVal}"`)
+  fetchSearchResults(newVal)
+})
+```
+
+### 監聽多個來源
+
+```js
+const firstName = ref('Jeremy')
+const lastName = ref('Ho')
+
+watch([firstName, lastName], ([newFirst, newLast], [oldFirst, oldLast]) => {
+  console.log(`姓名從 ${oldFirst} ${oldLast} 變成 ${newFirst} ${newLast}`)
+})
+```
+
+### 監聽 reactive 物件
+
+```js
+const state = reactive({ count: 0 })
+
+// 監聽 reactive 物件的某個屬性，要用 getter 函式
+watch(
+  () => state.count,
+  (newCount) => {
+    console.log('count 變了：', newCount)
+  }
+)
+```
+
+### 深層監聽
+
+如果你監聽一個 `ref` 包的物件，預設只會在「整個物件被替換」時觸發。如果你要監聽物件裡面的屬性變化，要加 `deep: true`：
+
+```js
+const user = ref({ name: 'Jeremy', age: 28 })
+
+watch(user, (newUser) => {
+  console.log('user 變了')
+}, { deep: true })
+```
+
+注意：深層監聽效能比較差，因為 Vue 要遞迴遍歷整個物件。如果你只是要監聽某個特定屬性，用 getter 函式比較好。
+
+---
+
+## watchEffect — watch 的懶人版
+
+`watchEffect` 跟 `watch` 很像，但它不需要你指定要監聽什麼。它會**自動收集依賴** — 你在 callback 裡面用了什麼響應式資料，它就會監聽什麼。
+
+```js
+import { ref, watchEffect } from 'vue'
+
+const count = ref(0)
+const name = ref('Jeremy')
+
+watchEffect(() => {
+  // Vue 會自動偵測到這裡用了 count 和 name
+  console.log(`${name.value} 的計數：${count.value}`)
+})
+```
+
+### watch vs watchEffect
+
+| | watch | watchEffect |
+|---|---|---|
+| 需要指定監聽來源 | 是 | 不需要，自動收集 |
+| 可以拿到舊值 | 可以 (`oldVal`) | 不行 |
+| 初次執行 | 預設不會（除非加 `immediate: true`） | 會立即執行一次 |
+| 適合場景 | 需要比較新舊值、條件觸發 | 簡單的副作用，不在意舊值 |
+
+用生活比喻：
+
+- `watch` 像保全監視器 — 你告訴它「盯著大門」，有人進出它就通報。你可以知道「誰進來了」和「誰出去了」。
+- `watchEffect` 像一隻很敏感的狗 — 你不用告訴它盯什麼，只要附近有動靜（你在 callback 裡用到的任何響應式資料變了），它就會叫。但它不會告訴你「之前是什麼狀況」。
+
+### 停止監聽
+
+不管是 `watch` 還是 `watchEffect`，都會回傳一個「停止函式」。在元件卸載時它們會自動停止，但如果你需要手動停止：
+
+```js
+const stop = watchEffect(() => {
+  console.log(count.value)
+})
+
+// 不想監聽了
+stop()
+```
+
+---
+
+## 小結
+
+| API | 用途 | 一句話 |
+|---|---|---|
+| `ref` | 宣告響應式資料 | 萬用，什麼都能包 |
+| `reactive` | 宣告響應式物件 | 方便但有坑，新手先用 ref |
+| `computed` | 根據其他資料算出新值 | 有快取的公式 |
+| `watch` | 資料變了做副作用 | 精準監控，可拿新舊值 |
+| `watchEffect` | 資料變了做副作用 | 自動收集，懶人用 |
+
+記住一個原則：**大部分時候用 `ref` + `computed` 就能搞定 80% 的需求**。`watch` 留給需要執行副作用的場景（打 API、操作 DOM 之類的），`reactive` 留給你真的很確定要用的時候。
+
+其實 Vue 3 的響應式系統設計得相當優雅，一旦理解了「資料變 → 畫面自動更新」這個核心概念，剩下的就只是選擇用哪個 API 比較適合而已。
