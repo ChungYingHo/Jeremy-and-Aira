@@ -2,22 +2,27 @@
 title: '[Algorithm] 貪婪演算法'
 author: 'jeremy'
 date: '2026-03-23'
-tags: [algorithm, greedy, activity selection, prim, kruskal, dijkstra, graph, tree]
-changelog: []
+tags: [algorithm, greedy, prim, kruskal, sollin, dijkstra, huffman, convex hull, bin packing, graph, tree]
+changelog: ['2026-04-02']
 ---
 
 import DirectedGraphDiagram from '@/components/ArticleRelated/data-structure/graph/DirectedGraphDiagram.svelte'
 import WeightedTreeDiagram from '@/components/ArticleRelated/algorithm/WeightedTreeDiagram.svelte'
+import MstDiagram from '@/components/ArticleRelated/algorithm/MstDiagram.svelte'
 import PrimVisualizer from '@/components/ArticleRelated/algorithm/PrimVisualizer.svelte'
 import KruskalVisualizer from '@/components/ArticleRelated/algorithm/KruskalVisualizer.svelte'
+import SollinVisualizer from '@/components/ArticleRelated/algorithm/SollinVisualizer.svelte'
 import DijkstraDiagram from '@/components/ArticleRelated/algorithm/DijkstraDiagram.svelte'
 import ActivitySelectionDiagram from '@/components/ArticleRelated/algorithm/ActivitySelectionDiagram.svelte'
+import HuffmanTreeDiagram from '@/components/ArticleRelated/algorithm/HuffmanTreeDiagram.svelte'
+import ConvexHullDiagram from '@/components/ArticleRelated/algorithm/ConvexHullDiagram.svelte'
+import BinPackingDiagram from '@/components/ArticleRelated/algorithm/BinPackingDiagram.svelte'
 
 ## 貪婪是一個概念，不是一個演算法
 
 「貪婪（Greedy）」就像「排序」一樣，是一個解題的**策略分類**，不是某一個特定的演算法。
 
-排序這個問題有很多種解法——泡泡排序、合併排序、快速排序——它們都在做「把東西排好」這件事，但方式不同。貪婪也是一樣：Prim、Kruskal、Dijkstra、活動選擇，都屬於「貪婪演算法」這個大類，但它們解的問題各自不同。
+排序這個問題有很多種解法——泡泡排序、合併排序、快速排序——它們都在做「把東西排好」這件事，但方式不同。貪婪也是一樣：Prim、Kruskal、Dijkstra、Huffman，都屬於「貪婪演算法」這個大類，但它們解的問題各自不同。
 
 這些演算法的共同點只有一件事：**每一步都選當下看起來最好的選項，不回頭。**
 
@@ -44,7 +49,20 @@ import ActivitySelectionDiagram from '@/components/ArticleRelated/algorithm/Acti
 一般的找零問題（任意面額）要用動態規劃才能保證正確。
 :::
 
-## 貪婪成立需要兩個條件
+## 貪婪演算法與最佳化問題
+
+大部分貪婪演算法都是在解**最佳化問題（Optimization Problem）**：在一堆可行解裡面，找出一個「最好的」——最小成本、最大利潤、最少步驟。
+
+最佳化問題的結構通常長這樣：
+
+1. **候選集合**：所有可能拿來用的元素（邊、物品、字元⋯）
+2. **可行解**：滿足問題限制條件的一組元素
+3. **目標函數**：用來衡量一個可行解有多好（總成本、路徑長度、編碼長度⋯）
+4. **最優解**：讓目標函數達到最大（或最小）的可行解
+
+貪婪演算法的做法是：每一步從候選集合裡挑出「目前看起來最好」的元素，加進去，再也不改。整個流程跑完就得到一個解——如果問題結構對了，這個解就是最優解。
+
+### 貪婪成立需要兩個條件
 
 貪婪不是萬能的。它能得到正確答案，是因為問題本身具備兩個特性：
 
@@ -62,9 +80,19 @@ import ActivitySelectionDiagram from '@/components/ArticleRelated/algorithm/Acti
 判斷能不能用貪婪，通常需要用反證法或交換論證來數學證明。實務上最快的做法是：先試著想貪婪策略，再找反例——能找到反例就換動態規劃。
 :::
 
+### 什麼時候適合用貪婪
+
+遇到最佳化問題，可以用這個流程判斷：
+
+1. **找看看有沒有明顯的排序策略**：活動選擇按結束時間、Kruskal 按邊的權重、Dijkstra 按距離——直覺的排序往往是貪婪策略的起點。
+2. **試著說明為什麼這個策略不會更差**：用「就算最優解沒有這樣選，換過來也不會變差」的邏輯說服自己。
+3. **如果說不通，找反例**：找到一個讓貪婪失效的輸入，就換動態規劃。
+
+貪婪適合的經典場景包括：最小生成樹、單源最短路徑、Huffman 編碼、活動選擇、分數背包。接下來一個一個來看。
+
 ## 圖的基本概念
 
-後面的三個演算法（Prim、Kruskal、Dijkstra）都以圖作為輸入。先把基本術語交代清楚。
+後面的幾個演算法（Prim、Kruskal、Sollin、Dijkstra）都以圖作為輸入。先把基本術語交代清楚。
 
 ### 無向圖與有向圖
 
@@ -98,7 +126,7 @@ import ActivitySelectionDiagram from '@/components/ArticleRelated/algorithm/Acti
 
 現實例子：幾個城市要連接電纜，每對城市之間鋪設的成本不同。希望所有城市都能互通，但總成本最低——這就是 MST 問題。
 
-解 MST 有兩個經典的貪婪演算法：Prim 和 Kruskal，方向不同但結果相同。
+解 MST 有三個經典的貪婪演算法：Prim、Kruskal 和 Sollin，策略不同但結果相同。
 
 ### Prim 演算法
 
@@ -177,24 +205,81 @@ def kruskal(nodes, edges):
 
 時間複雜度：$O(E \log E)$，主要來自排序。
 
-### Prim vs Kruskal
+### Sollin 演算法
 
-兩者都能找到最小生成樹，總權重一定相同（若有多棵 MST，選到的邊可能不同）。
+**策略：每一輪，所有連通分量各自找自己最便宜的跨分量邊，一次全部加進去，重複直到只剩一個分量。**
 
-| | Prim | Kruskal |
-| :--- | :--- | :--- |
-| 方向 | 從節點出發，逐步擴張 | 從邊出發，合併集合 |
-| 適合 | 稠密圖（邊多） | 稀疏圖（邊少） |
-| 需要 | 優先佇列 | Union-Find + 排序 |
-| 複雜度 | $O(E \log V)$ | $O(E \log E)$ |
+Sollin（又稱 Borůvka）是三個 MST 演算法裡最早被發明的（1926 年），也是唯一一個天生適合平行運算的——因為每個分量可以同時找自己的最小邊，不用等別人。
 
-## Dijkstra 最短路徑
+講白話一點：Prim 是一棵樹慢慢長大，Kruskal 是一條一條邊挑，Sollin 則是所有小團體同時行動，每輪結束後合併，大家一起「長大」。
 
-Dijkstra 解的問題是：從起點出發，找到到達圖中所有其他節點的最短路徑。
+<SollinVisualizer client:only="svelte" />
+
+```python
+def sollin(nodes, edges):
+    parent = {n: n for n in nodes}
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(x, y):
+        rx, ry = find(x), find(y)
+        if rx == ry:
+            return False
+        parent[ry] = rx
+        return True
+
+    total = 0
+    num_components = len(nodes)
+
+    while num_components > 1:
+        # 每個分量找最小的跨分量邊
+        cheapest = {}
+        for u, v, w in edges:
+            ru, rv = find(u), find(v)
+            if ru == rv:
+                continue  # 同分量，跳過
+            for r in [ru, rv]:
+                if r not in cheapest or w < cheapest[r][2]:
+                    cheapest[r] = (u, v, w)
+
+        # 把這些邊加進 MST
+        for u, v, w in cheapest.values():
+            if union(u, v):
+                total += w
+                num_components -= 1
+
+    return total
+```
+
+時間複雜度：$O(E \log V)$。每輪至少讓分量數量減半（因為每個分量都會跟至少一個鄰居合併），所以最多 $\lceil \log V \rceil$ 輪。
+
+### 三種 MST 演算法比較
+
+| | Prim | Kruskal | Sollin |
+| :--- | :--- | :--- | :--- |
+| 方向 | 從節點出發，逐步擴張 | 從邊出發，合併集合 | 每輪每個分量各挑最小邊 |
+| 適合 | 稠密圖（邊多） | 稀疏圖（邊少） | 平行運算場景 |
+| 需要 | 優先佇列 | Union-Find + 排序 | Union-Find |
+| 複雜度 | $O(E \log V)$ | $O(E \log E)$ | $O(E \log V)$ |
+| 特色 | 直觀好理解 | 實作簡潔 | 天生可平行化 |
+
+三個演算法的 MST 總權重一定相同（若有多棵 MST，選到的具體邊可能不同）。
+
+## 單一起點之最短路徑
+
+另一類經典的貪婪問題是**單源最短路徑（Single-Source Shortest Path）**：從一個起點出發，找到到達圖中所有其他節點的最短路徑。
+
+### Dijkstra 演算法
 
 **貪婪策略：每次從「還沒確定最短距離的節點」裡，選出目前距離起點最近的那個，把它標為「已確定」，再透過它更新鄰居的距離。**
 
 這個「每次選最近的」就是貪婪。它正確的原因是：一旦某個節點被選出來，就不可能再有更短的路了——前提是沒有負權重邊（有負邊要改用 Bellman-Ford）。
+
+為什麼呢？假設我們從優先佇列中取出節點 $u$，距離為 $d$。如果存在另一條更短的路到 $u$，那條路一定要經過某個還沒確定的節點 $v$——但 $v$ 還沒被取出，代表 $v$ 的距離 $\geq d$，再加上正權重邊只會更長，矛盾。所以 $d$ 就是 $u$ 的最短距離。
 
 <DijkstraDiagram client:visible />
 
@@ -272,7 +357,142 @@ def tree_distance(tree, start, end):
                 queue.append((neighbor, dist + weight))
 ```
 
-## 經典範例：活動選擇問題
+## 凸包（Convex Hull）
+
+凸包問題乍看跟圖論無關，但它同樣是一個經典的貪婪應用。
+
+**問題：給定平面上的一組點，找出一個最小的凸多邊形，讓所有點都在多邊形的邊界上或內部。**
+
+想像你把所有點想成釘在一塊板子上的釘子，然後用一條橡皮筋把所有釘子圈起來——橡皮筋收縮後的形狀就是凸包。
+
+凸包在計算幾何裡非常基礎，它是很多進階問題的前置步驟：碰撞偵測、路徑規劃、影像處理裡的輪廓提取等。
+
+<ConvexHullDiagram client:only="svelte" />
+
+### Graham Scan
+
+Graham Scan 是最常見的凸包演算法：
+
+1. 找到 $y$ 座標最小的點作為起點（$y$ 相同則取 $x$ 最小的）
+2. 其他所有點按照相對於起點的極角排序（極角相同則按距離排序）
+3. 依序掃描，維護一個堆疊——如果新點造成「右轉」，就把堆疊頂端的點彈出（它不是凸包點），直到形成「左轉」再推入新點
+
+「左轉右轉」怎麼判斷？用**外積（cross product）**：給定三個點 $P_1, P_2, P_3$，
+
+$$\text{cross} = (P_2.x - P_1.x)(P_3.y - P_1.y) - (P_2.y - P_1.y)(P_3.x - P_1.x)$$
+
+- $\text{cross} > 0$：左轉（逆時針），保留
+- $\text{cross} \leq 0$：右轉或共線，彈出 $P_2$
+
+```python
+import math
+
+def graham_scan(points):
+    # 找最下方的點作為起點
+    start = min(points, key=lambda p: (p[1], p[0]))
+    points.remove(start)
+
+    # 按極角排序
+    def polar_angle(p):
+        return math.atan2(p[1] - start[1], p[0] - start[0])
+
+    points.sort(key=polar_angle)
+
+    stack = [start]
+    for p in points:
+        while len(stack) >= 2:
+            cross = ((stack[-1][0] - stack[-2][0]) * (p[1] - stack[-2][1])
+                   - (stack[-1][1] - stack[-2][1]) * (p[0] - stack[-2][0]))
+            if cross <= 0:
+                stack.pop()  # 右轉，不是凸包點
+            else:
+                break
+        stack.append(p)
+
+    return stack
+```
+
+時間複雜度：$O(n \log n)$，主要來自排序。每個點最多被推入和彈出堆疊一次，所以掃描部分是 $O(n)$。
+
+### Jarvis March（Gift Wrapping）
+
+另一種貪婪做法叫 Jarvis March，概念更直觀：從最左邊的點開始，每次找「最外側」的下一個點，就像手動包禮物一樣一圈繞回來。
+
+時間複雜度是 $O(nh)$，$h$ 是凸包上的點數。當 $h$ 很小的時候比 Graham Scan 快，但最壞情況是 $O(n^2)$。
+
+## 霍夫曼編碼（Huffman Coding）
+
+Huffman 編碼是資料壓縮的經典應用。它的核心想法很貪婪：**出現頻率高的字元用短的編碼，頻率低的用長的編碼**——整體編碼長度就能最短。
+
+### 為什麼不能直接用固定長度
+
+假設有 A、B、C、D 四個字元，固定長度編碼每個要 2 bit（00、01、10、11）。但如果 A 出現了 1000 次，D 只出現 1 次，用同樣長度來編碼 A 和 D 就太浪費了。
+
+可變長度編碼的問題是：你怎麼知道一段位元串在哪裡斷？「01011」是 0-1-0-1-1 還是 01-01-1？Huffman 用**前綴碼（Prefix Code）** 巧妙地解決了這個問題——沒有任何字元的編碼是另一個字元的前綴，所以解碼時永遠不會有歧義。
+
+### 建構 Huffman Tree
+
+建構過程本身就是貪婪的：
+
+1. 每個字元建一個節點，權重就是頻率
+2. 反覆取出權重最小的兩個節點，合併成一個新節點，新權重 = 兩個子節點權重之和
+3. 重複直到只剩一個節點——就是 Huffman Tree 的根
+
+走完後，從根到每個葉子的路徑就是該字元的編碼：往左走是 0，往右走是 1。
+
+<HuffmanTreeDiagram client:only="svelte" />
+
+以上圖的例子，最終編碼結果：
+
+| 字元 | 頻率 | 編碼 | 位元數 |
+| :---: | :---: | :--- | :---: |
+| F | 45 | 0 | 1 |
+| C | 12 | 100 | 3 |
+| D | 13 | 101 | 3 |
+| A | 5 | 1100 | 4 |
+| B | 9 | 1101 | 4 |
+| E | 16 | 111 | 3 |
+
+F 最常出現所以編碼最短（1 bit），A 最少出現所以編碼最長（4 bit）。
+
+加權路徑長度 = $45 \times 1 + 12 \times 3 + 13 \times 3 + 5 \times 4 + 9 \times 4 + 16 \times 3 = 224$ bit。如果用固定 3 bit 編碼全部字元，需要 $100 \times 3 = 300$ bit。Huffman 省了 25% 以上。
+
+```python
+import heapq
+
+def huffman(freq):
+    # freq = {'A': 5, 'B': 9, 'C': 12, 'D': 13, 'E': 16, 'F': 45}
+    heap = [(f, i, c) for i, (c, f) in enumerate(freq.items())]
+    heapq.heapify(heap)
+    counter = len(freq)
+    tree = {}
+
+    while len(heap) > 1:
+        f1, _, left = heapq.heappop(heap)
+        f2, _, right = heapq.heappop(heap)
+        merged = (left, right)
+        heapq.heappush(heap, (f1 + f2, counter, merged))
+        counter += 1
+
+    # 從樹根生成編碼
+    def build_codes(node, prefix=''):
+        if isinstance(node, str):
+            tree[node] = prefix
+            return
+        build_codes(node[0], prefix + '0')
+        build_codes(node[1], prefix + '1')
+
+    build_codes(heap[0][2])
+    return tree
+```
+
+時間複雜度：$O(n \log n)$，$n$ 是字元數。每次從 heap 取出和放入都是 $O(\log n)$，共 $n - 1$ 輪。
+
+:::info
+Huffman 編碼是 **最優前綴碼**——在所有前綴碼中，它的加權路徑長度最短。這可以用交換論證證明：如果有一個更好的編碼，你可以把它的兩個最深葉子換成 Huffman 的選擇，不會變更差。
+:::
+
+## 活動選擇問題
 
 有一間會議室，一堆會議都想用，每場有開始和結束時間，但只能排不衝突的場次。怎麼選才能讓場數最多？
 
@@ -297,6 +517,60 @@ def tree_distance(tree, start, end):
 <ActivitySelectionDiagram client:visible />
 
 時間複雜度：$O(n \log n)$，排序主導。
+
+## 貪婪下的打包問題（Bin Packing）
+
+打包問題（Bin Packing）也是一個經典的最佳化情境：有一堆不同大小的物品，要塞進固定容量的箱子裡，目標是用最少的箱子。
+
+這個問題是 NP-hard 的——要保證找到最優解需要指數時間。但貪婪策略可以在多項式時間內給出不錯的近似解。
+
+<BinPackingDiagram client:only="svelte" />
+
+### 常見的貪婪策略
+
+**Next Fit（下一個適合就放）**
+
+只看目前這個箱子。放得下就放，放不下就開一個新箱子。最簡單但最浪費——前面的箱子可能還有空間卻不會回頭。
+
+**First Fit（第一個適合就放）**
+
+從第一個箱子開始找，找到第一個放得下的就放進去。比 Next Fit 好，因為會利用前面的空間。
+
+**First Fit Decreasing（先排序再塞）**
+
+先把物品從大到小排序，再用 First Fit。大東西先塞進去，小東西用來填縫隙，效果通常最好。
+
+```python
+def first_fit_decreasing(items, capacity=1.0):
+    items_sorted = sorted(items, reverse=True)
+    bins = []
+
+    for item in items_sorted:
+        placed = False
+        for b in range(len(bins)):
+            if bins[b] + item <= capacity:
+                bins[b] += item
+                placed = True
+                break
+        if not placed:
+            bins.append(item)
+
+    return len(bins)
+```
+
+### 近似比
+
+| 策略 | 近似比 | 直覺 |
+| :--- | :---: | :--- |
+| Next Fit | $\leq 2 \cdot OPT$ | 最粗暴 |
+| First Fit | $\leq 1.7 \cdot OPT$ | 回頭找空間 |
+| First Fit Decreasing | $\leq \frac{11}{9} \cdot OPT + \frac{6}{9}$ | 先排序再塞，效果最好 |
+
+這裡 $OPT$ 是最優解的箱子數。FFD 的近似比約 1.22，意思是它最多比最優解多用 22% 的箱子——在大多數實際應用中已經夠好了。
+
+:::tip
+Bin Packing 跟找零問題很類似——貪婪不保證最優，但能快速給出接近最優的答案。需要精確最優解時得用動態規劃或整數線性規劃。
+:::
 
 ## 貪婪的常見陷阱：0/1 背包
 
@@ -327,14 +601,6 @@ def tree_distance(tree, start, end):
 | 額外條件 | 需滿足貪婪選擇性質 | 只需最優子結構 |
 | 速度 | 通常更快 | 通常較慢 |
 | 正確性 | 需要證明 | 狀態設計正確就保證正確 |
-| 典型例子 | 活動選擇、Prim、Kruskal、Dijkstra | 0/1 背包、最長公共子序列 |
-
-## 什麼時候考慮貪婪
-
-遇到最佳化問題，可以用這個流程判斷：
-
-1. **找看看有沒有明顯的排序策略**：活動選擇按結束時間、Kruskal 按邊的權重、Dijkstra 按距離——直覺的排序往往是貪婪策略的起點。
-2. **試著說明為什麼這個策略不會更差**：用「就算最優解沒有這樣選，換過來也不會變差」的邏輯說服自己。
-3. **如果說不通，找反例**：找到一個讓貪婪失效的輸入，就換動態規劃。
+| 典型例子 | 活動選擇、MST、Dijkstra、Huffman | 0/1 背包、最長公共子序列 |
 
 貪婪的魅力在於通常簡單又快。難的不是寫 code，而是先判斷它在這個問題上是否成立。
