@@ -114,6 +114,12 @@ const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
       ::-webkit-scrollbar-thumb:hover {
         background: #404040;
       }
+
+      @media (min-width: 1280px) {
+        html, body {
+          overflow-x: clip;
+        }
+      }
     </style>
   </body>
 </html>
