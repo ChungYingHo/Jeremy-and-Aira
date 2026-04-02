@@ -3,104 +3,158 @@ title: '[Algorithm] 資料結構 ＆ 演算法概論 - 前端篇'
 author: 'jeremy'
 date: '2026-03-26'
 tags: [algorithm, data structure, database, big-o, frontend, vue, javascript]
-changelog: ['2026-04-02']
+changelog: []
 ---
 
 import BigOChart from '@/components/ArticleRelated/algorithm/BigOChart.svelte'
 import EventLoopDiagram from '@/components/ArticleRelated/algorithm/EventLoopDiagram.svelte'
 
-## 從一個真實問題開始
+## 其實你每天都在用演算法
 
-你一定寫過這種程式碼：從一個陣列裡把重複的值拿掉。
+先別被「演算法」這三個字嚇到。
+
+你今天早上出門上班，Google Maps 幫你算了一條最快的路——那是演算法。你在 Netflix 首頁看到的推薦片單——那也是演算法。你在 Excel 裡按一下排序——還是演算法。
+
+演算法說穿了就是「解決問題的步驟」。今天這篇不是要教你寫什麼紅黑樹或 Dijkstra（那是另一篇的事），而是想讓你知道：你寫的前端程式碼裡，其實已經到處都是演算法了，只是你可能沒意識到而已。
+
+---
+
+## 先來看一個你一定寫過的東西
+
+從一個陣列裡把重複的值拿掉——去重。
+
+你可能會這樣寫：
 
 ```js
-// 寫法一：用 filter + includes
-function dedupe(arr) {
-  return arr.filter((item, index) => arr.indexOf(item) === index)
+// 寫法一：土法煉鋼
+function removeDuplicates(arr) {
+  const result = []
+  for (const item of arr) {
+    // 每次都問：「result 裡面有沒有這個東西？」
+    if (!result.includes(item)) {
+      result.push(item)
+    }
+  }
+  return result
 }
+```
 
-// 寫法二：用 Set
-function dedupe(arr) {
+或者你可能看過更簡潔的寫法：
+
+```js
+// 寫法二：一行搞定
+function removeDuplicates(arr) {
   return [...new Set(arr)]
 }
 ```
 
-兩種寫法跑出來的結果一模一樣，但背後的效能差距可以非常大。
+兩種寫法跑出來的結果完全一樣。但我跟你說，當資料量大起來的時候，這兩種寫法的速度差距是天文數字等級的。
 
-寫法一，`indexOf` 每次都會從陣列的第一個元素開始往後掃，直到找到為止。假設陣列有 $n$ 個元素，`indexOf` 最多要比較 $n$ 次——而 `filter` 會對每個元素都呼叫一次 `indexOf`，所以整體是 $n \times n = n^2$ 次操作。
+### 為什麼？用排隊來想就懂了
 
-寫法二，`Set` 內部用的是 hash table，不管 Set 裡面有多少東西，檢查「某個值存不存在」基本上都是固定時間。整體只需要跑一遍陣列，$n$ 次操作就結束了。
+想像一下你在管理一個「不重複名單」。
 
-100 筆資料你可能感覺不到差異。但如果是 10 萬筆呢？
+**寫法一就像這樣：** 每來一個新名字，你就從名單的第一行開始，一行一行往下看：「有沒有這個名字？有沒有？有沒有？」名單上有 100 個名字，你就得看 100 行。下一個人來，又從頭看 100 行。再下一個人，又看 100 行⋯⋯
 
-- 寫法一：$100000^2 = 10^{10}$（一百億次操作）
-- 寫法二：$100000$（十萬次操作）
+如果今天有 1000 個人排隊要登記，名單上也累積了快 1000 個名字——你每登記一個人就要掃一遍快 1000 行的名單。1000 個人 × 1000 行 = 一百萬次翻找。
 
-差了十萬倍。
+**寫法二就像這樣：** 你手上有一本索引簿，每個名字都有專屬的格子。新名字來了，你直接翻到那一頁看看格子是空的還是有人——不用從頭掃，直接定位。不管名單上有多少人，查一個名字的速度都一樣快。
 
-其實 LeetCode 上有一題 [217. Contains Duplicate](https://leetcode.com/problems/contains-duplicate/)，就是判斷一個陣列裡有沒有重複值。如果你用 `includes` 在迴圈裡逐一檢查，測資量一大就會直接 TLE（Time Limit Exceeded）。換成 `Set` 就順利通過了——題目本身很簡單，考的就是你有沒有意識到不同做法的效能差異。
+1000 個人 × 每次只查一格 = 只要 1000 次。
 
-這件事在前端開發中也一樣重要。你的 `computed` 裡面藏了一個 $O(n^2)$ 的操作，資料量小的時候完全不會注意到。直到某天列表從 50 筆變成 5000 筆，畫面突然開始卡——而你可能要 debug 好一陣子才發現問題出在一個 `.find()` 上面。
+一百萬 vs 一千，差了一千倍。
+
+其實 LeetCode 上有一題 [217. Contains Duplicate](https://leetcode.com/problems/contains-duplicate/)，就是判斷陣列裡有沒有重複值。如果你用寫法一的邏輯去做，測資量一大就會直接 TLE（Time Limit Exceeded，超時）。換成 `Set` 就秒過——題目本身超簡單，考的就是你有沒有意識到兩種做法的速度差異。
 
 ---
 
-## 複雜度：你的程式有多慢
+## 你的程式碼，到底有多慢？
 
-上面那個「差了十萬倍」的觀察，就是複雜度分析在做的事。
+上面那個「差了一千倍」的觀察，其實就是工程師說的「複雜度分析」在做的事。
 
-### Big O 不是數學考試，是一個直覺工具
+不用怕，這不是數學課。我用生活的方式說給你聽。
 
-Big O 用來描述「當資料量 $n$ 愈來愈大，這段程式的運算量以什麼速度成長」。它不關心精確的數字，只關心增長的形狀。
+### 想像你在找一本書
 
-你可以把它想成是在問一個問題：**「如果資料量變成 10 倍，我的程式會慢多少？」**
+**情境一：書架上的書有編號**
 
-幾個最常見的等級：
+你要找第 42 號的書。書架上每本書都有清楚的編號，你直接走到 42 號的位置拿走——不管書架上有 100 本還是 100 萬本，你都只需要走那一步。
 
-**$O(1)$ — 常數時間**
+這種「不管資料多少，速度都一樣」的情況，工程師會說它的速度等級是 **常數時間**。
 
-不管資料有多少，花的時間都一樣。像 `Map.get(key)`、`Set.has(value)`、陣列用 index 取值 `arr[5]`——直接定位，不需要掃。
+**情境二：書架上的書沒有編號**
 
-**$O(\log n)$ — 對數時間**
+你要找一本叫《哈利波特》的書，但書架上的書是亂排的。你只好從第一本開始，一本一本翻：「是不是？不是。是不是？不是。是不是？找到了！」
 
-每一步都把問題切一半。最經典的例子是二分搜尋：100 萬筆資料只要比較 20 次就能找到目標。資料量翻 10 倍，也只多幾步而已。
+書架上有 100 本，你最多翻 100 次。有 1 萬本，你最多翻 1 萬次。資料量多 10 倍，你就慢 10 倍——很公平，成正比。
 
-**$O(n)$ — 線性時間**
+這種「資料多 10 倍就慢 10 倍」的情況，速度等級叫 **線性時間**。
 
-跑一遍陣列，每個元素看一次。`Array.filter()`、`Array.map()`、`Array.forEach()` 都是這個等級。資料量翻 10 倍，時間就慢 10 倍——很直覺、很公平。
+**情境三：字典式翻找**
 
-**$O(n \log n)$ — 線性乘對數**
+你在一本很厚的字典裡找一個字。你不會從第一頁開始翻，你會先翻到中間，看看是太前面還是太後面，然後再切一半，再切一半⋯⋯每次都把範圍砍掉一半。
 
-排序演算法的標準速度。`Array.sort()` 在 V8 裡用的是 TimSort，平均和最壞情況都是 $O(n \log n)$。比線性慢一點，但通常可以接受。
+一本 1000 頁的字典，你大概翻 10 次就能找到目標。100 萬頁的字典？大概也只要 20 次。資料量暴增，但你多做的事很少。
 
-**$O(n^2)$ — 平方時間**
+這種「每次砍一半」的情況，速度等級叫 **對數時間**。
 
-迴圈裡面套迴圈。資料量翻 10 倍，時間慢 100 倍。這是前端最常不小心踩進去的等級——一個 `.map()` 裡面呼叫 `.find()`，看起來只是兩行程式，實際上是 $n \times n$。
+**情境四：最慘的狀況**
+
+回到那個沒有編號的書架。這次更慘——你要幫每一本書都找到它的作者資訊，而作者資訊也在另一個沒有編號的書架上。
+
+對於每一本書（100 本），你都要去另一個書架從頭掃一遍（100 本）。100 × 100 = 10,000 次翻找。如果兩邊都有 1000 本呢？1000 × 1000 = 一百萬次。
+
+資料量多 10 倍，速度慢 100 倍。這就是前面「迴圈裡套迴圈」的情況，速度等級叫 **平方時間**。
+
+### 好，現在可以說 Big O 了
+
+工程師會用一個叫 **Big O** 的記號來標記這些速度等級。它就是一個簡寫，告訴你「資料量變大的時候，這段程式大概會慢多快」：
+
+| 速度等級 | Big O 記號 | 白話翻譯 | 生活對應 |
+| :--- | :---: | :--- | :--- |
+| 常數時間 | $O(1)$ | 不管多少資料，一樣快 | 有編號的書架，直接拿 |
+| 對數時間 | $O(\log n)$ | 每次砍一半，超快 | 翻字典 |
+| 線性時間 | $O(n)$ | 資料多 10 倍，慢 10 倍 | 從頭掃到尾 |
+| 排序等級 | $O(n \log n)$ | 比線性慢一點 | 排序一疊牌 |
+| 平方時間 | $O(n^2)$ | 資料多 10 倍，慢 100 倍 | 迴圈套迴圈 |
 
 <BigOChart client:only="svelte" />
 
-### 怎麼快速判斷複雜度
+前端開發最常不小心踩到的就是**平方時間**——一個 `.map()` 裡面呼叫 `.find()`，看起來只是兩行程式碼，但其實是一個迴圈套另一個迴圈。資料量小的時候完全感覺不到，但只要資料從 50 筆變成 5000 筆，畫面就開始卡了。
 
-其實沒有想像中難，就看你的程式碼「對每個元素做了多少事」：
+### 速度等級速查表
 
-| 你寫的程式碼 | 複雜度 | 為什麼 |
+你常用的那些陣列方法，速度等級其實很好記：
+
+| 程式碼 | 速度 | 為什麼 |
 | :--- | :---: | :--- |
-| `arr[0]`、`map.get(key)` | $O(1)$ | 直接定位 |
-| `arr.find(x => ...)` | $O(n)$ | 最多掃一遍 |
-| `arr.sort()` | $O(n \log n)$ | 排序的理論下界 |
-| `arr.map(x => arr2.find(...))` | $O(n \times m)$ | 對每個元素掃另一個陣列 |
-| `arr.filter(...).map(...).reduce(...)` | $O(n)$ | 跑了三遍，但每遍都是 $O(n)$，合計還是 $O(n)$ |
+| `map.get('key')` | $O(1)$ | 有索引，直接定位 |
+| `set.has(value)` | $O(1)$ | 有索引，直接定位 |
+| `arr[5]` | $O(1)$ | 用位置直接拿 |
+| `arr.find(x => ...)` | $O(n)$ | 從頭掃到尾 |
+| `arr.filter(...)` | $O(n)$ | 每個看一遍 |
+| `arr.sort()` | $O(n \log n)$ | 排序就是這個等級 |
+| `.map()` 裡面套 `.find()` | $O(n^2)$ | 迴圈套迴圈！危險！ |
 
-最後那個很多人會搞混：`filter().map().reduce()` 不是 $O(n^3)$。它只是對陣列跑了三遍，$3n$ 次操作，Big O 忽略常數，還是 $O(n)$。真正危險的是**巢狀**——外層的 `.map()` 每跑一次，內層的 `.find()` 就要再掃一遍整個陣列，這才是 $n \times n$。
+有一個常見的誤會：`arr.filter().map().reduce()` 這樣串三個方法，是不是 $n \times n \times n$？不是。它只是把陣列跑了三遍——一遍過濾、一遍轉換、一遍計算——每遍都是從頭到尾走一次，加起來是三倍的 $n$，不是 $n$ 的三次方。真正危險的是**巢狀**：外面的迴圈每跑一圈，裡面又要整個掃一遍。
 
 ---
 
-## 前端開發常碰到的資料結構
+## 前端開發裡的資料結構
 
-「資料結構」這四個字聽起來很學術，但其實你每天都在用。
+「資料結構」聽起來很學術，但其實就是「資料怎麼擺、怎麼找」。你每天都在用，只是沒有用這個詞去叫它。
 
-### Call Stack：程式是怎麼執行的
+### Call Stack：你的程式是怎麼一步步跑的
 
-JavaScript 是單執行緒語言，它一次只能做一件事。程式的執行順序由 **Call Stack（呼叫堆疊）** 管理——函式被呼叫就推進 stack，執行完就彈出。
+JavaScript 一次只能做一件事（單執行緒）。那它怎麼知道該先做哪件事？靠的是一個叫 **Call Stack** 的東西——中文叫「呼叫堆疊」。
+
+你可以把 Call Stack 想像成一疊盤子：
+
+- 程式呼叫一個函式 → 在盤子堆的最上面放一個盤子
+- 那個函式跑完了 → 把最上面的盤子拿走
+- 下面的盤子（之前的函式）才能繼續
+
+最晚放上去的盤子，最先被拿走——這就是 **Stack（堆疊）** 這個資料結構的特性，叫做「後進先出」。
 
 ```js
 function multiply(a, b) { return a * b }
@@ -108,135 +162,137 @@ function square(n) { return multiply(n, n) }
 console.log(square(5))
 ```
 
-執行順序：`console.log` 推入 → 呼叫 `square` 推入 → 呼叫 `multiply` 推入 → `multiply` 回傳、彈出 → `square` 回傳、彈出 → `console.log` 執行、彈出。
+這段程式跑的時候，盤子堆的變化是這樣的：
 
-這就是 **Stack（堆疊）** 這個資料結構——後進先出（LIFO）。你在 DevTools 裡看到的 Error Stack Trace，就是 Call Stack 當下的快照。如果某個函式不斷呼叫自己卻沒有結束條件，Stack 就會一直長，最後爆掉——`Maximum call stack size exceeded`，就是遞迴沒寫好的經典錯誤。
+1. `console.log(square(5))` 放上去
+2. `square(5)` 被呼叫，放上去
+3. `multiply(5, 5)` 被呼叫，放上去（現在有三層）
+4. `multiply` 算完回傳 25，拿走
+5. `square` 拿到結果，回傳 25，拿走
+6. `console.log` 印出 25，拿走（清空了）
 
-### Callback Queue 與 Event Loop
+你在 DevTools 裡看到的 Error Stack Trace，就是程式出錯那一刻盤子堆的快照——它告訴你「是從哪一路呼叫過來的」。而那個著名的錯誤 `Maximum call stack size exceeded`，就是盤子疊太高了——通常是遞迴沒寫好，函式不斷呼叫自己卻沒有停下來。
 
-既然 JS 是單執行緒，那 `setTimeout`、`fetch`、DOM 事件這些非同步的東西怎麼辦？靠的是 **Event Loop（事件迴圈）**。
+### Event Loop：那非同步的事怎麼辦？
 
-非同步操作完成後，callback 會被放進佇列裡等待。Event Loop 的工作就是不斷檢查：「Call Stack 空了嗎？空了就從佇列裡拿一個 callback 推進去執行。」
+JavaScript 一次只能做一件事，那 `setTimeout`、`fetch` 這些要等的東西怎麼辦？總不能整個程式卡在那邊等吧？
 
-這裡有兩個佇列：
-- **Microtask Queue**：`Promise.then()`、`queueMicrotask()` 的 callback。優先級高，會在每次 Call Stack 清空後**立即全部清空**。
-- **Task Queue**（又叫 Macrotask Queue）：`setTimeout`、`setInterval`、DOM 事件的 callback。優先級低，要等 Microtask Queue 全部清完才輪到它。
+靠的是 **Event Loop（事件迴圈）**——它就像一個在 Call Stack 旁邊站崗的管理員。
+
+機制是這樣的：
+1. 你寫了一個 `setTimeout(callback, 1000)`，JavaScript 把「等 1 秒」這件事丟給瀏覽器去計時，自己繼續做下面的事
+2. 1 秒到了，瀏覽器把那個 callback（你要它做的事）排進一個「等待區」
+3. Event Loop 不斷巡邏：「Call Stack 空了嗎？空了！那我從等待區拿一個 callback 來執行。」
+
+這個等待區其實有兩個，而且有優先順序：
+- **Microtask Queue**（VIP 等待區）：`Promise.then()` 的 callback 會排在這裡。每次 Call Stack 清空，VIP 等待區的全部 callback 會先被清空。
+- **Task Queue**（普通等待區）：`setTimeout`、DOM 事件的 callback 排在這裡。要等 VIP 的全部處理完才輪到它。
+
+這就是為什麼下面這段程式碼的輸出順序不是你直覺想的那樣：
 
 ```js
-console.log('1')
-setTimeout(() => console.log('3'), 0)
-Promise.resolve().then(() => console.log('4'))
-console.log('2')
-// 輸出順序：1, 2, 4, 3
+console.log('1')                              // 同步，直接跑
+setTimeout(() => console.log('3'), 0)          // 丟進普通等待區
+Promise.resolve().then(() => console.log('4')) // 丟進 VIP 等待區
+console.log('2')                              // 同步，直接跑
+
+// 輸出：1, 2, 4, 3
+// 不是 1, 2, 3, 4！
 ```
 
-為什麼 `setTimeout(..., 0)` 不是立刻執行？因為它的 callback 被放進 Task Queue，要等所有同步程式碼和 Microtask 都跑完才會輪到它。
+為什麼 `setTimeout(..., 0)` 不是立刻執行？因為就算等 0 秒，它的 callback 也是被排進普通等待區，要等同步程式和 VIP 都跑完才輪到它。Promise 是 VIP，所以 4 先出來，3 最後。
 
 <EventLoopDiagram client:only="svelte" />
 
-### JavaScript 的 Array 不太一樣
+### JavaScript 的陣列，跟你想的不太一樣
 
-傳統意義上的 Array 是一段連續的記憶體空間，每個位置大小固定，用 index 直接算出記憶體位址來存取——所以隨機存取是 $O(1)$。
+在課本裡，陣列（Array）是一排連續的格子，每個格子大小一樣，你說「我要第 5 格」，電腦直接算出位址拿給你——超快。
 
-但 JavaScript 的 Array 不要求固定型別，你可以 `[1, 'hello', true, {name: 'Jeremy'}]` 混著放，長度也是動態的。這代表 JS 引擎不能真的用一段固定大小的連續記憶體來存。
+但 JavaScript 的陣列讓你亂放東西：`[1, 'hello', true, {name: 'Jeremy'}]`，整數、字串、布林值、物件混在一起。這代表 JavaScript 引擎沒辦法真的用一排固定大小的格子來存。
 
-V8（Chrome 的 JS 引擎）的做法是：**看你怎麼用，決定底層用哪種模式。**
+那 V8（Chrome 的 JavaScript 引擎）怎麼處理的呢？它會看你怎麼用，自動選擇最適合的存法：
 
-**Dense Mode（密集模式）**
+**正常使用 → 快速模式**
 
-如果你的陣列是正常的、連續的、沒有奇怪的空洞：
+如果你的陣列是正常的、連續的，像 `[1, 2, 3, 4, 5]`，V8 就會用接近傳統陣列的方式來存——一段連續的記憶體，存取速度跟 C 語言差不多快。V8 甚至會偷偷觀察你放的東西是什麼型別：全部是整數就用最快的模式，混了字串就退一個等級，但還是很快。
 
-```js
-const arr = [1, 2, 3, 4, 5]
-```
+**奇怪使用 → 慢速模式**
 
-V8 會用類似傳統 array 的連續記憶體來存。這是最快的模式，CPU cache 友好，存取速度跟 C 語言的 array 差不多。V8 甚至會追蹤陣列裡存的是什麼型別——全部是整數（`PACKED_SMI_ELEMENTS`）、全部是浮點數（`PACKED_DOUBLE_ELEMENTS`）、還是混合型別（`PACKED_ELEMENTS`）——型別越單純，最佳化越激進。
-
-**Sparse Mode（稀疏模式）**
-
-如果你做了像這樣的事：
+但如果你做了像這樣的事：
 
 ```js
 const arr = []
-arr[10000] = 'hello'
+arr[10000] = 'hello' // 前面 10000 格都是空的！
 ```
 
-中間有一萬個空洞。V8 不會真的配 10001 個位置的記憶體給你，而是退化成 **dictionary mode**——用類似 hash map 的結構，只存你真正放了值的 index。省了記憶體，但存取變慢了。
+V8 不可能真的配 10001 格記憶體給你（太浪費了），所以它會退化成一個類似「索引簿」的結構——只記錄你真正放了東西的位置。省了記憶體，但查詢變慢了。
 
-重點是：一旦陣列被標記為 holey（有空洞），就算你後來把空洞填滿了，V8 也不會自動切回 dense mode。所以寫 JS 的時候盡量：
-- 用 `[]` 或 `Array.from()` 建陣列，不要直接指定超大 index
-- 避免 `delete arr[i]`（會留下空洞），要刪元素用 `splice`
+而且一旦陣列被標記成「有空洞」，就算你後來把空洞填滿了，V8 也不會自動切回快速模式。所以寫 JS 的時候，盡量不要在陣列裡留空洞（比如不要用 `delete arr[i]` 來刪東西，用 `splice` 比較好）。
 
-### Map、Set、Object、WeakMap
+### Map、Set、Object、WeakMap——前端的百寶箱
 
-前端最常用的 hash table 家族：
+這四個東西你多少都用過，它們都是用來「存東西、找東西」的，但各自有擅長的場景。
 
-**`Object {}`**
+**`Object {}`——最萬用的**
 
-最常用的鍵值對結構。key 只能是 string 或 Symbol。V8 對 `{}` 有大量最佳化（Hidden Class），一般場景下存取速度很快。
+就是你每天都在寫的 `{ name: 'Jeremy', age: 28 }`。它的 key 只能是文字（string），查找速度很快。大部分場景用 `{}` 就夠了。
 
-**`Map`**
+**`Map`——比 Object 更有彈性**
 
-跟 `Object` 類似但更通用：key 可以是任何型別（物件、函式、NaN 都行）、保持插入順序、在頻繁增刪的場景下效能更穩定。當你的 key 不是字串，或者需要頻繁 `.delete()`，用 `Map` 比 `Object` 合適。
+跟 `Object` 很像，但 key 可以是任何東西（數字、物件、甚至 `NaN` 都行），而且會記住你放東西的順序。如果你需要用「不是文字」的東西當 key，或者需要頻繁新增刪除，`Map` 比 `Object` 更適合。
 
-**`Set`**
+**`Set`——只管「有沒有」**
 
-只存值、不存鍵值對的 hash table。核心操作 `.has()` 是 $O(1)$。前端最常用的場景就是去重和快速查找——前面提到的 `new Set(arr)` 去重就是典型用法。
+不存鍵值對，只存一堆不重複的值。核心能力就是回答一個問題：「這個東西在不在裡面？」而且回答速度是固定的，不管 Set 有多大。前面提到的去重就是 `Set` 的經典用法。
 
-**`WeakMap` / `WeakSet`**
+**`WeakMap`——會自動清垃圾的 Map**
 
-跟 `Map`/`Set` 一樣，但 key 必須是物件，而且不會阻止垃圾回收。當那個物件在其他地方都沒有被引用了，`WeakMap` 裡對應的條目會自動被清掉。
+跟 `Map` 很像，但 key 一定要是物件。特殊的地方在於：如果那個物件在其他地方都沒人用了，`WeakMap` 裡的對應條目會自動被清掉，不會佔記憶體。
 
-```js
-// 典型用法：為 DOM 元素附加資料，不用擔心記憶體洩漏
-const metadata = new WeakMap()
-function track(element) {
-  metadata.set(element, { clicks: 0 })
-}
-// 當 element 被移除、沒有其他引用，WeakMap 裡的條目也會被 GC 清掉
-```
+Vue 3 的響應式系統內部就大量使用 `WeakMap`——它用來記錄「哪些物件是 reactive 的」，但不會因為這個追蹤機制而阻止物件被垃圾回收。
 
-Vue 3 的 reactivity 系統內部就大量使用 `WeakMap` 來追蹤哪些物件是 reactive 的——用 `WeakMap` 就不會因為追蹤機制而阻止物件被回收。
-
-| 結構 | key 型別 | 查找 | 保序 | GC 友好 | 適合場景 |
-| :--- | :--- | :---: | :---: | :---: | :--- |
-| `Object` | string / Symbol | $O(1)$ | 部分 | — | 一般鍵值對 |
-| `Map` | 任意 | $O(1)$ | ✓ | — | 非字串 key、頻繁增刪 |
-| `Set` | 任意 | $O(1)$ | ✓ | — | 去重、成員判斷 |
-| `WeakMap` | 物件 | $O(1)$ | ✗ | ✓ | 附加 metadata、避免洩漏 |
+| 東西 | key 限制 | 查找速度 | 什麼時候用 |
+| :--- | :--- | :---: | :--- |
+| `Object {}` | 文字 | 超快 | 一般場景 |
+| `Map` | 不限 | 超快 | key 不是文字、頻繁增刪 |
+| `Set` | —（只存值） | 超快 | 去重、判斷有沒有 |
+| `WeakMap` | 物件 | 超快 | 避免記憶體洩漏 |
 
 ---
 
-## Vue 開發實例中的演算法思維
+## 寫 Vue 的時候，藏在程式碼裡的速度差異
 
-這一段不是要講 Vue 內部的演算法（Virtual DOM diff 之類的），而是想聊聊我們平常寫 Vue 的時候，那些看起來很直覺的寫法，背後其實藏著複雜度的差異。
+這段不是要講 Vue 內部什麼 Virtual DOM diff 演算法——那是框架開發者要操心的事。我想聊的是：我們平常寫 Vue 的時候，那些看起來很正常的寫法，背後其實有快有慢。
 
-### computed 裡的隱形迴圈
+### 例子一：computed 裡的隱形陷阱
 
-這是很常見的寫法：從一個商品列表裡，把每個商品的分類名稱補上去。
+假設你在做一個商品列表，每個商品有一個分類 ID，你想把分類名稱補上去：
 
 ```vue
 <script setup>
 import { computed } from 'vue'
 
 const props = defineProps({
-  items: Array,
-  categories: Array,
+  items: Array,       // [{id: 1, name: '蘋果', categoryId: 'fruit'}, ...]
+  categories: Array,  // [{id: 'fruit', name: '水果'}, {id: 'meat', name: '肉類'}, ...]
 })
 
-// 直覺寫法：對每個 item 呼叫 .find() 找分類
+// 直覺寫法
 const enrichedItems = computed(() =>
-  props.items.map(item => ({
-    ...item,
-    categoryName: props.categories.find(c => c.id === item.categoryId)?.name
-  }))
+  props.items.map(item => {
+    // 對每一個商品，都跑進 categories 裡面從頭到尾找一遍
+    const cat = props.categories.find(c => c.id === item.categoryId)
+    return { ...item, categoryName: cat?.name }
+  })
 )
 </script>
 ```
 
-看起來很乾淨對吧？但 `.map()` 裡面套 `.find()`，就是 $O(n \times m)$。如果 `items` 有 1000 筆、`categories` 有 100 個，每次 `computed` 重算就要跑 10 萬次比較。
+看起來很乾淨對吧？`.map()` 裡面用 `.find()` 查分類名稱，邏輯很清楚。
 
-改成先建一個 Map 做 lookup：
+但你有沒有意識到：**對每一個商品，`.find()` 都要把 categories 從頭掃到尾**？如果有 500 個商品、100 個分類，每次 computed 重算就是 500 × 100 = 五萬次比較。而且只要 `items` 一變動（比如搜尋結果改變），整個 computed 就會重跑一次。
+
+改成先建一個「索引簿」：
 
 ```vue
 <script setup>
@@ -247,10 +303,14 @@ const props = defineProps({
   categories: Array,
 })
 
+// 先把 categories 建成一個 Map（索引簿）
+// key 是分類 ID，value 是分類物件
+// 這一步跑一遍 categories 就做完了
 const categoryMap = computed(() =>
   new Map(props.categories.map(c => [c.id, c]))
 )
 
+// 現在查分類名稱不用掃了，直接用 ID 去 Map 裡面撈
 const enrichedItems = computed(() =>
   props.items.map(item => ({
     ...item,
@@ -260,90 +320,93 @@ const enrichedItems = computed(() =>
 </script>
 ```
 
-`categoryMap` 建一次是 $O(m)$，之後每次查找是 $O(1)$，整個 `enrichedItems` 就降成 $O(n + m)$。而且因為 `categoryMap` 是獨立的 `computed`，只有 `categories` 變了才會重建——`items` 變化的時候不會重建 Map，Vue 的響應式系統自動幫你做了這件事。
+`categoryMap` 只有在 `categories` 變動時才重建（Vue 的 `computed` 有快取功能），而每次查找都是直接定位，不用掃。整體從「迴圈套迴圈」降級成「掃一遍就結束」——快很多。
 
-### v-for 搭配 v-if 的代價
+### 例子二：v-for 裡面硬塞 v-if
 
 另一個常見的場景：
 
 ```vue
 <template>
+  <!-- 不太好的寫法 -->
   <div v-for="item in items" :key="item.id">
     <span v-if="item.active">{{ item.name }}</span>
   </div>
 </template>
 ```
 
-這樣寫，Vue 會先把所有 `items` 都跑一遍 `v-for`，生成所有的 DOM 節點，然後 `v-if` 再決定哪些要顯示。就算 1000 筆裡面只有 10 筆是 `active` 的，Vue 還是得跑 1000 次迴圈。
+這樣寫，Vue 會把 `items` 裡面每一筆都跑過 `v-for`，每一筆都生成 DOM 節點，然後才用 `v-if` 決定要不要顯示。就算 1000 筆裡面只有 10 筆是 `active` 的，Vue 還是得跑 1000 圈。
 
-比較好的做法是先在 `computed` 裡過濾：
+比較好的做法：先過濾好再丟給 `v-for`。
 
 ```vue
 <script setup>
 import { computed } from 'vue'
 
+// 先把 active 的篩出來，交給 computed 快取
 const activeItems = computed(() =>
   props.items.filter(item => item.active)
 )
 </script>
 
 <template>
+  <!-- 只跑 active 的那些，DOM 節點也少很多 -->
   <div v-for="item in activeItems" :key="item.id">
     <span>{{ item.name }}</span>
   </div>
 </template>
 ```
 
-`computed` 有快取，只有 `items` 變了才會重新過濾。而且 `v-for` 只迭代過濾後的結果，DOM 節點數量也少很多。
+### 但是——不要為了效能犧牲一切
 
-### 但是，不要為了效能犧牲一切
+講了這些效能差異，我覺得有一件事很重要，而且是很多文章不會跟你說的：
 
-講了這麼多效能考量，但我覺得有一件事很重要：**在小資料量的時候，可讀性比效能重要。**
+**資料量小的時候，好讀比快更重要。**
 
 ```js
-// 這個很好讀，一眼就知道在幹嘛
+// 這個超好讀，一眼就知道在幹嘛
 const userName = users.find(u => u.id === currentId)?.name
 
-// 這個效能更好，但要多花腦力理解
+// 這個比較快，但你得多想一秒才能理解
 const userMap = new Map(users.map(u => [u.id, u]))
 const userName = userMap.get(currentId)?.name
 ```
 
-如果 `users` 只有 20 筆而且不會增長，用 `.find()` 就夠了。為了 20 筆資料建一個 `Map`，是在增加程式碼的認知負擔，卻幾乎不會帶來實際的效能改善。
+如果 `users` 只有 20 個人而且不會增長，用 `.find()` 就好了啊。為了 20 筆資料去建一個 `Map`，其實是在增加程式碼的複雜度，換來的效能提升你根本感覺不到。
 
-我自己的判斷標準是：
+我自己的判斷方式是：
 
-- **資料量固定且很小（< 100 筆）**：怎麼好讀怎麼寫
-- **資料量會成長、或是在 `computed` / `watch` 裡頻繁觸發**：先建 lookup 結構
-- **不確定的時候**：先寫好讀的版本，等真的遇到效能問題再用 DevTools 的 Performance tab 測量，有數據再優化
+- **資料很少（幾十筆）、不會成長**：怎麼好讀怎麼寫，不需要想太多
+- **資料會成長、或是在 `computed` 裡頻繁被重算**：先建個 `Map` 或 `Set` 做索引
+- **不確定的時候**：先寫好讀的版本。等哪天真的卡了，打開 DevTools 的 Performance 面板看數據，有證據再優化
 
-過早優化是萬惡之源（Premature optimization is the root of all evil）——這句話是 Donald Knuth 說的，他寫了《The Art of Computer Programming》，算是演算法界的大佬。他的意思不是叫你不要優化，而是叫你不要在沒有資料的情況下憑空猜測哪裡慢。
+「過早優化是萬惡之源」這句話是 Donald Knuth（電腦科學的大佬）說的。他不是叫你不要優化，是叫你不要在沒有證據的情況下瞎猜哪裡慢。先讓程式碼能跑、好讀、好維護，速度的問題等到真的出現再處理。
 
 ---
 
-## 資料庫概念與前端的關聯
+## 前端跟資料庫有什麼關係？
 
-這個段落可能有點出乎意料——前端工程師為什麼要懂資料庫？
+這個段落可能會讓你意外——前端工程師幹嘛要知道資料庫的事？
 
-其實前端每天都在做「資料庫」在做的事，只是你可能沒有用這個詞來描述它。
+但你仔細想想，前端其實每天都在做「資料庫」做的事，只是規模小一點、跑在瀏覽器裡而已。
 
-### Pinia Store 就像一個 In-Memory Database
+### 你的 Pinia Store 就是一個迷你資料庫
 
-你在 Pinia 裡定義的 store，本質上就是一個跑在瀏覽器記憶體裡的小型資料庫：
+你在 Pinia 裡寫的 store，其實就是一個跑在瀏覽器記憶體裡的小型資料庫：
 
 ```js
 // stores/product.js
 export const useProductStore = defineStore('product', () => {
-  const products = ref([])        // 資料表
-  const loading = ref(false)      // 狀態旗標
+  const products = ref([])          // 這就是你的「資料表」
+  const loading = ref(false)
 
-  async function fetchAll() {     // 查詢（SELECT *）
+  async function fetchAll() {       // 「把全部資料撈出來」
     loading.value = true
     products.value = await api.getProducts()
     loading.value = false
   }
 
-  function getById(id) {          // 用主鍵查詢（SELECT WHERE id = ?）
+  function getById(id) {            // 「用 ID 查某一筆」
     return products.value.find(p => p.id === id)
   }
 
@@ -351,13 +414,11 @@ export const useProductStore = defineStore('product', () => {
 })
 ```
 
-這跟資料庫做的事情其實一模一樣：存資料、查資料、更新資料。差別只在於它跑在瀏覽器裡、重新整理就沒了。
+存資料、查資料、更新資料——這不就是資料庫在做的事嗎？差別只在於你的「資料庫」跑在瀏覽器裡，重新整理就沒了。
 
-### 正規化：前端 Store 要不要把資料攤平
+### 要不要把資料「攤平」？
 
-資料庫設計裡有一個重要概念叫**正規化（Normalization）**——避免資料重複存放，每筆資料只存一份，需要的時候用關聯去查。
-
-前端的 store 也會遇到一樣的問題。假設 API 回傳的資料長這樣：
+假設後端 API 回傳的資料長這樣：
 
 ```json
 [
@@ -367,12 +428,12 @@ export const useProductStore = defineStore('product', () => {
 ]
 ```
 
-同一個作者 Jeremy 的資料在每篇文章裡重複出現了。如果你直接存進 store，之後要改作者名字就得找出所有用到這個作者的文章逐一修改。
+注意到了嗎？Jeremy 的資料出現了兩次。如果你直接存進 store，之後想改作者名字，就得到處找、到處改。
 
-正規化的做法是把資料攤平（normalized state）：
+資料庫的做法是「攤平」——把重複的東西抽出來，各存一份，用 ID 去關聯：
 
 ```js
-// normalized state
+// 把資料攤平存
 const state = {
   posts: {
     1: { id: 1, title: '文章一', authorId: 10 },
@@ -384,105 +445,67 @@ const state = {
     20: { id: 20, name: 'Aira' },
   }
 }
+
+// 要改 Jeremy 的名字？改一個地方就好
+state.authors[10].name = 'Jeremy Ho'
+
+// 要查某篇文章的作者？用 ID 直接撈
+const author = state.authors[post.authorId]
 ```
 
-每個作者只存一份，文章透過 `authorId` 去關聯。要改作者名字？改一個地方就好。要查某篇文章的作者？`authors[post.authorId]`，$O(1)$。
+每筆資料只存一份，不重複，要改只改一個地方——這在資料庫的世界叫「正規化」。在前端的世界，你可能聽過 Redux 社群說的 "normalized state"，其實就是同一件事。
 
-這就是資料庫裡「主鍵 + 外鍵」的概念，套在前端 store 上也完全成立。Redux 社群早期就大力推廣這種 normalized state 的模式，Vue 生態系裡雖然比較少強調，但邏輯是一樣的。
+不過實務上，小型專案不一定要做到這個程度。如果你的資料結構不複雜、作者不會改名，直接存 API 回傳的格式也沒問題。這又回到那個平衡：好讀好維護 vs 理論上更「正確」。
 
-### IndexedDB 和 localStorage：前端的持久化資料庫
+### 瀏覽器裡的「真正」資料庫
 
-有時候你需要的不只是「在記憶體裡存一下」，而是「關掉瀏覽器再打開還在」。
+有時候你需要資料在關掉瀏覽器後還留著——不是那種重新整理就消失的 store。
 
-**localStorage**
+**localStorage**：最簡單。就是一個你可以存東西的小倉庫，key-value 格式，容量大約 5-10 MB。適合存使用者偏好設定（深色模式、語系選擇），不適合存大量資料。
 
-最簡單的鍵值對儲存，同步 API，上限通常 5-10 MB。適合存簡單的設定值（深色模式偏好、上次選的語系）。不適合存大量結構化資料，因為所有資料都必須序列化成字串。
+**IndexedDB**：瀏覽器內建的完整資料庫。容量大（幾百 MB 以上）、可以建索引加速查詢、支援交易機制——名字裡的 "Indexed" 就是說它可以像真正的資料庫一樣建索引。PWA（那種安裝在手機上的網頁 app）能離線運作，靠的就是把資料存在 IndexedDB 裡。
 
-**IndexedDB**
+### 前端的快取，就是一種資料庫策略
 
-瀏覽器內建的完整資料庫，非同步 API，容量可以到數百 MB 甚至更多。支援 index、transaction、cursor——名字裡的 "Indexed" 就是指它跟傳統資料庫一樣可以建索引來加速查詢。
+你的前端 store 裡面存的資料，其實是後端資料庫的「副本」。後端資料庫是正本，你的 store 是影本。
+
+問題來了：影本什麼時候會過期？要不要每次都重新跟後端要？
+
+有一種常見的策略叫 **Stale-While-Revalidate**（先用舊的，背景偷偷更新）：
+
+1. 使用者打開頁面，先用 store 裡面快取的資料渲染畫面（就算可能過期也沒關係）
+2. 同時在背景發一個 API 去拿最新的資料
+3. 拿到後靜靜地更新畫面
+
+使用者不用看到白屏等待，體驗好很多。TanStack Query（Vue Query）這類工具幫你做的就是這件事——管理快取、判斷資料有沒有過期、背景自動更新。你寫的 `useQuery()` 其實就是在做這整套流程。
+
+還有一種叫**樂觀更新**：使用者按下「按讚」，不等 API 回應就先把讚的數字 +1。如果 API 成功了，什麼都不用做；如果失敗了，再把數字 -1 改回來。先假設會成功，失敗再回滾——這跟資料庫裡「交易失敗就回滾」是同一個概念。
+
+### API 打太多次的問題
+
+最後講一個後端工程師很愛提的概念，但前端也會踩到。
+
+假設你要渲染一個文章列表，每篇文章要顯示作者名稱。如果你對每篇文章都打一次 API 去撈作者：
 
 ```js
-// 簡化的 IndexedDB 使用範例
-const request = indexedDB.open('myApp', 1)
-
-request.onupgradeneeded = (event) => {
-  const db = event.target.result
-  const store = db.createObjectStore('articles', { keyPath: 'id' })
-  store.createIndex('authorId', 'authorId')  // 建索引，就像資料庫的 CREATE INDEX
+const posts = await fetchPosts()        // 第 1 次 API
+// 然後對每篇文章各打一次
+for (const post of posts) {
+  post.author = await fetchAuthor(post.authorId)  // 第 2, 3, 4, 5... 次 API
 }
 ```
 
-PWA（Progressive Web App）能離線運作，靠的就是把資料存在 IndexedDB 裡。下次使用者開啟 app 的時候，先從 IndexedDB 讀取快取的資料顯示畫面，同時在背景跟伺服器同步最新資料。
+10 篇文章就打 11 次 API。100 篇就 101 次。每次 API 都有網路延遲，加起來超慢。
 
-### 快取策略：前端版的 Database Caching
-
-前端跟後端之間的資料同步，其實就是一個快取問題。後端的資料庫是「真實資料來源（Source of Truth）」，前端的 store 是「快取」。
-
-常見的快取策略：
-
-**Stale-While-Revalidate**
-
-先用快取的資料渲染畫面（即使可能過期），同時在背景發請求去拿最新資料。拿到後更新畫面。使用者不用等白屏，但看到的可能是幾秒前的資料。
-
-```js
-async function fetchWithCache(key, fetcher) {
-  const cached = cache.get(key)
-  if (cached) {
-    // 先回傳快取的資料
-    render(cached)
-  }
-  // 同時去拿最新的
-  const fresh = await fetcher()
-  cache.set(key, fresh)
-  render(fresh)
-}
-```
-
-這個模式在 TanStack Query（Vue Query）裡是預設行為——它幫你管理快取、自動判斷資料是否過期、背景重新請求。你寫的 `useQuery()` 其實就是在做這件事。
-
-**樂觀更新（Optimistic Update）**
-
-使用者按下「按讚」，不等 API 回應就先在畫面上加一——如果 API 成功，什麼都不用做；如果失敗，再把那個讚拿掉。
-
-```js
-async function likePost(postId) {
-  // 樂觀更新：先改前端狀態
-  post.value.likes += 1
-
-  try {
-    await api.likePost(postId)
-  } catch {
-    // API 失敗，回滾
-    post.value.likes -= 1
-  }
-}
-```
-
-這跟資料庫裡的 transaction rollback 是同一個概念：先假設操作會成功，失敗了再回滾。
-
-### N+1 問題：資料庫版的 $O(n^2)$
-
-最後講一個後端很經典、但前端也會踩到的坑。
-
-假設要渲染一個文章列表，每篇文章要顯示作者資訊。如果每篇文章都各自打一支 API 去取作者：
-
-```js
-// N+1：取 N 篇文章，再打 N 次 API 取作者
-const posts = await fetchPosts()              // 1 次
-const postsWithAuthors = await Promise.all(
-  posts.map(post => fetchAuthor(post.authorId)) // N 次
-)
-```
-
-10 篇文章就打 11 次 API。100 篇就 101 次。每次 API 請求都有網路延遲，加起來非常慢。
-
-更好的做法是批次取回：
+更聰明的做法：一次把所有需要的作者批次撈回來，然後在前端用 `Map` 配對。
 
 ```js
 const posts = await fetchPosts()
+// 把所有不重複的作者 ID 收集起來
 const authorIds = [...new Set(posts.map(p => p.authorId))]
-const authors = await fetchAuthorsByIds(authorIds) // 1 次，帶多個 id
+// 一次撈回所有作者
+const authors = await fetchAuthorsByIds(authorIds)
+// 建個索引簿，配對就秒完
 const authorMap = new Map(authors.map(a => [a.id, a]))
 
 const postsWithAuthors = posts.map(post => ({
@@ -491,19 +514,21 @@ const postsWithAuthors = posts.map(post => ({
 }))
 ```
 
-2 次 API 搞定，然後在前端用 `Map` 做 $O(1)$ 查找。又是建 Map 的老招。
+2 次 API 搞定，前端用 `Map` 做配對。又是「先建索引再查」的老招。
 
 ---
 
 ## 串起來
 
-回頭看這一整篇，其實說的都是同一件事：**選對資料結構，就選對了複雜度。**
+回頭看這一整篇，其實說的都是同一件事：**資料怎麼擺，決定了你的程式有多快。**
 
-- 用 `Set` 取代 `includes`，查找從 $O(n)$ 降到 $O(1)$
-- 先建 `Map` 再查，避免 `.find()` 造成的 $O(n^2)$
-- 前端的 store 做正規化，跟資料庫的正規化是同一個思路
-- API 請求做批次處理，跟資料庫避免 N+1 查詢是同一個道理
+- 用 `Set` 取代 `includes`，不用再從頭掃到尾
+- 先建 `Map` 再查，不用每次都整個翻一遍
+- Store 裡的資料做攤平，改一個地方就好
+- API 做批次處理，不要一筆一筆慢慢撈
 
-你不需要會寫紅黑樹或 Dijkstra 才算「懂演算法」。在前端的世界裡，演算法思維更多時候就是在問：「這個操作，資料量大起來還撐得住嗎？」
+你不需要會手刻紅黑樹才算「懂演算法」。在前端的世界裡，演算法思維通常就是在問一個很簡單的問題：
+
+**「如果資料量變成 10 倍，這段程式還撐得住嗎？」**
 
 能回答這個問題，你就已經在用演算法了。
