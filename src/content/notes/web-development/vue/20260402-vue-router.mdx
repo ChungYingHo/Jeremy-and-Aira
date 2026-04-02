@@ -1,0 +1,431 @@
+---
+title: '[Vue] Vue Router — 前端路由完整攻略'
+author: 'jeremy'
+date: '2026-04-02'
+tags: ['vue', 'vue-router', 'routing', 'SPA']
+changelog: []
+---
+
+## 為什麼前端需要路由？
+
+在傳統的網站架構裡，你點一個連結，瀏覽器就會向伺服器要一個全新的 HTML 頁面，整個畫面閃一下然後重新載入。
+
+但 SPA（Single Page Application，單頁式應用）不一樣。整個網站其實只有一個 HTML 頁面，切換頁面的時候不會真的跟伺服器要新頁面，而是透過 JavaScript 動態替換畫面上的內容。
+
+問題來了：如果整個 app 只有一個頁面，那 URL 怎麼辦？使用者按上一頁會發生什麼事？直接輸入 URL 能到正確的頁面嗎？
+
+這就是 **前端路由** 要解決的事。Vue Router 就是 Vue 官方的路由解決方案，它幫你把 URL 和元件對應起來，讓 SPA 的使用體驗跟傳統多頁網站一樣自然。
+
+---
+
+## 基本設定
+
+先裝套件（如果你用 `create-vue` 建專案時有選 Router 就已經裝好了）：
+
+```bash
+npm install vue-router
+```
+
+### 建立路由
+
+```js
+// router/index.js
+import { createRouter, createWebHistory } from 'vue-router'
+import Home from '@/views/Home.vue'
+import About from '@/views/About.vue'
+
+const routes = [
+  {
+    path: '/',
+    name: 'Home',
+    component: Home
+  },
+  {
+    path: '/about',
+    name: 'About',
+    component: About
+  }
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes
+})
+
+export default router
+```
+
+### 掛載到 app
+
+```js
+// main.js
+import { createApp } from 'vue'
+import App from './App.vue'
+import router from './router'
+
+createApp(App).use(router).mount('#app')
+```
+
+### 在 template 裡使用
+
+```vue
+<!-- App.vue -->
+<template>
+  <nav>
+    <RouterLink to="/">首頁</RouterLink>
+    <RouterLink to="/about">關於</RouterLink>
+  </nav>
+
+  <!-- 路由匹配到的元件會渲染在這裡 -->
+  <RouterView />
+</template>
+```
+
+`<RouterLink>` 就是 Vue Router 版的 `<a>` 標籤，它不會觸發整頁刷新，而是用前端路由切換。`<RouterView>` 則是一個「佔位框」，告訴 Vue「把匹配到的元件放這裡」。
+
+### createWebHistory vs createWebHashHistory
+
+```js
+// URL 長這樣：example.com/about
+createWebHistory()
+
+// URL 長這樣：example.com/#/about
+createWebHashHistory()
+```
+
+**Web History** 的 URL 比較乾淨，但需要後端配合（所有路徑都要導向 index.html）。現在主流的部署平台（Vercel、Netlify）都有自動處理，所以通常都用 `createWebHistory`。
+
+**Hash History** 不需要後端配合（因為 `#` 後面的東西瀏覽器不會送到伺服器），但 URL 比較醜。
+
+---
+
+## 動態路由
+
+很多頁面的 URL 是動態的，比如 `/user/123`、`/post/456`。這種用動態路由：
+
+```js
+const routes = [
+  {
+    path: '/user/:id',
+    name: 'User',
+    component: UserProfile
+  }
+]
+```
+
+`:id` 就是動態參數。在元件裡可以這樣取得：
+
+```vue
+<script setup>
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+console.log(route.params.id) // '123'
+</script>
+```
+
+### 多個動態參數
+
+```js
+// /user/jeremy/posts/42
+{
+  path: '/user/:username/posts/:postId',
+  component: UserPost
+}
+```
+
+### 監聽參數變化
+
+如果使用者從 `/user/123` 跳到 `/user/456`，Vue 不會銷毀再重建元件（因為用的是同一個），而是**複用**。所以 `onMounted` 不會再執行一次。
+
+你需要用 `watch` 監聽路由參數的變化：
+
+```vue
+<script setup>
+import { watch } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
+watch(
+  () => route.params.id,
+  (newId) => {
+    // 重新取得資料
+    fetchUser(newId)
+  }
+)
+</script>
+```
+
+---
+
+## 巢狀路由
+
+很多頁面的版面結構是這樣的：外面有一個共用的 layout（比如 sidebar），裡面的內容區域會根據子路由切換。
+
+```
+/settings
+├── /settings/profile    → 個人資料
+├── /settings/security   → 安全設定
+└── /settings/notify     → 通知設定
+```
+
+這種就用巢狀路由：
+
+```js
+const routes = [
+  {
+    path: '/settings',
+    component: SettingsLayout,
+    children: [
+      {
+        path: '',          // /settings 的預設頁面
+        component: SettingsProfile
+      },
+      {
+        path: 'profile',   // /settings/profile
+        component: SettingsProfile
+      },
+      {
+        path: 'security',  // /settings/security
+        component: SettingsSecurity
+      },
+      {
+        path: 'notify',    // /settings/notify
+        component: SettingsNotify
+      }
+    ]
+  }
+]
+```
+
+然後在 `SettingsLayout.vue` 裡面放一個 `<RouterView>`：
+
+```vue
+<!-- SettingsLayout.vue -->
+<template>
+  <div class="settings-page">
+    <aside>
+      <RouterLink to="/settings/profile">個人資料</RouterLink>
+      <RouterLink to="/settings/security">安全設定</RouterLink>
+      <RouterLink to="/settings/notify">通知設定</RouterLink>
+    </aside>
+
+    <main>
+      <!-- 子路由的元件會渲染在這裡 -->
+      <RouterView />
+    </main>
+  </div>
+</template>
+```
+
+巢狀路由的概念就是：**外層的 `<RouterView>` 渲染父路由，裡面還可以有 `<RouterView>` 渲染子路由**。一層一層像俄羅斯娃娃一樣。
+
+---
+
+## 導航守衛
+
+導航守衛就是「路由的保全」。使用者要進某個頁面之前，你可以攔截他，檢查條件是否符合，再決定放不放行。
+
+最常見的用途就是**權限控制**：沒登入不能進 dashboard、沒有 admin 權限不能進管理頁面。
+
+### 全域守衛
+
+```js
+// router/index.js
+router.beforeEach((to, from) => {
+  const isLoggedIn = !!localStorage.getItem('token')
+
+  // 要去的頁面需要登入，但使用者沒登入
+  if (to.meta.requiresAuth && !isLoggedIn) {
+    // 導向登入頁
+    return { name: 'Login' }
+  }
+})
+```
+
+搭配路由的 `meta` 欄位：
+
+```js
+const routes = [
+  {
+    path: '/dashboard',
+    component: Dashboard,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: Login
+  }
+]
+```
+
+### 路由獨享守衛
+
+只針對某個路由設定：
+
+```js
+{
+  path: '/admin',
+  component: Admin,
+  beforeEnter: (to, from) => {
+    const user = useAuthStore()
+    if (user.role !== 'admin') {
+      return { name: 'Home' }
+    }
+  }
+}
+```
+
+### 元件內守衛
+
+在元件裡面用 `onBeforeRouteLeave`，常見用途是「離開前提醒使用者有未儲存的修改」：
+
+```vue
+<script setup>
+import { onBeforeRouteLeave } from 'vue-router'
+
+const hasUnsavedChanges = ref(false)
+
+onBeforeRouteLeave((to, from) => {
+  if (hasUnsavedChanges.value) {
+    const answer = confirm('你有未儲存的修改，確定要離開嗎？')
+    if (!answer) return false // 取消導航
+  }
+})
+</script>
+```
+
+### 守衛的執行順序
+
+當你從 A 頁面導航到 B 頁面：
+
+1. A 的 `onBeforeRouteLeave`
+2. 全域 `beforeEach`
+3. B 的 `beforeEnter`（如果有）
+4. B 的元件被解析
+5. 全域 `afterEach`
+
+知道就好，實務上不太需要記這麼細。
+
+---
+
+## 懶載入
+
+如果你的 app 有 50 個頁面，使用者打開首頁的時候就要下載全部 50 個頁面的 JS？太浪費了。
+
+懶載入（Lazy Loading）讓每個頁面的程式碼在**需要的時候才載入**。做法超簡單，把 `import` 改成動態的就好：
+
+```js
+const routes = [
+  {
+    path: '/',
+    component: Home  // 首頁直接載入
+  },
+  {
+    path: '/about',
+    // 動態 import → 只有使用者點進 /about 才會載入這個元件的 JS
+    component: () => import('@/views/About.vue')
+  },
+  {
+    path: '/dashboard',
+    component: () => import('@/views/Dashboard.vue')
+  }
+]
+```
+
+Vite 和 Webpack 都會自動把動態 import 的部分拆成獨立的 JS 檔案（code splitting）。使用者進首頁只會下載首頁的 JS，點到 About 才會額外下載 About 的 JS。
+
+### 分組打包
+
+如果有些頁面通常會一起被訪問，你可以把它們打包在一起：
+
+```js
+// 這三個會被打包在同一個 chunk 裡
+component: () => import(/* webpackChunkName: "settings" */ '@/views/SettingsProfile.vue')
+component: () => import(/* webpackChunkName: "settings" */ '@/views/SettingsSecurity.vue')
+component: () => import(/* webpackChunkName: "settings" */ '@/views/SettingsNotify.vue')
+```
+
+不過如果你用 Vite 的話，它的 tree-shaking 已經做得很好了，大部分情況不需要手動分組。
+
+---
+
+## 實用技巧
+
+### 程式化導航
+
+除了用 `<RouterLink>`，你也可以在 JS 裡面控制導航：
+
+```js
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+// 跳到某個路由
+router.push('/about')
+router.push({ name: 'User', params: { id: '123' } })
+
+// 替換（不會留下歷史紀錄，按上一頁不會回來）
+router.replace('/login')
+
+// 前進/後退
+router.go(-1) // 等同於按「上一頁」
+router.go(1)  // 等同於按「下一頁」
+```
+
+### Query 參數
+
+```js
+// URL: /search?q=vue&page=1
+router.push({ path: '/search', query: { q: 'vue', page: 1 } })
+
+// 在元件裡取得
+const route = useRoute()
+console.log(route.query.q)    // 'vue'
+console.log(route.query.page) // '1'（注意是字串）
+```
+
+### 404 頁面
+
+```js
+{
+  path: '/:pathMatch(.*)*',
+  name: 'NotFound',
+  component: () => import('@/views/NotFound.vue')
+}
+```
+
+把這個放在路由設定的最後面，所有沒匹配到的路徑都會導到 404 頁面。
+
+### 滾動行為
+
+切換路由時預設不會回到頂部。加上 `scrollBehavior` 可以控制：
+
+```js
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    // 如果有儲存位置（瀏覽器上一頁/下一頁），回到那個位置
+    if (savedPosition) return savedPosition
+    // 否則回到頂部
+    return { top: 0 }
+  }
+})
+```
+
+---
+
+## 小結
+
+| 概念 | 一句話 |
+|---|---|
+| 基本路由 | URL 對應元件，用 `RouterView` 渲染 |
+| 動態路由 | `:id` 參數，用 `route.params` 取得 |
+| 巢狀路由 | `children` + 多層 `RouterView` |
+| 導航守衛 | 路由保全，檢查權限才放行 |
+| 懶載入 | `() => import()` 用到才載入 |
+
+Vue Router 的東西其實還有很多（transition、keep-alive、命名視圖等），但上面這些已經涵蓋了日常開發 90% 的需求。把這些搞懂，你就能建構一個有完整路由系統的 Vue 應用了。
