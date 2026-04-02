@@ -1,0 +1,390 @@
+---
+title: '[Vue] 常用工具篇 — v-for、v-if、生命週期、Composable'
+author: 'jeremy'
+date: '2026-04-02'
+tags: ['vue', 'v-for', 'v-if', 'lifecycle', 'composable']
+changelog: []
+---
+
+## 前言
+
+這篇要來講 Vue 裡面幾個你「每天都會用到」的東西。它們不像響應式系統那麼核心底層，但你寫 Vue 一定離不開它們。就像你可能不需要天天了解引擎原理，但你一定天天在開車。
+
+---
+
+## v-for — 列表渲染
+
+你有一個陣列，想把每個項目渲染成一個列表？用 `v-for`。
+
+```vue
+<script setup>
+import { ref } from 'vue'
+
+const fruits = ref(['蘋果', '香蕉', '橘子'])
+</script>
+
+<template>
+  <ul>
+    <li v-for="fruit in fruits" :key="fruit">
+      {{ fruit }}
+    </li>
+  </ul>
+</template>
+```
+
+### key 到底在幹嘛？
+
+每次寫 `v-for`，Vue 都會提醒你要加 `:key`。很多人加了但其實不知道為什麼要加。
+
+Vue 更新列表的時候，會用一種叫做 **diff 演算法** 的策略來決定哪些元素要新增、哪些要刪除、哪些要移動。`key` 就是給每個元素一個「身份證」，讓 Vue 可以精準辨認「這個是原本的那個」。
+
+沒有 `key` 的話，Vue 會用「就地複用」策略 — 它會盡量重用現有的 DOM 元素，只是把內容換掉。大部分情況下這沒問題，但如果列表項目有內部狀態（比如 input 的輸入值），就會出現很詭異的 bug。
+
+**反面教材：用 index 當 key**
+
+```vue
+<!-- ❌ 不建議 -->
+<li v-for="(item, index) in list" :key="index">
+```
+
+為什麼？假設你有三個項目 `[A, B, C]`，對應 key 是 `[0, 1, 2]`。你刪掉 B 之後變成 `[A, C]`，key 變成 `[0, 1]`。Vue 會覺得「key=1 的元素從 B 變成 C 了」，然後更新 key=1 的內容，再刪掉 key=2。
+
+這樣做的結果是：更新的元素數量比必要的多，而且如果元素有內部狀態，狀態會對不上。
+
+**正確做法：用唯一 ID**
+
+```vue
+<!-- ✅ 推薦 -->
+<li v-for="item in list" :key="item.id">
+```
+
+### v-for 搭配物件
+
+```vue
+<div v-for="(value, key, index) in userInfo" :key="key">
+  {{ index }}. {{ key }}: {{ value }}
+</div>
+```
+
+### v-for 的範圍
+
+```vue
+<!-- 渲染 1 到 10 -->
+<span v-for="n in 10" :key="n">{{ n }}</span>
+```
+
+---
+
+## v-if vs v-show — 條件渲染
+
+兩個都是「根據條件顯示/隱藏元素」，但原理完全不同。
+
+### v-if
+
+```vue
+<div v-if="isLoggedIn">
+  歡迎回來！
+</div>
+<div v-else-if="isLoading">
+  載入中...
+</div>
+<div v-else>
+  請先登入
+</div>
+```
+
+`v-if` 是**真正的條件渲染** — 條件為 false 的時候，那個 DOM 元素根本不會被建立。條件變成 true 的時候才會建立，變回 false 就銷毀。
+
+### v-show
+
+```vue
+<div v-show="isVisible">
+  我是一段文字
+</div>
+```
+
+`v-show` 只是切換 CSS 的 `display: none`。不管條件是 true 還是 false，DOM 元素都一直存在，只是被隱藏了。
+
+### 什麼時候用誰？
+
+| | v-if | v-show |
+|---|---|---|
+| 原理 | 建立/銷毀 DOM | 切換 `display: none` |
+| 初始成本 | 低（false 時不渲染） | 高（不管怎樣都會渲染） |
+| 切換成本 | 高（每次都要建立/銷毀） | 低（只是改 CSS） |
+| 適合 | 條件很少改變 | 頻繁切換 |
+
+用生活比喻：
+- `v-if` 像搬家 — 不需要的時候整間房子拆掉，需要的時候重新蓋。
+- `v-show` 像拉窗簾 — 房子一直在那裡，只是你看不到。
+
+所以 tab 切換、tooltip 這種頻繁顯隱的，用 `v-show`。登入/未登入那種不太切換的，用 `v-if`。
+
+### v-if 和 v-for 不要放在同一個元素上
+
+```vue
+<!-- ❌ 不要這樣 -->
+<li v-for="item in list" v-if="item.isActive" :key="item.id">
+
+<!-- ✅ 用 computed 先過濾，或包一層 template -->
+<template v-for="item in list" :key="item.id">
+  <li v-if="item.isActive">{{ item.name }}</li>
+</template>
+```
+
+在 Vue 3 裡 `v-if` 的優先權比 `v-for` 高，所以上面的寫法會導致 `v-if` 根本拿不到 `item`（因為 `v-for` 還沒跑）。
+
+更好的做法是用 `computed` 先過濾好：
+
+```js
+const activeItems = computed(() => list.value.filter(item => item.isActive))
+```
+
+然後直接 `v-for="item in activeItems"`。清楚又高效。
+
+---
+
+## 生命週期 — 元件的一生
+
+每個 Vue 元件都有它的「一生」— 從被建立、到掛載到畫面、到更新、到最後被銷毀。Vue 讓你可以在這些「人生階段」插入自己的程式碼。
+
+### Composition API 的生命週期 hooks
+
+在 `<script setup>` 裡，最常用的就這幾個：
+
+```js
+import { onMounted, onUnmounted, onUpdated } from 'vue'
+
+onMounted(() => {
+  // 元件掛載到 DOM 之後
+  // 適合：取得 DOM 元素、打初始 API、啟動計時器
+  console.log('我出生了！')
+})
+
+onUpdated(() => {
+  // 響應式資料變了，DOM 更新之後
+  // 適合：DOM 更新後要做的事（但通常用不太到）
+  console.log('我變了！')
+})
+
+onUnmounted(() => {
+  // 元件從 DOM 移除之後
+  // 適合：清除計時器、取消訂閱、移除事件監聽
+  console.log('我走了，再見！')
+})
+```
+
+### 完整的生命週期
+
+| Hook | 觸發時機 | 常見用途 |
+|---|---|---|
+| `onBeforeMount` | 掛載之前 | 幾乎不用 |
+| `onMounted` | 掛載完成 | 打 API、操作 DOM |
+| `onBeforeUpdate` | DOM 更新前 | 幾乎不用 |
+| `onUpdated` | DOM 更新後 | 讀取更新後的 DOM |
+| `onBeforeUnmount` | 卸載前 | 清理工作（計時器等） |
+| `onUnmounted` | 卸載完成 | 最終清理 |
+
+老實說，**90% 的情況你只會用到 `onMounted` 和 `onUnmounted`**。
+
+### 典型範例：打 API
+
+```vue
+<script setup>
+import { ref, onMounted } from 'vue'
+
+const users = ref([])
+const isLoading = ref(true)
+
+onMounted(async () => {
+  try {
+    const res = await fetch('/api/users')
+    users.value = await res.json()
+  } finally {
+    isLoading.value = false
+  }
+})
+</script>
+```
+
+### 典型範例：清理計時器
+
+```vue
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+
+const now = ref(new Date())
+let timer
+
+onMounted(() => {
+  timer = setInterval(() => {
+    now.value = new Date()
+  }, 1000)
+})
+
+onUnmounted(() => {
+  clearInterval(timer) // 不清的話會 memory leak！
+})
+</script>
+```
+
+---
+
+## Composable — 組合式函數
+
+Composable 是 Vue 3 Composition API 最強大的設計之一。簡單來說就是：**把可以複用的邏輯抽出來變成一個函式**。
+
+### 先看痛點
+
+假設你有三個元件都需要「追蹤滑鼠位置」的功能。不用 composable 的話，你得在每個元件裡面都寫一遍：
+
+```js
+// 元件 A
+const x = ref(0)
+const y = ref(0)
+function update(e) { x.value = e.pageX; y.value = e.pageY }
+onMounted(() => window.addEventListener('mousemove', update))
+onUnmounted(() => window.removeEventListener('mousemove', update))
+
+// 元件 B — 又寫一遍
+// 元件 C — 再寫一遍
+```
+
+三份一模一樣的程式碼，改一個要改三個地方。
+
+### 用 Composable 抽出來
+
+```js
+// composables/useMouse.js
+import { ref, onMounted, onUnmounted } from 'vue'
+
+export function useMouse() {
+  const x = ref(0)
+  const y = ref(0)
+
+  function update(event) {
+    x.value = event.pageX
+    y.value = event.pageY
+  }
+
+  onMounted(() => window.addEventListener('mousemove', update))
+  onUnmounted(() => window.removeEventListener('mousemove', update))
+
+  return { x, y }
+}
+```
+
+然後在任何元件裡面：
+
+```vue
+<script setup>
+import { useMouse } from '@/composables/useMouse'
+
+const { x, y } = useMouse()
+</script>
+
+<template>
+  <p>滑鼠位置：{{ x }}, {{ y }}</p>
+</template>
+```
+
+一行搞定！而且邏輯只寫一次，改一個地方就全部更新。
+
+### 命名慣例
+
+Composable 的命名慣例是 `use` 開頭：`useMouse`、`useFetch`、`useAuth`、`useLocalStorage`... 這不是規定，是社群約定俗成，看到 `use` 開頭就知道是 composable。
+
+### 實戰範例：useFetch
+
+封裝一個通用的資料請求 composable：
+
+```js
+// composables/useFetch.js
+import { ref } from 'vue'
+
+export function useFetch(url) {
+  const data = ref(null)
+  const error = ref(null)
+  const isLoading = ref(true)
+
+  fetch(url)
+    .then(res => res.json())
+    .then(json => { data.value = json })
+    .catch(err => { error.value = err })
+    .finally(() => { isLoading.value = false })
+
+  return { data, error, isLoading }
+}
+```
+
+使用：
+
+```vue
+<script setup>
+import { useFetch } from '@/composables/useFetch'
+
+const { data: users, error, isLoading } = useFetch('/api/users')
+</script>
+
+<template>
+  <div v-if="isLoading">載入中...</div>
+  <div v-else-if="error">出錯了：{{ error.message }}</div>
+  <ul v-else>
+    <li v-for="user in users" :key="user.id">{{ user.name }}</li>
+  </ul>
+</template>
+```
+
+### 實戰範例：useLocalStorage
+
+```js
+// composables/useLocalStorage.js
+import { ref, watch } from 'vue'
+
+export function useLocalStorage(key, defaultValue) {
+  const stored = localStorage.getItem(key)
+  const data = ref(stored ? JSON.parse(stored) : defaultValue)
+
+  watch(data, (newVal) => {
+    localStorage.setItem(key, JSON.stringify(newVal))
+  }, { deep: true })
+
+  return data
+}
+```
+
+使用：
+
+```vue
+<script setup>
+import { useLocalStorage } from '@/composables/useLocalStorage'
+
+const theme = useLocalStorage('theme', 'dark')
+// 改 theme.value 會自動存到 localStorage
+</script>
+```
+
+### Composable vs Mixin
+
+如果你接觸過 Vue 2，可能用過 Mixin。Composable 基本上是 Mixin 的上位替代：
+
+| | Mixin | Composable |
+|---|---|---|
+| 命名衝突 | 會（屬性名重複就互相覆蓋） | 不會（你自己解構命名） |
+| 資料來源 | 不清楚（來自哪個 mixin？） | 清楚（import 就知道） |
+| TypeScript 支援 | 差 | 好 |
+
+所以 Vue 3 基本上不推薦用 Mixin 了，composable 才是正解。
+
+---
+
+## 小結
+
+| 工具 | 一句話 |
+|---|---|
+| `v-for` | 列表渲染，記得加唯一 `:key` |
+| `v-if` / `v-show` | 條件渲染，少切換用 if、頻繁切換用 show |
+| 生命週期 | 記 `onMounted` 和 `onUnmounted` 就夠了 |
+| Composable | 把共用邏輯抽成 `use` 開頭的函式 |
+
+這四個東西是 Vue 開發的日常。掌握了它們，加上前面文章講的響應式和資料流，你就已經有能力寫出一個完整的 Vue 應用了。接下來我們會進入路由（Vue Router）和狀態管理（Pinia），那就是大型應用的領域了。
