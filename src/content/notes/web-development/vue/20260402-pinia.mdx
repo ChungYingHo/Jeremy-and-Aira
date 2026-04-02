@@ -1,0 +1,423 @@
+---
+title: '[Vue] Pinia — 狀態管理，沒有你想的那麼可怕'
+author: 'jeremy'
+date: '2026-04-02'
+tags: ['vue', 'pinia', 'state management', 'store']
+changelog: []
+---
+
+## 為什麼需要狀態管理？
+
+先來看一個場景：你的 app 有一個 Header 元件顯示使用者名字，一個 Sidebar 元件顯示使用者頭像，還有一個 Settings 頁面可以修改使用者資料。
+
+這三個元件在元件樹上可能長這樣：
+
+```
+App
+├── Header          ← 需要 user
+├── Sidebar         ← 需要 user
+└── Main
+    └── Settings    ← 需要修改 user
+```
+
+它們之間沒有直接的父子關係。如果用 props 傳，你得從 App 一路往下傳到每個元件。如果用 `provide/inject`，App 得 provide、每個元件得 inject，改一個要更新好多地方。
+
+當 app 越來越大、共享狀態越來越多的時候，這種「散落在各處的狀態」會讓你的程式碼變成一團義大利麵。
+
+**狀態管理** 的概念就是：把這些需要跨元件共享的資料集中到一個地方管理。任何元件都可以直接存取和修改，而且改動會自動反映到所有使用它的元件。
+
+用生活比喻：props + emit 像是面對面傳紙條，provide/inject 像是在大樓裡設一個公佈欄只有同棟的人看得到。而 Pinia 就像一個**共用的雲端硬碟** — 不管你在哪裡，打開就能看到最新的檔案，改了之後所有人都會看到更新。
+
+---
+
+## Pinia 是什麼？
+
+Pinia 是 Vue 官方的狀態管理套件，也是 Vuex 的後繼者。名字來自西班牙文的「鳳梨」（piña），所以它的 logo 是一顆鳳梨 🍍。
+
+```bash
+npm install pinia
+```
+
+### 掛載到 app
+
+```js
+// main.js
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import App from './App.vue'
+
+const app = createApp(App)
+app.use(createPinia())
+app.mount('#app')
+```
+
+---
+
+## 建立 Store
+
+Store 就是一個「倉庫」，裡面放的是你要集中管理的狀態。Pinia 有兩種定義 store 的語法。
+
+### Option Store（選項式）
+
+跟 Vue 2 的 Options API 很像：
+
+```js
+// stores/counter.js
+import { defineStore } from 'pinia'
+
+export const useCounterStore = defineStore('counter', {
+  state: () => ({
+    count: 0,
+    name: 'Jeremy'
+  }),
+  getters: {
+    doubleCount: (state) => state.count * 2
+  },
+  actions: {
+    increment() {
+      this.count++
+    }
+  }
+})
+```
+
+### Setup Store（組合式）— 推薦
+
+跟 Composition API 的寫法一模一樣，如果你已經在用 `<script setup>`，這種寫法會非常直覺：
+
+```js
+// stores/counter.js
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+
+export const useCounterStore = defineStore('counter', () => {
+  // state → ref
+  const count = ref(0)
+  const name = ref('Jeremy')
+
+  // getters → computed
+  const doubleCount = computed(() => count.value * 2)
+
+  // actions → function
+  function increment() {
+    count.value++
+  }
+
+  return { count, name, doubleCount, increment }
+})
+```
+
+兩種寫法效果完全一樣，選你看順眼的就好。但如果你是新手而且已經習慣 Composition API 的話，**Setup Store** 比較直覺，因為 `ref` 就是 state、`computed` 就是 getter、function 就是 action。
+
+---
+
+## State — 狀態
+
+State 就是 store 裡面的資料。它就是一堆 `ref`（或者 Option Store 裡的 `state()`）。
+
+### 在元件裡使用
+
+```vue
+<script setup>
+import { useCounterStore } from '@/stores/counter'
+
+const counter = useCounterStore()
+</script>
+
+<template>
+  <p>{{ counter.count }}</p>
+  <p>{{ counter.name }}</p>
+</template>
+```
+
+### 直接修改 state
+
+```js
+const counter = useCounterStore()
+
+// 直接改
+counter.count++
+
+// 用 $patch 一次改多個
+counter.$patch({
+  count: counter.count + 1,
+  name: 'Aira'
+})
+
+// $patch 也可以傳函式（適合修改陣列）
+counter.$patch((state) => {
+  state.items.push({ id: 1, name: 'item' })
+  state.count++
+})
+```
+
+### 解構要用 storeToRefs
+
+```js
+import { storeToRefs } from 'pinia'
+
+const counter = useCounterStore()
+
+// ❌ 直接解構會失去響應式！
+const { count, name } = counter
+
+// ✅ 用 storeToRefs
+const { count, name } = storeToRefs(counter)
+
+// 注意：actions（函式）直接解構就好，不需要 storeToRefs
+const { increment } = counter
+```
+
+為什麼？因為 `counter.count` 本質上是一個 `ref`，直接解構出來你拿到的只是當時的「值」而不是「ref 物件」。`storeToRefs` 會幫你保留 ref 的連結。
+
+---
+
+## Getters — 計算屬性
+
+Getters 就是 store 版的 `computed`。它根據 state 算出衍生資料，而且有快取。
+
+```js
+export const useCartStore = defineStore('cart', () => {
+  const items = ref([])
+
+  // getter：算出總金額
+  const totalPrice = computed(() =>
+    items.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  )
+
+  // getter：算出商品數量
+  const itemCount = computed(() =>
+    items.value.reduce((sum, item) => sum + item.quantity, 0)
+  )
+
+  return { items, totalPrice, itemCount }
+})
+```
+
+在元件裡直接用：
+
+```vue
+<template>
+  <p>購物車有 {{ cart.itemCount }} 件商品</p>
+  <p>總計 ${{ cart.totalPrice }}</p>
+</template>
+```
+
+### Getter 存取其他 store 的 state
+
+```js
+import { useAuthStore } from './auth'
+
+export const useCartStore = defineStore('cart', () => {
+  const items = ref([])
+
+  const discountedTotal = computed(() => {
+    const auth = useAuthStore()
+    const total = items.value.reduce((sum, item) => sum + item.price, 0)
+    // VIP 打 8 折
+    return auth.isVip ? total * 0.8 : total
+  })
+
+  return { items, discountedTotal }
+})
+```
+
+---
+
+## Actions — 操作
+
+Actions 就是修改 state 的函式。跟 Vuex 不同，**Pinia 沒有 mutation 的概念**。你就直接寫函式去改 state。
+
+```js
+export const useAuthStore = defineStore('auth', () => {
+  const user = ref(null)
+  const token = ref('')
+  const isLoggedIn = computed(() => !!token.value)
+
+  async function login(email, password) {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    })
+    const data = await res.json()
+
+    user.value = data.user
+    token.value = data.token
+    localStorage.setItem('token', data.token)
+  }
+
+  function logout() {
+    user.value = null
+    token.value = ''
+    localStorage.removeItem('token')
+  }
+
+  return { user, token, isLoggedIn, login, logout }
+})
+```
+
+看到了嗎？Actions 可以是同步的也可以是非同步的（async/await），直接寫就好，超自然。
+
+---
+
+## 跟 Vuex 的差別
+
+如果你有接觸過 Vuex，可能會好奇為什麼要換成 Pinia。
+
+| | Vuex | Pinia |
+|---|---|---|
+| Mutation | 需要，同步修改 state 一定要用 | 沒有，直接改 |
+| Action | 處理非同步，再 commit mutation | 直接改 state，同步非同步都行 |
+| Module | 需要，而且有 namespace 的坑 | 每個 store 獨立，不需要 module |
+| TypeScript | 支援差，很多地方要手動標型別 | 原生支援，推導很好 |
+| 體積 | ~10kb | ~1.5kb |
+| DevTools | 支援 | 支援 |
+
+Vuex 最大的痛點就是 mutation。你想改一個 state，得先寫一個 mutation，然後在 action 裡 commit 這個 mutation。一個簡單的修改要經過三個步驟：
+
+```js
+// Vuex：改一個 count 要三步
+// 1. 定義 mutation
+mutations: { INCREMENT(state) { state.count++ } }
+// 2. 定義 action
+actions: { increment({ commit }) { commit('INCREMENT') } }
+// 3. 元件裡呼叫
+store.dispatch('increment')
+```
+
+```js
+// Pinia：一步搞定
+counter.count++
+// 或者
+counter.increment()
+```
+
+Vuex 的 mutation 設計初衷是為了讓 DevTools 能追蹤每次修改。但 Pinia 在沒有 mutation 的情況下一樣做到了。所以 mutation 就變成了純粹的 boilerplate（樣板程式碼）。
+
+**結論：新專案直接用 Pinia，不要再用 Vuex 了。** Vue 官方也這麼建議。
+
+---
+
+## 實際使用情境
+
+### 情境 1：使用者認證
+
+```js
+// stores/auth.js
+export const useAuthStore = defineStore('auth', () => {
+  const user = ref(null)
+  const token = ref(localStorage.getItem('token') || '')
+
+  const isLoggedIn = computed(() => !!token.value)
+  const isAdmin = computed(() => user.value?.role === 'admin')
+
+  async function login(credentials) {
+    const res = await api.post('/login', credentials)
+    token.value = res.data.token
+    user.value = res.data.user
+    localStorage.setItem('token', res.data.token)
+  }
+
+  function logout() {
+    token.value = ''
+    user.value = null
+    localStorage.removeItem('token')
+  }
+
+  async function fetchUser() {
+    if (!token.value) return
+    const res = await api.get('/me')
+    user.value = res.data
+  }
+
+  return { user, token, isLoggedIn, isAdmin, login, logout, fetchUser }
+})
+```
+
+### 情境 2：購物車
+
+```js
+// stores/cart.js
+export const useCartStore = defineStore('cart', () => {
+  const items = ref([])
+
+  const totalPrice = computed(() =>
+    items.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  )
+
+  const totalItems = computed(() =>
+    items.value.reduce((sum, item) => sum + item.quantity, 0)
+  )
+
+  function addItem(product) {
+    const existing = items.value.find(item => item.id === product.id)
+    if (existing) {
+      existing.quantity++
+    } else {
+      items.value.push({ ...product, quantity: 1 })
+    }
+  }
+
+  function removeItem(productId) {
+    items.value = items.value.filter(item => item.id !== productId)
+  }
+
+  function clearCart() {
+    items.value = []
+  }
+
+  return { items, totalPrice, totalItems, addItem, removeItem, clearCart }
+})
+```
+
+### 情境 3：主題切換
+
+```js
+// stores/theme.js
+export const useThemeStore = defineStore('theme', () => {
+  const isDark = ref(localStorage.getItem('theme') === 'dark')
+
+  const theme = computed(() => isDark.value ? 'dark' : 'light')
+
+  function toggle() {
+    isDark.value = !isDark.value
+    localStorage.setItem('theme', theme.value)
+    document.documentElement.classList.toggle('dark', isDark.value)
+  }
+
+  return { isDark, theme, toggle }
+})
+```
+
+---
+
+## 什麼時候該用 Pinia？
+
+不是所有狀態都需要放進 Pinia。判斷標準：
+
+**適合放進 Pinia 的：**
+- 多個不相關的元件都需要用到的資料（使用者資訊、購物車、主題）
+- 需要在頁面切換後還保留的狀態
+- 業務邏輯複雜、需要集中管理的狀態
+
+**不需要放進 Pinia 的：**
+- 只有一個元件自己用的狀態 → 用元件的 `ref`
+- 只有父子之間傳的資料 → 用 `props` + `emit`
+- 只有某棵子樹要用的資料 → 用 `provide` / `inject`
+- 表單的暫時狀態 → 用元件的 `ref` 或 `reactive`
+
+其實就是一個原則：**能用簡單的方式解決就用簡單的方式，不要動不動就上 Pinia**。先用 props，不夠再用 provide/inject，真的需要全域共享再用 Pinia。
+
+---
+
+## 小結
+
+| 概念 | 一句話 |
+|---|---|
+| Store | 集中管理狀態的倉庫 |
+| State | 就是 `ref`，存放資料 |
+| Getter | 就是 `computed`，衍生資料 |
+| Action | 就是函式，修改資料的操作 |
+| storeToRefs | 解構 store 時保留響應式 |
+
+Pinia 真的沒有想像中那麼可怕。如果你已經會用 Composition API 的 `ref`、`computed`、普通函式，那你其實已經會用 Pinia 了 — 它們用的是完全一樣的概念，只是多了一層「集中管理」的外殼而已。
