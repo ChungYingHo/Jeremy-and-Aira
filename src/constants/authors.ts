@@ -2,6 +2,8 @@ export type Author = {
   name: string
   imgPath: string
   isSecret: boolean
+  isHiddenFromAbout?: boolean
+  coAuthorImgs?: string[]
   summary?: string
   description?: string
   currentRole?: string[]
@@ -46,6 +48,13 @@ export const AUTHORS: Author[] = [
         summary: 'Shareable ESLint 9+/10 flat config with interactive CLI setup.'
       }
     ]
+  },
+  {
+    name: 'Jeremy & Claude',
+    imgPath: '/assets/authors/jeremy.png',
+    isSecret: false,
+    isHiddenFromAbout: true,
+    coAuthorImgs: ['/assets/authors/jeremy.png', '/assets/authors/claude.svg'],
   },
   {
     name: 'Aira Studio',

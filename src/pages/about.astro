@@ -41,7 +41,7 @@ const splitSummary = (text: string) => {
 
     <div class="space-y-12">
       
-      {AUTHORS.map((author, index) => {
+      {AUTHORS.filter(a => !a.isHiddenFromAbout).map((author, index) => {
         const { quote, author: quoteAuthor } = splitSummary(author.summary || '');
         const hasPortfolio = author.portfolio && author.portfolio.length > 0;
         
