@@ -25,7 +25,7 @@ const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
 ---
 
 <!doctype html>
-<html lang="zh-TW" class="dark scroll-smooth overflow-x-hidden">
+<html lang="zh-TW" class="dark scroll-smooth" style="overflow-x: clip;">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
@@ -51,7 +51,6 @@ const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
       text-slate-300
       bg-[#0e0c12]
       antialiased
-      overflow-x-hidden
       selection:bg-indigo-500/30
       selection:text-indigo-200
       relative
@@ -80,6 +79,10 @@ const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
       html {
         font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
         scroll-behavior: smooth;
+      }
+
+      body {
+        overflow-x: clip;
       }
 
       .bg-grid-pattern {
