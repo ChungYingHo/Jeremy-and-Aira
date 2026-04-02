@@ -54,7 +54,7 @@ export const AUTHORS: Author[] = [
     imgPath: '/assets/authors/jeremy.png',
     isSecret: false,
     isHiddenFromAbout: true,
-    coAuthorImgs: ['/assets/authors/jeremy.png', '/assets/authors/claude.svg'],
+    coAuthorImgs: ['/assets/authors/jeremy.png', '/assets/authors/claude.png'],
   },
   {
     name: 'Aira Studio',
