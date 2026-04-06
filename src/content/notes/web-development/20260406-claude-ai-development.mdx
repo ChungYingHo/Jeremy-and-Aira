@@ -1,0 +1,233 @@
+---
+title: '[AI] 用 Claude 寫程式：從 Prompt 到 Production 的協作心法'
+author: 'Jeremy & Claude'
+date: '2026-04-06'
+tags: [ai, claude, prompt-engineering, developer-tools, productivity]
+changelog: []
+---
+
+## 為什麼是 Claude？
+
+AI 工具百百種，ChatGPT、Gemini、Copilot... 每隔幾個月就有新東西冒出來。那為什麼這篇要特別拿 Claude 出來講？
+
+其實很簡單，因為 Claude 在「寫程式」這件事上，表現真的很不一樣。
+
+跟 ChatGPT 相比，Claude 在處理長篇程式碼和複雜邏輯時明顯更穩定。它不太會在長對話中「忘記」前面聊過的東西，也比較不會自己幻想出不存在的 API。更重要的是，它的回答傾向先理解你的需求再動手，而不是一股腦丟一坨 code 出來。
+
+好啦，不是在幫 Claude 打廣告（雖然這篇確實是跟它合寫的），但用了一段時間之後，我確實覺得在開發工作上它是目前最順手的 AI 夥伴。
+
+---
+
+## Claude 的核心特色
+
+在聊怎麼用之前，先快速整理幾個 Claude 跟其他 AI 工具比較不一樣的地方：
+
+- **超大 Context Window**：Claude 的上下文視窗很大，可以一次餵進完整的檔案甚至整個小專案，不用像以前一樣把 code 切成好幾段分批貼
+- **程式碼品質穩定**：它產出的 code 在命名、結構、風格上比較一致，不會上一段用 camelCase 下一段突然變 snake_case
+- **理解能力強**：你把整個元件丟給它說「這邊有 bug」，它通常能準確找到問題點，而不是重寫整個元件
+- **拒絕瞎猜**：它比較不會硬掰不存在的函式或套件，不確定的時候會跟你說它不確定
+
+---
+
+## Claude Code：直接在終端機裡協作
+
+如果你只用過網頁版的 Claude，那你一定要試試 **Claude Code**。
+
+Claude Code 是 Anthropic 官方的 CLI 工具，它不是那種只能問問題的聊天機器人，而是可以直接讀你的 codebase、改檔案、跑指令的 AI agent。講白了就是：你在 terminal 裡面開一個對話，Claude 可以直接看到你整個專案，然後幫你改 code。
+
+```bash
+# 安裝
+npm install -g @anthropic-ai/claude-code
+
+# 在專案根目錄啟動
+claude
+```
+
+啟動之後，你可以直接用自然語言跟它溝通：
+
+```
+> 幫我把 src/utils/date.ts 裡的 formatDate 函式加上對 invalid date 的處理
+```
+
+它會自己去讀檔案、理解現有的程式碼、提出修改方案，然後問你要不要套用。整個流程就像在跟一個坐在你旁邊的工程師 pair programming。
+
+### CLAUDE.md — 給 AI 的專案說明書
+
+Claude Code 有一個很讚的設計：你可以在專案裡放一個 `CLAUDE.md`，裡面寫這個專案的規範、架構、注意事項。Claude 每次啟動都會先讀這個檔案，所以它一開始就知道你的 coding style、目錄結構、還有哪些地雷不能踩。
+
+其實這篇文章所在的部落格專案就有用 `CLAUDE.md`，裡面寫了像是「單引號、不加分號、2 空格縮排」、「禁止相對父層引用」這些規範。所以 Claude 在幫忙寫 code 的時候，就會自動遵守這些規則，不需要每次都提醒它。
+
+---
+
+## 實戰：怎麼有效地使用 Claude
+
+好啦，工具介紹完了，來聊聊實際使用上的心得。
+
+### 1. Prompt 是一切的基礎
+
+跟 AI 溝通，prompt 寫得好不好差非常多。同樣是請 Claude 幫你寫一個函式，下面兩種問法的結果天差地遠：
+
+**❌ 模糊的 prompt：**
+
+```
+幫我寫一個驗證函式
+```
+
+Claude 不知道你要驗證什麼，會產出一個很泛用但不符合你需求的東西。
+
+**✅ 具體的 prompt：**
+
+```
+幫我寫一個 TypeScript 函式 validateEmail，接收 string 參數，
+回傳 { valid: boolean; error?: string }。
+規則：
+1. 不能為空字串
+2. 必須包含 @ 和至少一個 .
+3. @ 前面至少要有一個字元
+4. 不允許連續的 ..
+```
+
+這樣 Claude 就能精準地產出你要的東西：
+
+```typescript
+const validateEmail = (email: string): { valid: boolean; error?: string } => {
+  if (!email.trim()) {
+    return { valid: false, error: 'Email cannot be empty' }
+  }
+
+  if (!email.includes('@') || !email.includes('.')) {
+    return { valid: false, error: 'Email must contain @ and .' }
+  }
+
+  const [local] = email.split('@')
+  if (!local || local.length === 0) {
+    return { valid: false, error: 'Invalid format before @' }
+  }
+
+  if (email.includes('..')) {
+    return { valid: false, error: 'Consecutive dots are not allowed' }
+  }
+
+  return { valid: true }
+}
+```
+
+### 2. 程式碼審查
+
+這是我覺得 Claude 最好用的場景之一。你把一段 code 丟給它，請它幫你 review，它會從效能、可讀性、潛在 bug、安全性等角度給你建議。
+
+```
+幫我 review 這段 code，注意：
+- 有沒有潛在的 bug 或 edge case
+- 效能上有沒有可以改善的地方
+- 命名跟結構是否清晰
+
+[貼上你的程式碼]
+```
+
+我的經驗是，Claude 在 review 時特別擅長抓到：
+- **未處理的 edge case**：比如空陣列、null、undefined
+- **效能問題**：比如在迴圈裡重複計算、不必要的 re-render
+- **型別問題**：TypeScript 的型別有沒有太鬆或太緊
+
+### 3. 除錯
+
+遇到 bug 的時候，直接把錯誤訊息和相關程式碼一起丟給 Claude，通常比你自己瞪著螢幕看半天有效率多了。
+
+```
+我在跑 npm run build 的時候遇到這個錯誤：
+
+[貼上完整的 error stack trace]
+
+相關的程式碼在這裡：
+
+[貼上相關檔案]
+```
+
+重點是**把完整的 error message 給它**。很多人只會說「build 壞了」，但不給錯誤訊息，這就像跟醫生說「我不舒服」但不說哪裡不舒服一樣。
+
+### 4. 寫文件和測試
+
+寫文件跟寫測試，大概是大部分工程師最不想做的兩件事。Claude 在這方面幫了大忙。
+
+```
+幫這個函式寫 JSDoc，然後用 Vitest 寫單元測試，
+至少涵蓋 happy path、edge case、error case：
+
+[貼上函式]
+```
+
+它產的測試案例通常還蠻全面的，而且命名很清楚，`describe` 和 `it` 的描述一看就知道在測什麼。當然，產出來之後還是要自己看過確認邏輯正不正確，畢竟 AI 有時候會寫出「看起來對但其實沒測到重點」的測試。
+
+---
+
+## 協作的最佳實踐
+
+用了一段時間之後，我整理出幾個跟 Claude 協作比較順的做法：
+
+### 給足上下文
+
+Claude 不是通靈的。你不能只說「把這個改好」，你得告訴它：
+
+- 這段 code 的用途是什麼
+- 你想達成什麼效果
+- 有什麼限制條件（框架版本、coding style 等）
+
+上下文給得越多，它的回答品質越高。
+
+### 分段處理複雜任務
+
+如果你要 Claude 幫你做一個大功能，不要一次把所有需求全部倒出來。拆成幾個小步驟，每一步確認沒問題再往下走。
+
+```
+第一步：先幫我定義資料結構和型別
+第二步：寫 API 呼叫的邏輯
+第三步：寫 UI 元件
+第四步：串接資料和 UI
+```
+
+這樣不僅結果更好，你也更容易在過程中發現問題。
+
+### 不要無腦複製貼上
+
+這是最重要的一點。Claude 產出的 code **一定要看過、理解之後再用**。
+
+原因很簡單：
+1. 它可能用了你專案沒有安裝的套件
+2. 它可能產出風格跟你專案不一致的 code
+3. 它可能做了一些「看起來合理但不符合你業務邏輯」的假設
+4. 偶爾它還是會產出有 bug 的 code
+
+把 AI 當成一個很強的 Junior 工程師：它產出的東西需要你這個 Senior 去 review 跟把關。
+
+### 善用迭代
+
+不用期待第一次就拿到完美的結果。跟 Claude 的對話是一個迭代的過程：
+
+1. 先給初始需求，拿到第一版
+2. 看過之後指出要修改的地方
+3. Claude 修改後再看一次
+4. 重複直到滿意
+
+這個過程其實就是一種 pair programming，只是你的 pair 是 AI。
+
+---
+
+## 什麼時候不該用 Claude
+
+雖然 Claude 很好用，但有些情況它幫不了太多：
+
+- **高度依賴業務邏輯的決策**：比如「這個欄位到底要不要必填」，這種事 AI 不會知道，你得去問 PM 或看需求文件
+- **效能瓶頸的根因分析**：它可以給你優化建議，但真正的效能瓶頸需要你用 profiler 去量測
+- **架構設計的最終決策**：Claude 可以給你好幾個方案的 pros/cons，但最後拍板的應該是你，因為你才了解整個團隊的情況和技術債的歷史
+- **涉及機密的程式碼**：注意不要把公司機密的 code 直接貼到網頁版的 AI 上，如果有隱私考量，用 Claude Code 搭配適當的設定會安全許多
+
+---
+
+## 結語
+
+AI 不會取代工程師，但會用 AI 的工程師會取代不會用的。
+
+Claude 對我來說，最大的價值不是「幫我寫 code」，而是「讓我可以把時間花在更重要的事情上」。把重複性的工作交給它，把需要創意和判斷力的部分留給自己，這才是人跟 AI 協作的正確姿勢。
+
+好啦，如果你還沒試過 Claude，真的可以去玩玩看。不管是網頁版還是 Claude Code，先用用看，跟它聊幾次，你就會慢慢找到你自己的使用節奏。
