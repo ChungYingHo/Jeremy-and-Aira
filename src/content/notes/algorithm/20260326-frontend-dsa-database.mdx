@@ -9,327 +9,216 @@ changelog: []
 import BigOChart from '@/components/ArticleRelated/algorithm/BigOChart.svelte'
 import EventLoopDiagram from '@/components/ArticleRelated/algorithm/EventLoopDiagram.svelte'
 
-## 資料與演算法比我們想像得更近
+## 演算法與前端
 
-從一個你一定寫過的東西開始——從陣列裡把重複的值拿掉，也就是去重。
+LeetCode 上有一題 [217. Contains Duplicate](https://leetcode.com/problems/contains-duplicate/)，用意是檢查陣列裡的數字是否有重複出現，若有就 return true，反之就 return false。  
+這基本在前端應用上最容易聯想的就是陣列的元素去重。  
+概念上這種跟陣列相關的問題第一個會直覺想到用陣列自己本身的 methods 去解決，比如 leetcode 217 這題可能會直覺想到 `includes`：
 
-常見的寫法有三種：
-
-```js
-// 寫法一：土法煉鋼，用迴圈 + includes
-function removeDuplicates(arr) {
-  const result = []
-  for (const item of arr) {
-    // 每次都問：「result 裡面有沒有這個東西？」
-    // includes 會從頭掃到尾，有 n 個元素就最多比 n 次
-    if (!result.includes(item)) {
-      result.push(item)
-    }
+```ts
+function containsDuplicate(nums: number[]): boolean {
+  const checked: number[] = []
+  for (const num of nums) { 
+    if (checked.includes(num)) 
+      return true
+    checked.push(num)
   }
-  return result
+  return false 
 }
-// 複雜度：O(n²)
-// 外層迴圈跑 n 次，每次 includes 最多掃 n 次 → n × n
 ```
 
-```js
-// 寫法二：filter + indexOf
-function removeDuplicates(arr) {
-  // 只保留「第一次出現」的元素
-  // indexOf 會回傳該值第一次出現的位置
-  return arr.filter((item, index) => arr.indexOf(item) === index)
+然後就發現 `includes` 通過了絕大分的測試，但在遇到超~~~ 多內容的陣列就會遇到 TLE (Time Limit Exceeded)。  
+所以改用一個不是陣列本身的方式來解題，透過 `new Set` 來解題：
+
+```ts
+function containsDuplicate(nums: number[]): boolean {
+  return new Set(nums).size !== nums.length
 }
-// 複雜度：O(n²)
-// filter 跑 n 次，每次 indexOf 從頭掃到尾最多 n 次 → 一樣是 n × n
 ```
 
-```js
-// 寫法三：一行搞定
-function removeDuplicates(arr) {
-  return [...new Set(arr)]
+可以看到它順利通過 leetcode 的整整 77 個大測試，甚至執行速率還不錯。  
+造成這種差異的就在於使用 `includes` 的方式的複雜度是 $O(n^2)$，而 `new Set` 的複雜度是 $O(n)$。  
+如果忘記複雜度是什麼或簡單怎麼計算，沒關係，這等等會講。  
+但這裡只要記住一件事，$O(n^2)$ 所耗費的時間在 $n$ 足夠大時是會遠大於 $O(n)$ 的。  
+其實簡單舉個 $n = 10$，$O(n^2)$ 會耗費 100 時間單位，$O(n)$ 只會耗 10 個時間單位，基本就能稍微感受到其差異了。
+
+## 複雜度分析
+簡單複習一下複雜度，其實大家簡單回憶一下複雜度會回想起複雜度其實分為時間複雜度跟空間複雜度，但基本討論的都還是時間複雜度最多，因為時間複雜度通常是影響程式效能的主要因素。空間複雜度雖然也重要，但一般要資料量非常大，或是記憶體非常有限的情況下，才會特別注意空間複雜度。  
+所以我們這裡就只講時間複雜度。  
+
+關於複雜度的討論，基本就是大家耳熟能詳的 Big O notation，用一個簡單的代表來衡量演算法在 $n$ 趨近於無限大時在最壞的情況下的表現。  
+對於 Big O，他還有個 Big Ω 跟 Big Θ 的姐妹，用白話一點的說法來記憶，前者可以當作是演算法在最佳的情況下的表現，後者則可以視為平均表現，但這是不嚴謹的說法，不過他們也不在這次的討論中，因為通常大家最關心的是演算法在最壞情況下的表現，所以這裡也不贅述其餘二者。
+
+對於複雜度分析，我們回到前面 leetcode 217 的例子。  
+剛剛提到 `includes` 的方式其複雜度為 $O(n^2)$ 是怎麼算的？  
+其實就是估算 $n$ 筆資料在最壞情況下，核心操作總共會被執行幾次。
+
+```ts
+function containsDuplicate(nums: number[]): boolean {
+  const checked: number[] = []
+  for (const num of nums) {         // O(n)：走訪每個元素
+    if (checked.includes(num))      // O(n)：includes 會線性掃描整個陣列
+      return true
+    checked.push(num)
+  }
+  return false                      // 總計 O(n) × O(n) = O(n²)
 }
-// 複雜度：O(n)
-// Set 內部用 hash table，加入和查找都是固定時間
-// 整個陣列只需要跑一遍
 ```
 
-三種寫法跑出來的結果完全一樣。但寫法一和寫法二都是 $O(n^2)$（資料量多 10 倍，慢 100 倍），寫法三是 $O(n)$（資料量多 10 倍，只慢 10 倍）。
+至於 `new Set` 的方法為何是 $O(n)$？  
+在於 new Set(nums) 建構時需要走訪全部 $n$ 個元素，而每次插入 Set 的操作為 $O(1)$，因此整體為 $O(1) \times n = O(n)$。
 
-### 用排隊來想就懂了
+```ts
+function containsDuplicate(nums: number[]): boolean {
+  // new Set(nums)：走訪 n 個元素，每次插入為 O(1)，整體 O(n)
+  return new Set(nums).size !== nums.length
+}
+```
 
-想像一下你在管理一個「不重複名單」。
+所以這就是一個最基本的複雜度分析。  
+而常見的複雜度種類可以稍微概括如下：
 
-**寫法一、二就像這樣：** 每來一個新名字，你就從名單的第一行開始，一行一行往下看：「有沒有這個名字？有沒有？有沒有？」名單上有 100 個名字，你就得看 100 行。下一個人來，又從頭看 100 行。再下一個人，又看 100 行⋯⋯
-
-如果今天有 1000 個人排隊要登記，名單上也累積了快 1000 個名字——你每登記一個人就要掃一遍快 1000 行的名單。1000 個人 × 1000 行 = 一百萬次翻找。
-
-**寫法三就像這樣：** 你手上有一本索引簿，每個名字都有專屬的格子。新名字來了，你直接翻到那一頁看看格子是空的還是有人——不用從頭掃，直接定位。不管名單上有多少人，查一個名字的速度都一樣快。
-
-1000 個人 × 每次只查一格 = 只要 1000 次。
-
-一百萬 vs 一千，差了一千倍。
-
-其實 LeetCode 上有一題 [217. Contains Duplicate](https://leetcode.com/problems/contains-duplicate/)，就是判斷陣列裡有沒有重複值。如果你用 `includes` 或 `indexOf` 的邏輯去做，測資量一大就會直接 TLE（Time Limit Exceeded，超時）。換成 `Set` 就秒過——題目本身超簡單，考的就是你有沒有意識到不同做法的速度差異。
-
----
-
-## 你的程式碼，到底有多慢？
-
-上面那個「差了一千倍」的觀察，其實就是工程師說的「複雜度分析」在做的事。
-
-不用怕，這不是數學課。我用生活的方式說給你聽。
-
-### 想像你在找一本書
-
-**情境一：書架上的書有編號**
-
-你要找第 42 號的書。書架上每本書都有清楚的編號，你直接走到 42 號的位置拿走——不管書架上有 100 本還是 100 萬本，你都只需要走那一步。
-
-這種「不管資料多少，速度都一樣」的情況，工程師會說它的速度等級是 **常數時間**。
-
-**情境二：書架上的書沒有編號**
-
-你要找一本叫《哈利波特》的書，但書架上的書是亂排的。你只好從第一本開始，一本一本翻：「是不是？不是。是不是？不是。是不是？找到了！」
-
-書架上有 100 本，你最多翻 100 次。有 1 萬本，你最多翻 1 萬次。資料量多 10 倍，你就慢 10 倍——很公平，成正比。
-
-這種「資料多 10 倍就慢 10 倍」的情況，速度等級叫 **線性時間**。
-
-**情境三：字典式翻找**
-
-你在一本很厚的字典裡找一個字。你不會從第一頁開始翻，你會先翻到中間，看看是太前面還是太後面，然後再切一半，再切一半⋯⋯每次都把範圍砍掉一半。
-
-一本 1000 頁的字典，你大概翻 10 次就能找到目標。100 萬頁的字典？大概也只要 20 次。資料量暴增，但你多做的事很少。
-
-這種「每次砍一半」的情況，速度等級叫 **對數時間**。
-
-**情境四：最慘的狀況**
-
-回到那個沒有編號的書架。這次更慘——你要幫每一本書都找到它的作者資訊，而作者資訊也在另一個沒有編號的書架上。
-
-對於每一本書（100 本），你都要去另一個書架從頭掃一遍（100 本）。100 × 100 = 10,000 次翻找。如果兩邊都有 1000 本呢？1000 × 1000 = 一百萬次。
-
-資料量多 10 倍，速度慢 100 倍。這就是前面「迴圈裡套迴圈」的情況，速度等級叫 **平方時間**。
-
-### 好，現在可以說 Big O 了
-
-工程師會用一個叫 **Big O** 的記號來標記這些速度等級。它就是一個簡寫，告訴你「資料量變大的時候，這段程式大概會慢多快」：
-
-| 速度等級 | Big O 記號 | 白話翻譯 | 生活對應 |
-| :--- | :---: | :--- | :--- |
-| 常數時間 | $O(1)$ | 不管多少資料，一樣快 | 有編號的書架，直接拿 |
-| 對數時間 | $O(\log n)$ | 每次砍一半，超快 | 翻字典 |
-| 線性時間 | $O(n)$ | 資料多 10 倍，慢 10 倍 | 從頭掃到尾 |
-| 排序等級 | $O(n \log n)$ | 比線性慢一點 | 排序一疊牌 |
-| 平方時間 | $O(n^2)$ | 資料多 10 倍，慢 100 倍 | 迴圈套迴圈 |
+1. $O(1)$：常數時間複雜度，無論輸入的規模多大，執行時間都是固定的。
+2. $O(\log n)$：對數時間複雜度，當輸入規模增長，執行時間呈對數成長。  
+3. $O(n)$：線性時間複雜度，執行時間與輸入的規模成正比。
+4. $O(n \log n)$：線性對數時間複雜度，當輸入規模增長，執行時間以 $n$ 乘以 $\log n$ 的速率增長。  
+5. $O(n^k)$：多項式複雜度，當輸入規模增長，執行時間呈平方成長。  
+6. $O(2^n)$：指數時間複雜度，當輸入規模增長，執行時間呈指數成長。  
 
 <BigOChart client:only="svelte" />
 
-前端開發最常不小心踩到的就是**平方時間**——一個 `.map()` 裡面呼叫 `.find()`，看起來只是兩行程式碼，但其實是一個迴圈套另一個迴圈。資料量小的時候完全感覺不到，但只要資料從 50 筆變成 5000 筆，畫面就開始卡了。
+對於前端實務開發來說，最常不小心踩到的就是多項式複雜度，舉例來說我們可能都看過 `.map()` 裡面呼叫 `.find()` 之類的寫法，簡單、方便，好用一直用。  
+但這其實就是一個迴圈套另一個迴圈。  
+一般會沒感受到它帶來的效能差異是因為經手的資料量挺小的，但只要資料從 50 筆變成 5000 筆，畫面大概就開始卡了。
 
-### 速度等級速查表
-
-你常用的那些陣列方法，速度等級其實很好記：
+對於前端來說，我們一些很常用的方法也都可以以複雜度衡量：
 
 | 程式碼 | 速度 | 為什麼 |
 | :--- | :---: | :--- |
-| `map.get('key')` | $O(1)$ | 有索引，直接定位 |
-| `set.has(value)` | $O(1)$ | 有索引，直接定位 |
-| `arr[5]` | $O(1)$ | 用位置直接拿 |
-| `arr.find(x => ...)` | $O(n)$ | 從頭掃到尾 |
-| `arr.filter(...)` | $O(n)$ | 每個看一遍 |
-| `arr.sort()` | $O(n \log n)$ | 排序就是這個等級 |
-| `.map()` 裡面套 `.find()` | $O(n^2)$ | 迴圈套迴圈！危險！ |
+| `arr[5]` | $O(1)$ |
+| `arr.find(x => ...)` | $O(n)$ |
+| `arr.filter(...)` | $O(n)$ |
+| `arr.sort()` | $O(n \log n)$ |
+| `.map()` 裡面套 `.find()` | $O(n^2)$ |
 
-有一個常見的誤會：`arr.filter().map().reduce()` 這樣串三個方法，是不是 $n \times n \times n$？不是。它只是把陣列跑了三遍——一遍過濾、一遍轉換、一遍計算——每遍都是從頭到尾走一次，加起來是三倍的 $n$，不是 $n$ 的三次方。真正危險的是**巢狀**：外面的迴圈每跑一圈，裡面又要整個掃一遍。
-
----
+還有一個常見的寫法類似這樣：`arr.filter().map().reduce()`，可能會覺得其複雜度為 $n \times n \times n = O(n^3)$？  
+但其實它只是把陣列跑了三遍，一遍過濾、一遍轉換、一遍計算—，每遍都是從頭到尾走一次，加起來是三倍的 $n$，不是 $n$ 的三次方，所以其實複雜度仍為 $O(n)$。  
+真正會用多項式計算的巢狀結構，比如前述的 `.map()` 裡面套 `.find()`
 
 ## 前端開發裡的資料結構
 
-「資料結構」聽起來很學術，但其實就是「資料怎麼擺、怎麼找」。你每天都在用，只是沒有用這個詞去叫它。
+其實用 JS 講 data structure 略有些難受，因為 JS 真的是個挺神奇的語言。  
+大家都知道在 JS 裡 array 是 object 的一種，但對應學術裡的 data structure，object 其實是 hash table，而 array 則依舊是 array，其原因來自於現在的 JS engine 會針對 array 做一些優化。  
+就我自己的理解是它會偷偷觀察我們寫 Js array 的方式去更換底層結構：
+- index 是連續整數、元素型別一致 → 換成連續記憶體，就是學術上的 array
+- 中間有空洞、或混了不同型別 → 退回 hash table
 
-### Call Stack：你的程式是怎麼一步步跑的
+所以總之用 JS 說資料結構真的有一丟丟反直覺。  
+但在一些前端常討論的內容還是可以稍微感受到資料結構的強大。
 
-JavaScript 一次只能做一件事（單執行緒）。那它怎麼知道該先做哪件事？靠的是一個叫 **Call Stack** 的東西——中文叫「呼叫堆疊」。
+### Object
+如同前述所說，JS object 其實底層是 hash table。  
+Hash table 這個資料結構的的特點是存資料時，key 會先經過一個 hash function 轉換成一個數字，這個數字就是該資料在記憶體中的位置（index）。  
+之後要查找時，同樣把 key 丟進 hash function，直接算出位置跳過去，就不需要從頭掃，因此查找的複雜度永遠是 $O(1)$。  
+這個 hash 概念其實跟登入系統輸入密碼時的 hash 是一樣的，不過登入系統這便是為了安全性更多一點。
 
-你可以把 Call Stack 想像成一疊盤子：
+### Call stack
+前端在探討非同步時多少都會提到一點 call stack。     
+既然它掛著 stack 的名字，學過資料結構的都知道，stack 是一種 LIFO (Last In First Out) 的結構，意思是說最後進去的東西會最先被取出來。  
+用一個我一直覺得是非同步經典影片裡的截圖來看 call stack:
 
-- 程式呼叫一個函式 → 在盤子堆的最上面放一個盤子
-- 那個函式跑完了 → 把最上面的盤子拿走
-- 下面的盤子（之前的函式）才能繼續
+![Call stack](https://cdn.jsdelivr.net/gh/ChungYingHo/Jeremy-Assets@master/jeremy-and-aira/languages/javascript/call-stack.png)
 
-最晚放上去的盤子，最先被拿走——這就是 **Stack（堆疊）** 這個資料結構的特性，叫做「後進先出」。
+### Callback queue
+Callback queue 是非同步探討一定會講到的內容，基本上講的是當非同步任務由執行環境處理完成後，對應的 callback 會被放入佇列中等待執行，這個佇列通常被稱為 callback queue。  
+Queue 基本常拿出來跟 stack 做對比，前面提到 stack 是 LIFO (Last In First Out)，queue 剛好反過來是 FIFO (First In First Out)，也就是先進先出。  
+因此 callback queue 概念上就是越先進去的 callback 會越早被 event loop 給抓出來排進 call stack。  
+至於 callback queue 嚴格意義上又會被分 macrotask queue 與 microtask queue，這是非同步要探討的問題，這裡也不贅述。
 
-```js
-function multiply(a, b) { return a * b }
-function square(n) { return multiply(n, n) }
-console.log(square(5))
+### DOM tree
+前端最基本的骨架 DOM tree 也是一個經典資料結構的應用 - tree。   
+舉例來說，`<html>` 是根節點，往下分出 `<head>` 和 `<body>`，`<body>` 再往下分出各個子元素，層層展開
+
+```
+html
+├── head
+│   └── title
+└── body
+    ├── h1
+    └── div
+        └── p
 ```
 
-這段程式跑的時候，盤子堆的變化是這樣的：
+在那個沒有高科技的年代，要選到 DOM node 會用到的 `querySelector` 本質上就是在這顆樹上透過 DFS (Depth-First Search) 去找節點，所以它是一路往最深的子節點鑽，找不到再回頭換下一條路，直到找到第一個符合的元素為止。   
+所以在真的很糟的情況下，`querySelector` 就是把整個 DOM tree 都給爬完，這個複雜度是 $O(n)$。  
+所以在古早古早以前，但我相信大家應該都經歷過，會盡量把搜尋的範圍縮小，比如：
 
-1. `console.log(square(5))` 放上去
-2. `square(5)` 被呼叫，放上去
-3. `multiply(5, 5)` 被呼叫，放上去（現在有三層）
-4. `multiply` 算完回傳 25，拿走
-5. `square` 拿到結果，回傳 25，拿走
-6. `console.log` 印出 25，拿走（清空了）
-
-你在 DevTools 裡看到的 Error Stack Trace，就是程式出錯那一刻盤子堆的快照——它告訴你「是從哪一路呼叫過來的」。而那個著名的錯誤 `Maximum call stack size exceeded`，就是盤子疊太高了——通常是遞迴沒寫好，函式不斷呼叫自己卻沒有停下來。
-
-### Event Loop：那非同步的事怎麼辦？
-
-JavaScript 一次只能做一件事，那 `setTimeout`、`fetch` 這些要等的東西怎麼辦？總不能整個程式卡在那邊等吧？
-
-靠的是 **Event Loop（事件迴圈）**——它就像一個在 Call Stack 旁邊站崗的管理員。
-
-機制是這樣的：
-1. 你寫了一個 `setTimeout(callback, 1000)`，JavaScript 把「等 1 秒」這件事丟給瀏覽器去計時，自己繼續做下面的事
-2. 1 秒到了，瀏覽器把那個 callback（你要它做的事）排進一個「等待區」
-3. Event Loop 不斷巡邏：「Call Stack 空了嗎？空了！那我從等待區拿一個 callback 來執行。」
-
-這個等待區其實有兩個，而且有優先順序：
-- **Microtask Queue**（VIP 等待區）：`Promise.then()` 的 callback 會排在這裡。每次 Call Stack 清空，VIP 等待區的全部 callback 會先被清空。
-- **Task Queue**（普通等待區）：`setTimeout`、DOM 事件的 callback 排在這裡。要等 VIP 的全部處理完才輪到它。
-
-這就是為什麼下面這段程式碼的輸出順序不是你直覺想的那樣：
-
-```js
-console.log('1')                              // 同步，直接跑
-setTimeout(() => console.log('3'), 0)          // 丟進普通等待區
-Promise.resolve().then(() => console.log('4')) // 丟進 VIP 等待區
-console.log('2')                              // 同步，直接跑
-
-// 輸出：1, 2, 4, 3
-// 不是 1, 2, 3, 4！
+```
+const container = document.getElementById('app') // 已經有參考了
+container.querySelector('.target')               // 只走 container 底下的樹
 ```
 
-為什麼 `setTimeout(..., 0)` 不是立刻執行？因為就算等 0 秒，它的 callback 也是被排進普通等待區，要等同步程式和 VIP 都跑完才輪到它。Promise 是 VIP，所以 4 先出來，3 最後。
+但可能更實際的做法是透過 `getElementById` 來選取 DOM node，因為 id 在整份文件裡是唯一的，瀏覽器在解析 HTML 時，順便維護一張 id → 節點的 hash table，記住每個 id 對應的節點位置。查找時直接從 hash table 拿到該節點的參考，不需要從根節點一路遍歷下去。
 
-<EventLoopDiagram client:only="svelte" />
+## 實務上探討一下演算法與資料結構 (Vue 為例)
 
-### 前端的百寶箱：Map、Set、Object、WeakMap
+### 例子一：computed 的運算
 
-這四個東西你多少都用過，它們都是用來「存東西、找東西」的。要理解為什麼它們查找速度快，得先知道一個概念：**Hash Table（雜湊表）**。
-
-#### 為什麼 Hash Table 這麼快？
-
-想像一個有 1000 格的置物櫃。每格都有編號（0 到 999）。
-
-你要存一個叫 `"Jeremy"` 的東西。Hash Table 會先把 `"Jeremy"` 這個字丟進一個「hash function（雜湊函式）」裡——它就像一台魔法機器，吃進去任何東西，吐出一個數字。假設吐出來的是 `42`，那就把東西放進第 42 格。
-
-下次要找 `"Jeremy"` 的時候？再把 `"Jeremy"` 丟進同一台機器，又得到 `42`，直接去第 42 格拿——不用掃 1000 格，一步到位。
-
-這就是為什麼 `Map.get()`、`Set.has()`、`Object` 的屬性存取都是 $O(1)$——它們底層都是用 Hash Table 實作的。
-
-:::info
-偶爾會有兩個不同的 key 算出同樣的數字（這叫「碰撞」），這時候需要額外處理，最壞情況下可能退化成 $O(n)$。但在正常使用下，碰撞很少發生，所以我們說 Hash Table 的查找是「平均 $O(1)$」。
-:::
-
-#### JS 資料結構 vs 學術資料結構
-
-你在 JavaScript 裡用的這些東西，其實都對應到電腦科學裡正式的資料結構：
-
-| 你在 JS 裡寫的 | 學術上叫做 | 核心特性 |
-| :--- | :--- | :--- |
-| `Object {}` | Hash Table | key → value 對應，key 限文字，查找 $O(1)$ |
-| `Map` | Hash Table | key → value 對應，key 不限型別，查找 $O(1)$ |
-| `Set` | Hash Set | 只存值不存對，判斷「在不在」$O(1)$ |
-| `Array []` | 動態陣列（Dynamic Array） | 連續記憶體，用 index 存取 $O(1)$，搜尋 $O(n)$ |
-| `WeakMap` | Weak Reference Hash Table | 同 Hash Table，但不阻止垃圾回收 |
-
-這個對應關係很重要，因為當你看到有人說「用 Hash Table 優化查找」，其實就是在說「用 `Map` 或 `Set` 取代 `Array.find()`」——你已經會了。
-
-#### 各自的擅長場景
-
-**`Object {}`——最萬用的**
-
-就是你每天都在寫的 `{ name: 'Jeremy', age: 28 }`。key 只能是文字（string），但 V8 對它有大量最佳化，一般場景下超快。
-
-**`Map`——比 Object 更彈性**
-
-key 可以是任何東西（數字、物件、甚至 `NaN` 都行），會記住插入順序，頻繁新增刪除時效能更穩定。當你需要用「不是文字」的東西當 key，`Map` 比 `Object` 合適。
-
-**`Set`——只管「有沒有」**
-
-不存鍵值對，只存一堆不重複的值。核心能力就是回答：「這個東西在不在裡面？」而且靠 Hash Table 直接定位，不管 Set 有多大都一樣快。前面的去重就是 `Set` 的經典用法。
-
-**`WeakMap`——會自動清垃圾的 Map**
-
-跟 `Map` 很像，但 key 一定要是物件。特殊的地方在於：如果那個物件在其他地方都沒人用了，`WeakMap` 裡的對應條目會自動被清掉，不會佔記憶體。Vue 3 的響應式系統內部就大量使用 `WeakMap` 來追蹤哪些物件是 reactive 的。
-
-| 東西 | 底層結構 | key 限制 | 查找速度 | 什麼時候用 |
-| :--- | :--- | :--- | :---: | :--- |
-| `Object {}` | Hash Table | 文字 | $O(1)$ | 一般場景 |
-| `Map` | Hash Table | 不限 | $O(1)$ | key 不是文字、頻繁增刪 |
-| `Set` | Hash Set | —（只存值） | $O(1)$ | 去重、判斷有沒有 |
-| `WeakMap` | Weak Hash Table | 物件 | $O(1)$ | 避免記憶體洩漏 |
-| `Array []` | 動態陣列 | — | $O(1)$ 索引 / $O(n)$ 搜尋 | 有序資料、需要 index |
-
----
-
-## 寫 Vue 的時候，藏在程式碼裡的速度差異
-
-這段不是要講 Vue 內部什麼 Virtual DOM diff 演算法——那是框架開發者要操心的事。我想聊的是：我們平常寫 Vue 的時候，那些看起來很正常的寫法，背後其實有快有慢。
-
-### 例子一：computed 裡的隱形陷阱
-
-假設你在做一個商品列表，每個商品有一個分類 ID，你想把分類名稱補上去：
+假設在做一個商品列表，每個商品有一個分類 ID，現在想把分類名稱補上去，最直覺的做法大概是這樣：
 
 ```vue
 <script setup>
 import { computed } from 'vue'
 
 const props = defineProps({
-  items: Array,       // [{id: 1, name: '蘋果', categoryId: 'fruit'}, ...]
-  categories: Array,  // [{id: 'fruit', name: '水果'}, {id: 'meat', name: '肉類'}, ...]
+  posts: Array,   // [{ id: 1, authorId: 'a1', title: '第一篇文章' }, ...]
+  authors: Array, // [{ id: 'a1', name: '小明' }, ...]
 })
 
-// 直覺寫法
-const enrichedItems = computed(() =>
-  props.items.map(item => {
-    // 對每一個商品，都跑進 categories 裡面從頭到尾找一遍
-    const cat = props.categories.find(c => c.id === item.categoryId)
-    return { ...item, categoryName: cat?.name }
+const enrichedPosts = computed(() =>
+  props.posts.map(post => {
+    const author = props.authors.find(a => a.id === post.authorId)
+    return { ...post, authorName: author?.name }
   })
 )
 </script>
 ```
 
-看起來很乾淨對吧？`.map()` 裡面用 `.find()` 查分類名稱，邏輯很清楚。
+`.map()` 裡面用 `.find()` 查分類名稱，是邏輯相當清楚、撰寫相當清楚的。  
+但對每一個 post 而言，`.find()` 都要把 authors 從頭掃到尾。  
+如果有 500 篇 post、100 個 author，每次 computed 重算就是 500 × 100 = 50000 次比較，其複雜度為 $O(n^2)$。  
+而且只要 `items` 一變動（比如搜尋結果改變），整個 computed 就會重跑一次。  
+這在資料量大時就是個災難。
 
-但你有沒有意識到：**對每一個商品，`.find()` 都要把 categories 從頭掃到尾**？如果有 500 個商品、100 個分類，每次 computed 重算就是 500 × 100 = 五萬次比較。而且只要 `items` 一變動（比如搜尋結果改變），整個 computed 就會重跑一次。
-
-改成先建一個「索引簿」（也就是 Hash Table）：
+解決這種在大樹巨時極耗效能的方式是改成先建一個「索引簿」（也就是 Hash Table），下面的查找複雜度為 $O(n)$：
 
 ```vue
 <script setup>
 import { computed } from 'vue'
 
 const props = defineProps({
-  items: Array,
-  categories: Array,
+  posts: Array,   // [{ id: 1, authorId: 'a1', title: '第一篇文章' }, ...]
+  authors: Array, // [{ id: 'a1', name: '小明' }, ...]
 })
 
-// 先把 categories 建成一個 Map（索引簿）
-// key 是分類 ID，value 是分類物件
-// 這一步跑一遍 categories 就做完了
-const categoryMap = computed(() =>
-  new Map(props.categories.map(c => [c.id, c]))
+// 先把 authors 建成一個 Map（索引簿）
+// key 是作者 ID，value 是作者物件
+// 這一步跑一遍 authors 就做完了
+const authorMap = computed(() =>
+  new Map(props.authors.map(a => [a.id, a]))
 )
 
-// 現在查分類名稱不用掃了，直接用 ID 去 Map 裡面撈
-const enrichedItems = computed(() =>
-  props.items.map(item => ({
-    ...item,
-    categoryName: categoryMap.value.get(item.categoryId)?.name
+// 現在查作者名稱不用掃了，直接用 ID 去 Map 裡面撈
+const enrichedPosts = computed(() =>
+  props.posts.map(post => ({
+    ...post,
+    authorName: authorMap.value.get(post.authorId)?.name
   }))
 )
 </script>
 ```
 
-`categoryMap` 只有在 `categories` 變動時才重建（Vue 的 `computed` 有快取功能），而每次查找都是直接定位，不用掃。整體從「迴圈套迴圈」降級成「掃一遍就結束」——快很多。
+## 以下還沒寫完
 
 ### 例子二：v-for 裡面硬塞 v-if
 
