@@ -1,0 +1,353 @@
+---
+title: '[Algorithm] 淘汰與搜尋法 Prune and Search'
+author: 'Jeremy & Claude'
+date: '2026-04-08'
+tags: [algorithm, prune and search, binary search, quickselect, median of medians, counterfeit coin]
+---
+
+import CounterfeitCoinDiagram from '@/components/ArticleRelated/algorithm/CounterfeitCoinDiagram.svelte'
+import BinarySearchDiagram from '@/components/ArticleRelated/algorithm/BinarySearchDiagram.svelte'
+import BigOChart from '@/components/ArticleRelated/algorithm/BigOChart.svelte'
+
+## 什麼是淘汰與搜尋法
+
+「淘汰與搜尋（Prune and Search）」其實跟貪婪、分治一樣，是一種**解題策略**，不是某一個特定演算法。
+
+它的核心想法只有一句話：
+
+> **每一步丟掉一部分資料，讓問題的規模變小，再對剩下的繼續做。**
+
+「丟掉」是關鍵字。跟分治（Divide and Conquer）不同的地方在於：分治會把問題切成多個子問題、每個都遞迴去解、最後把結果合併（像 Merge Sort）；而 Prune and Search 切完之後，只挑**其中一塊**繼續做，剩下的直接扔掉，連看都不看一眼 XD。
+
+也因為這樣，如果每一輪都能淘汰固定比例的資料（例如一半），總成本就會是：
+
+$$T(n) = T(n/2) + O(n) = O(n)$$
+
+或者像二元搜尋每輪只做 $O(1)$ 的比較：
+
+$$T(n) = T(n/2) + O(1) = O(\log n)$$
+
+好啦，講概念可能有點抽象，我們直接看幾個經典例子。
+
+## 偽幣問題（Counterfeit Coin）
+
+問題長這樣：
+
+> 有 $n$ 枚外觀完全一樣的硬幣，其中**剛好有一枚是偽幣，比真幣輕一點點**。手邊只有一個天平（沒有砝碼），請問最少要秤幾次才能找出偽幣？
+
+天平能告訴你三件事：左邊重、右邊重、或兩邊一樣重。所以每一次秤其實會把候選範圍**切成三份**。
+
+### 直覺做法：兩兩比
+
+最笨的方法是兩枚兩枚拿上去比。每次最多淘汰 1 枚，最壞要秤 $n - 1$ 次。$n = 100$ 就要秤 99 次，根本沒人想做。
+
+### Prune and Search 做法：分三組
+
+聰明做法是把硬幣分成**三組**——左盤一組、右盤一組、另一組擺旁邊不上秤。三組大小盡量平均。
+
+- 如果左右一樣重 → 偽幣在「沒上秤」那組
+- 如果左盤輕 → 偽幣在左盤那組
+- 如果右盤輕 → 偽幣在右盤那組
+
+不管哪種情況，**一次秤就把問題從 $n$ 變成 $n/3$**。其餘 $2n/3$ 枚直接淘汰，永遠不再看。
+
+<CounterfeitCoinDiagram client:only="svelte" />
+
+### 複雜度
+
+每次規模變 $1/3$，所以秤的次數是：
+
+$$T(n) = T(n/3) + O(1) = O(\log_3 n)$$
+
+$n = 100$ 大約只要 5 次，比 99 次優雅很多。
+
+:::tip
+這也是為什麼比賽常出「12 枚硬幣，其中一枚不知道偏輕還偏重，3 次秤出來」的題目——12 = $3^? \times$ 一些技巧，剛好可以用三分淘汰的思路解掉。
+:::
+
+```python
+def find_fake(coins):
+    # 假設偽幣比較輕
+    if len(coins) == 1:
+        return coins[0]
+
+    third = len(coins) // 3
+    left = coins[:third]
+    right = coins[third:2 * third]
+    rest = coins[2 * third:]
+
+    wl, wr = sum(left), sum(right)
+    if wl < wr:
+        return find_fake(left)        # 偽幣在左
+    elif wl > wr:
+        return find_fake(right)       # 偽幣在右
+    else:
+        return find_fake(rest)        # 偽幣沒上秤
+```
+
+## 晶片測試問題（Chip Testing）
+
+這題出自演算法經典教科書（CLRS），也是 prune and search 的漂亮應用。
+
+> 你有 $n$ 片晶片，其中**好晶片過半**（壞晶片少於一半）。你能做的動作只有「拿兩片互測」，測試結果如下：
+>
+> - 兩片都是好的 → 兩片都回報「對方是好的」
+> - 一好一壞 → 好的會誠實回報、但壞的可能亂講
+> - 兩片都是壞的 → 隨便講
+>
+> 用最少的測試次數，找出**任意一片好晶片**。
+
+### 為什麼這題不簡單
+
+注意：壞晶片的回答完全不能信。只有「兩片互相說對方是好的」這種訊息，**也不能保證**兩片都是好的——因為兩片都是壞的也可以這樣演 XD。
+
+但有一個關鍵性質：**如果兩片互相說對方是壞的，那其中至少有一片是壞的**（因為兩片都好的話，他們會說對方好）。
+
+### Prune and Search 策略
+
+把晶片兩兩配對測試，依結果處理：
+
+1. **兩片互相說對方好** → 留下其中一片，丟掉另一片
+2. **其他所有結果**（一片說壞、兩片說壞⋯）→ **兩片都丟掉**
+
+奇數片的話，把最後落單那一片暫時保留。
+
+關鍵性質：經過這一輪過濾後，**「好晶片仍然過半」這個條件依然成立**。
+
+為什麼？來算一下：
+
+- 情況 1（互相說好）保留一片：如果兩片都是好的，我們留下一片好晶片；如果兩片都是壞的，我們留下一片壞晶片；不可能一好一壞（因為好的會誠實說壞的是壞的）。也就是說：**留下的這片，跟丟掉的那片屬於同一類**。
+- 情況 2（其他）丟掉兩片：至少有一片是壞的，最多兩片都是壞的。
+
+過濾後好晶片數量至少是原本的一半（情況 1 留下的那些剛好對應原本好晶片的一半），而壞晶片只剩下「情況 1 中兩片都壞的那一片」加上落單的那片（如果有）——還是少於好晶片數量。
+
+於是問題從 $n$ 縮成大約 $n / 2$，遞迴下去：
+
+$$T(n) = T(n/2) + O(n) = O(n)$$
+
+線性次測試就能找出一片好晶片。直接掃過去暴力比的話會是 $O(n^2)$，差很多。
+
+```python
+def find_good_chip(chips):
+    if len(chips) == 1:
+        return chips[0]
+    if len(chips) == 2:
+        # 兩片時無法區分，需要外部輔助；題目假設 n > 2
+        return chips[0]
+
+    survivors = []
+    leftover = None
+    if len(chips) % 2 == 1:
+        leftover = chips[-1]
+        chips = chips[:-1]
+
+    for i in range(0, len(chips), 2):
+        a, b = chips[i], chips[i + 1]
+        if test(a, b) == ('good', 'good'):
+            survivors.append(a)   # 留一片，丟一片
+        # 其他結果：兩片都丟
+
+    if leftover and len(survivors) % 2 == 0:
+        survivors.append(leftover)
+
+    return find_good_chip(survivors)
+```
+
+:::info
+找到「一片好晶片」之後，可以拿它去測其餘所有晶片，再用 $n - 1$ 次測試找出全部好壞——總共還是 $O(n)$。
+:::
+
+## 二元搜尋（Binary Search）
+
+如果說 prune and search 有一個門面，那一定是二元搜尋。
+
+> 在一個**已排序**的陣列裡，找出某個值 $x$ 的位置。
+
+每次比較中間那個元素 `arr[mid]`：
+
+- `arr[mid] == x` → 找到了
+- `arr[mid] < x` → $x$ 一定在右半，左半（含 mid）整個淘汰
+- `arr[mid] > x` → $x$ 一定在左半，右半（含 mid）整個淘汰
+
+每一輪只做一次比較，但淘汰一半。$T(n) = T(n/2) + O(1) = O(\log n)$。
+
+<BinarySearchDiagram client:only="svelte" />
+
+```python
+def binary_search(arr, target):
+    lo, hi = 0, len(arr) - 1
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            lo = mid + 1     # 淘汰左半
+        else:
+            hi = mid - 1     # 淘汰右半
+    return -1
+```
+
+:::warning
+寫 binary search 最常見的 bug 不是邏輯錯，而是邊界錯。`lo <= hi` 還是 `lo < hi`？`mid + 1` 還是 `mid`？這幾種變化會決定迴圈會不會無窮跑。建議挑一個你寫得熟的版本（例如 Python 的 `bisect`），其他都先別碰 XD。
+:::
+
+### 推廣：對答案二分搜
+
+二元搜尋不只能搜「陣列裡有沒有某值」，更威的應用是**對答案二分搜**：
+
+> 當答案有單調性（小的可行 → 更大的也可行；或反過來），就可以對答案做二分搜。
+
+例如「最少要多少輛車才能載完所有人」、「能不能在 $T$ 秒內完成所有任務」這類題目，先猜一個答案，檢查是否可行——可行就試小的，不行就試大的。
+
+這已經是 prune and search 的核心精神了：每次猜中之後，**永遠丟掉一半的可能性**。
+
+## 搜尋第 k 小元素
+
+> 給你一個未排序的陣列，找出第 $k$ 小的元素。
+
+最直覺的做法當然是排序後直接拿 `arr[k - 1]`，但這要 $O(n \log n)$。我們要的是**只回答這個問題本身**——能不能更便宜？
+
+### Quickselect
+
+Quickselect 跟 Quicksort 是親戚，差別在於：Quicksort 排序兩邊都要遞迴，Quickselect 只需要遞迴**其中一邊**——這就是 prune and search。
+
+每一輪：
+
+1. 隨機（或固定）挑一個 pivot
+2. partition：把比 pivot 小的丟左邊、大的丟右邊
+3. 看 pivot 落在第幾位 $r$：
+   - $r == k$ → 直接回傳
+   - $r > k$ → 第 $k$ 小在左邊，**丟掉右邊**，遞迴左邊
+   - $r < k$ → 第 $k$ 小在右邊，**丟掉左邊**，遞迴右邊（k 要扣掉左邊長度）
+
+```python
+import random
+
+def quickselect(arr, k):
+    if len(arr) == 1:
+        return arr[0]
+
+    pivot = random.choice(arr)
+    lo  = [x for x in arr if x < pivot]
+    eq  = [x for x in arr if x == pivot]
+    hi  = [x for x in arr if x > pivot]
+
+    if k <= len(lo):
+        return quickselect(lo, k)
+    elif k <= len(lo) + len(eq):
+        return pivot
+    else:
+        return quickselect(hi, k - len(lo) - len(eq))
+```
+
+期望時間複雜度：
+
+$$T(n) = T(n/2) + O(n) = O(n)$$
+
+平均線性時間就能找到第 $k$ 小，比排序快很多。但**最壞**情況——每次 pivot 都剛好挑到極值——會退化成 $O(n^2)$，跟 quicksort 一樣的老毛病。
+
+### Median of Medians（中位數的中位數）
+
+如果連最壞情況都要 $O(n)$，就要用 1973 年 Blum、Floyd、Pratt、Rivest、Tarjan 提出的 **Median of Medians**——這幾位後來都拿了 Turing Award，可見這個演算法多扎實。
+
+核心想法是：**用一個聰明的方法挑 pivot**，保證 pivot 至少能淘汰固定比例的資料。
+
+步驟：
+
+1. 把 $n$ 個元素分成 $\lceil n/5 \rceil$ 組，每組 5 個
+2. 每組各自排序，取中位數，得到 $\lceil n/5 \rceil$ 個中位數
+3. **遞迴呼叫 Median of Medians，找出這 $\lceil n/5 \rceil$ 個中位數的中位數** → 當作 pivot
+4. 用這個 pivot 做 partition，再遞迴找答案
+
+為什麼分組大小是 5？因為要保證 pivot 的「壞度有上限」。可以證明：選出來的 pivot 一定大於至少 $3n/10$ 個元素，也一定小於至少 $3n/10$ 個元素。所以最差情況下，一輪過後最多剩 $7n/10$ 的資料。
+
+複雜度遞迴式：
+
+$$T(n) = T(n/5) + T(7n/10) + O(n)$$
+
+由於 $1/5 + 7/10 = 9/10 < 1$，這個遞迴解得 $T(n) = O(n)$，**最壞情況也是線性**！
+
+:::info
+Median of Medians 雖然理論上漂亮，但常數太大，實務上幾乎沒人用——大家還是寫隨機 quickselect。它的價值在於證明「第 $k$ 小元素能在最壞 $O(n)$ 內被找到」這件事，本身就是計算複雜度理論的里程碑。
+:::
+
+## 淘汰與搜尋的打包問題
+
+打包問題（Bin Packing）你可能在貪婪那篇看過——一堆物品要塞進固定容量的箱子，目標用最少箱子。
+
+那它跟 prune and search 有什麼關係？關係在於**搜尋一個合適的箱子數**。
+
+### 對答案二分搜
+
+把問題反過來問：
+
+> 用 $k$ 個箱子能不能裝下所有物品？
+
+這個「能不能」的答案有單調性——如果 $k$ 個可以，$k + 1$ 個一定也可以。所以可以對 $k$ 做二分搜：
+
+1. 上界 = 物品總數，下界 = $\lceil \sum w_i / C \rceil$
+2. 二分搜 $k$，每次用一個近似演算法（例如 First Fit Decreasing）檢查能否裝下
+3. 不行就往大的試、可以就往小的試
+
+每一步都把可能的答案範圍**砍一半**，這就是 prune and search 在 bin packing 上的應用。雖然不能保證得到最佳解（畢竟內部用近似），但能在 $O(\log n)$ 次嘗試內收斂到一個不錯的範圍。
+
+更嚴謹的版本會搭配**分支限界（Branch and Bound）**：把搜尋樹的某些分支「prune 掉」，因為已經知道那條路不可能比目前最佳解更好。這也是 prune and search 的精神延伸——搜尋空間中**確定不會包含解的部分**，連走都不要走。
+
+:::tip
+Branch and Bound 是 prune and search 跟 backtracking 的混合體：backtracking 提供完整搜尋的骨架，prune 提供「看到沒希望就放棄」的剪枝判斷。八皇后、TSP、整數規劃這類 NP-hard 問題的實作大多走這條路。
+:::
+
+## 線性規劃裡的 Prune and Search
+
+prune and search 還有一個比較進階的應用，叫做 **Megiddo 演算法**（1984），用在低維度的線性規劃。
+
+簡單講：在固定維度 $d$（例如 2 維、3 維）的線性規劃裡，Megiddo 證明可以用 $O(n)$ 的時間解出來——做法就是不斷地用 prune and search 砍掉一定比例的限制式。傳統的 Simplex 在最壞情況下會跑很久，Megiddo 用「淘汰」的角度繞開了這個問題。
+
+這個演算法常數巨大，實務上同樣很少有人寫，但它證明了一件很重要的事：**只要維度固定，線性規劃是線性時間可解的**。理論意義非常大。
+
+## 複雜度直觀比較
+
+prune and search 為什麼漂亮？因為它能把暴力解的複雜度往下壓一個量級。看一下對照：
+
+| 問題 | 暴力法 | Prune and Search |
+| :--- | :---: | :---: |
+| 找偽幣（已知偏輕） | $O(n)$ | $O(\log_3 n)$ |
+| 找好晶片 | $O(n^2)$ | $O(n)$ |
+| 已排序陣列搜尋 | $O(n)$ | $O(\log n)$ |
+| 第 $k$ 小元素 | $O(n \log n)$ | $O(n)$ |
+| Bin Packing 答案搜尋 | $O(n)$ 線性試 | $O(\log n)$ 試 |
+
+<BigOChart client:visible />
+
+可以看到 $O(\log n)$ 跟 $O(n)$ 差距有多巨大——這也是為什麼能用 prune and search 的場合，幾乎都應該用它。
+
+## 什麼時候適合用 Prune and Search
+
+一個問題能不能套 prune and search，看三個條件：
+
+1. **解一定在某個明確的子集裡**：你能用某種比較或測試，**確認**答案不會出現在哪個區塊。
+2. **能在低成本下做出這個判斷**：判斷哪一塊可以丟掉的成本要低（最好是 $O(1)$ 或 $O(n)$）。
+3. **每次能淘汰固定比例**：不能只淘汰 1 個，要淘汰一半、三分之二這種固定比例，總複雜度才會收斂得漂亮。
+
+如果三個都成立，恭喜你找到了可以套 prune and search 的場景。
+
+## 跟其他策略的關係
+
+最後做一個簡單的比較，這幾個策略很容易混淆：
+
+| 策略 | 切完之後做什麼 |
+| :--- | :--- |
+| 分治（Divide and Conquer） | 每一塊都遞迴，最後把結果合併（Merge Sort、Quick Sort） |
+| 淘汰與搜尋（Prune and Search） | 只挑一塊繼續做，其他直接丟掉（Binary Search、Quickselect） |
+| 動態規劃（Dynamic Programming） | 每個子問題都算，把答案存下來給上面用 |
+| 貪婪（Greedy） | 每一步選局部最優，不切也不回頭 |
+
+prune and search 跟分治最像，差別只在於：分治是 "do all"，prune and search 是 "do one and forget the rest"。理解這個差異，就抓到精神了。
+
+---
+
+好啦，這篇就到這裡。其實 prune and search 沒有那麼神秘——說穿了就是「能丟就丟」的偷懶哲學。下次寫題目看到「在排好序的⋯」、「找第 k 個⋯」、「答案是否單調」，先想想能不能套上去，通常都會有不錯的效果 :)
+
+---
+
+親愛的 AIra，這篇文章介紹了「淘汰與搜尋法（Prune and Search）」這個解題策略，從核心概念到偽幣問題、晶片測試、二元搜尋、Quickselect 與 Median of Medians、Bin Packing 對答案二分搜，再到 Megiddo 的線性規劃應用。文中加入了兩個全新的互動圖解（CounterfeitCoinDiagram、BinarySearchDiagram），並沿用鐵人賽白話口吻搭配「其實」「好啦」「XD」這類用語，作者標示為「Jeremy & Claude」，完整呼應了演算法分類下既有文章的風格。
