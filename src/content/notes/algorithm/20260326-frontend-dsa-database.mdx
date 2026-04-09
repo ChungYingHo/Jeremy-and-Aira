@@ -1,7 +1,7 @@
 ---
 title: '[Algorithm] 資料結構 ＆ 演算法概論 - 前端篇'
-author: 'Jeremy & Claude'
-date: '2026-03-26'
+author: 'Jeremy'
+date: '2026-04-09'
 tags: [algorithm, data structure, database, big-o, frontend, vue, javascript]
 changelog: []
 ---
@@ -66,7 +66,7 @@ function containsDuplicate(nums: number[]): boolean {
 ```
 
 至於 `new Set` 的方法為何是 $O(n)$？  
-在於 new Set(nums) 建構時需要走訪全部 $n$ 個元素，而每次插入 Set 的操作為 $O(1)$，因此整體為 $O(1) \times n = O(n)$。
+在於 `new Set(nums)` 建構時需要走訪全部 $n$ 個元素，而每次插入 Set 的操作為 $O(1)$，因此整體為 $O(1) \times n = O(n)$。
 
 ```ts
 function containsDuplicate(nums: number[]): boolean {
@@ -82,7 +82,7 @@ function containsDuplicate(nums: number[]): boolean {
 2. $O(\log n)$：對數時間複雜度，當輸入規模增長，執行時間呈對數成長。  
 3. $O(n)$：線性時間複雜度，執行時間與輸入的規模成正比。
 4. $O(n \log n)$：線性對數時間複雜度，當輸入規模增長，執行時間以 $n$ 乘以 $\log n$ 的速率增長。  
-5. $O(n^k)$：多項式複雜度，當輸入規模增長，執行時間呈平方成長。  
+5. $O(n^k)$：多項式複雜度，當輸入規模增長，執行時間呈多項式成長。  
 6. $O(2^n)$：指數時間複雜度，當輸入規模增長，執行時間呈指數成長。  
 
 <BigOChart client:only="svelte" />
@@ -95,21 +95,21 @@ function containsDuplicate(nums: number[]): boolean {
 
 | 程式碼 | 速度 | 為什麼 |
 | :--- | :---: | :--- |
-| `arr[5]` | $O(1)$ |
-| `arr.find(x => ...)` | $O(n)$ |
-| `arr.filter(...)` | $O(n)$ |
-| `arr.sort()` | $O(n \log n)$ |
-| `.map()` 裡面套 `.find()` | $O(n^2)$ |
+| `arr[5]` | $O(1)$ | 用位置直接拿 |
+| `arr.find(x => ...)` | $O(n)$ | 從頭掃到尾 |
+| `arr.filter(...)` | $O(n)$ | 每個看一遍 |
+| `arr.sort()` | $O(n \log n)$ | 排序就是這個等級 |
+| `.map()` 裡面套 `.find()` | $O(n^2)$ | 迴圈套迴圈 |
 
 還有一個常見的寫法類似這樣：`arr.filter().map().reduce()`，可能會覺得其複雜度為 $n \times n \times n = O(n^3)$？  
-但其實它只是把陣列跑了三遍，一遍過濾、一遍轉換、一遍計算—，每遍都是從頭到尾走一次，加起來是三倍的 $n$，不是 $n$ 的三次方，所以其實複雜度仍為 $O(n)$。  
-真正會用多項式計算的巢狀結構，比如前述的 `.map()` 裡面套 `.find()`
+但其實它只是把陣列跑了三遍，一遍過濾、一遍轉換、一遍計算，每遍都是從頭到尾走一次，加起來是 $3n$，在 Big O 裡常數會被忽略，所以整體仍然是 $O(n)$，不是 $O(3n)$。  
+真正會用多項式計算的是巢狀結構，比如前述的 `.map()` 裡面套 `.find()`。
 
 ## 前端開發裡的資料結構
 
 其實用 JS 講 data structure 略有些難受，因為 JS 真的是個挺神奇的語言。  
 大家都知道在 JS 裡 array 是 object 的一種，但對應學術裡的 data structure，object 其實是 hash table，而 array 則依舊是 array，其原因來自於現在的 JS engine 會針對 array 做一些優化。  
-就我自己的理解是它會偷偷觀察我們寫 Js array 的方式去更換底層結構：
+就我自己的理解是它會偷偷觀察我們寫 JS array 的方式去更換底層結構：
 - index 是連續整數、元素型別一致 → 換成連續記憶體，就是學術上的 array
 - 中間有空洞、或混了不同型別 → 退回 hash table
 
@@ -118,8 +118,8 @@ function containsDuplicate(nums: number[]): boolean {
 
 ### Object
 如同前述所說，JS object 其實底層是 hash table。  
-Hash table 這個資料結構的的特點是存資料時，key 會先經過一個 hash function 轉換成一個數字，這個數字就是該資料在記憶體中的位置（index）。  
-之後要查找時，同樣把 key 丟進 hash function，直接算出位置跳過去，就不需要從頭掃，因此查找的複雜度永遠是 $O(1)$。  
+Hash table 這個資料結構的特點是存資料時，key 會先經過一個 hash function 轉換成一個數字，這個數字就是該資料在記憶體中的位置（index）。  
+之後要查找時，同樣把 key 丟進 hash function，直接算出位置跳過去，就不需要從頭掃，因此查找的複雜度在一般情況下是 $O(1)$。  
 這個 hash 概念其實跟登入系統輸入密碼時的 hash 是一樣的，不過登入系統這便是為了安全性更多一點。
 
 ### Call stack
@@ -137,7 +137,7 @@ Queue 基本常拿出來跟 stack 做對比，前面提到 stack 是 LIFO (Last 
 
 ### DOM tree
 前端最基本的骨架 DOM tree 也是一個經典資料結構的應用 - tree。   
-舉例來說，`<html>` 是根節點，往下分出 `<head>` 和 `<body>`，`<body>` 再往下分出各個子元素，層層展開
+舉例來說，`<html>` 是根節點，往下分出 `<head>` 和 `<body>`，`<body>` 再往下分出各個子元素，層層展開：
 
 ```
 html
@@ -149,22 +149,22 @@ html
         └── p
 ```
 
-在那個沒有高科技的年代，要選到 DOM node 會用到的 `querySelector` 本質上就是在這顆樹上透過 DFS (Depth-First Search) 去找節點，所以它是一路往最深的子節點鑽，找不到再回頭換下一條路，直到找到第一個符合的元素為止。   
-所以在真的很糟的情況下，`querySelector` 就是把整個 DOM tree 都給爬完，這個複雜度是 $O(n)$。  
-所以在古早古早以前，但我相信大家應該都經歷過，會盡量把搜尋的範圍縮小，比如：
+`querySelector` 本質上就是在這顆樹上透過 DFS (Depth-First Search) 去找節點，一路往最深的子節點鑽，找不到再回頭換下一條路，直到找到第一個符合的元素為止。   
+所以在最壞的情況下，`querySelector` 就是把整個 DOM tree 都給爬完，複雜度是 $O(n)$。  
+因此有時候會建議把搜尋的範圍縮小，比如：
 
-```
+```js
 const container = document.getElementById('app') // 已經有參考了
 container.querySelector('.target')               // 只走 container 底下的樹
 ```
 
-但可能更實際的做法是透過 `getElementById` 來選取 DOM node，因為 id 在整份文件裡是唯一的，瀏覽器在解析 HTML 時，順便維護一張 id → 節點的 hash table，記住每個 id 對應的節點位置。查找時直接從 hash table 拿到該節點的參考，不需要從根節點一路遍歷下去。
+但更根本的作法是透過 `getElementById` 來選取 DOM node。因為 id 在整份文件裡是唯一的，瀏覽器在解析 HTML 時通常會順便維護一張 id → 節點的 hash table，記住每個 id 對應的節點位置。查找時直接從 hash table 拿到該節點的參考，不需要從根節點一路遍歷下去——不過這屬於瀏覽器實作層面的優化，規格本身並沒有強制要求。
 
 ## 實務上探討一下演算法與資料結構 (Vue 為例)
 
 ### 例子一：`computed` 的運算
 
-假設在做一個商品列表，每個商品有一個分類 ID，現在想把分類名稱補上去，最直覺的做法大概是這樣：
+假設在做一個文章列表，每篇文章有一個作者 ID，現在想把作者名稱補上去，最直覺的做法大概是這樣：
 
 ```vue
 <script setup>
@@ -184,13 +184,13 @@ const enrichedPosts = computed(() =>
 </script>
 ```
 
-`.map()` 裡面用 `.find()` 查分類名稱，是邏輯相當清楚、撰寫相當清楚的。  
+`.map()` 裡面用 `.find()` 查作者名稱，邏輯清楚、撰寫直覺。  
 但對每一個 post 而言，`.find()` 都要把 authors 從頭掃到尾。  
 如果有 500 篇 post、100 個 author，每次 computed 重算就是 500 × 100 = 50000 次比較，其複雜度為 $O(n^2)$。  
 而且只要 `items` 一變動（比如搜尋結果改變），整個 computed 就會重跑一次。  
 這在資料量大時就是個災難。
 
-解決這種在大樹巨時極耗效能的方式是改成先建一個「索引簿」（也就是 Hash Table），下面的查找複雜度為 $O(n)$：
+解決這種在資料量大時極耗效能的方式是改成先建一個「索引簿」（也就是 Hash Table），下面的查找複雜度為 $O(n)$：
 
 ```vue
 <script setup>
@@ -230,8 +230,7 @@ const enrichedPosts = computed(() =>
 </template>
 ```
 
-在這個寫法下，實際是先跑迴圈把 `items` 裡面每一筆都跑過生成 DOM 節點後，才用 `v-if` 決定要不要顯示。  
-就算 1000 筆裡面只有 10 筆是 `active` 的，Vue 還是得跑 1000 圈。   
+在這個寫法下，Vue 還是得跑完 `items` 的每一圈去判斷 `v-if` 的條件，就算 1000 筆裡面只有 10 筆是 `active` 的也一樣。  
 比較好的做法：先過濾好再丟給 `v-for`。
 
 ```vue
@@ -254,7 +253,7 @@ const activeItems = computed(() =>
 
 如果對上面這個比較無感的話，那有一個變體應該比較常見。  
 
-```
+```vue
 <script setup>
 // 後端只給 createdAt（timestamp），沒有給 isNew
 // 只好前端自己算：7 天內發布的算新文章
@@ -273,7 +272,7 @@ function isNew(post) {
 
 這種一樣可以先計算完再丟給 `v-for`：
 
-```
+```vue
 <script setup>
 import { computed } from 'vue'
 
@@ -295,7 +294,7 @@ const newPosts = computed(() => {
 這其實滿主觀意識的。  
 但前面在講演算法跟資料結構在探討複雜度時說的都是「當 $n$ 趨近於無窮大時」。  
 因為在少量資料時，複雜度的衡量意義其實不高。  
-舉例來說 $4 /times n^2$ 跟 $2^n /4$ 一個是 $O(n^2)$、一個是 $O(2^n)$，以複雜度來說會預期前者更好，但在 $n = 11$ 之前，後者都是優於前者的。  
+舉例來說 $4 \times n^2$ 跟 $2^n / 4$，一個是 $O(n^2)$、一個是 $O(2^n)$，以複雜度來說會預期前者更好，但在 $n = 11$ 之前，後者都是優於前者的。  
 所以這說明當資料量少時，去探討複雜度的意義可能不大，因為可能兩者差不多或更有甚者是複雜度差者在小資料量時表現更好。  
 但這個資料量多小，就滿看實際應用場景的。  
 但總之在資料量小時，我認為是可以捨棄複雜度的，因為其實效能相差不大，而轉向使用更通俗好懂的撰寫方式。
@@ -312,6 +311,119 @@ const userName = userIndex[currentId]?.name
 > 過早優化是萬惡之源 - Donald Knuth
 
 上面是找資料找到的 XD  
-但總之概念就是在正確的時間做正確的優化。
+但總之這概念提倡的是在正確的時間做正確的優化。  
+但這正確的時間是什麼時間其實也是帶點主觀的。
 
+## 資料庫
+每次打 API 拿到的 JSON，其實一般都可以反映資料庫的設計決策。  
+我們可能常見到這兩種 API response 長相：
 
+```json
+// 巢狀：關聯資料直接內嵌
+{
+  "id": 1,
+  "title": "第一篇文章",
+  "author": { "id": "a1", "name": "小明" },
+  "tags": ["Vue", "JS"]
+}
+```
+
+```json
+// 扁平：只給 id，關聯資料要自己再去拿
+{
+  "id": 1,
+  "title": "第一篇文章",
+  "authorId": "a1",
+  "tagIds": ["tag_vue", "tag_js"]
+}
+```
+
+兩者的差異在於資料庫的正規化程度，也對應到兩種不太一樣的資料庫儲存設計。
+
+### 正規化
+假設後端用一張表存所有資料，巢狀 response 對應的原始表可能長這樣：
+
+| post_id | title    | author_id | author_name | tags    |
+|---------|----------|-----------|-------------|---------|
+| 1       | 第一篇文章 | a1        | 小明         | Vue, JS |
+| 2       | 第二篇文章 | a1        | 小明         | JS      |
+
+正規化就是把這張表一步步整理乾淨的過程，目的是提升儲存效率、減少資料異常。
+
+### 1NF
+第一正規是為了讓每一張表都有一個 primary key，且每個欄位只存一個值。  
+比如這裡 `tags` 欄位塞了多個值，資料庫無法直接查詢或索引裡面的單一標籤。
+
+改成每個值獨立一筆：
+
+| post_id | title    | author_id | author_name | tag |
+|---------|----------|-----------|-------------|-----|
+| 1       | 第一篇文章 | a1        | 小明         | Vue |
+| 1       | 第一篇文章 | a1        | 小明         | JS  |
+| 2       | 第二篇文章 | a1        | 小明         | JS  |
+
+### 2NF
+第二正規化是為了消除 1NF 後產生的重複資料。  
+`tag` 拆開後，`title`、`author_name` 跟 `tag` 根本沒關係，卻被迫跟著重複出現。依據 2NF 可以拆成兩張表：
+
+**posts**
+
+| post_id | title    | author_id | author_name |
+|---------|----------|-----------|-------------|
+| 1       | 第一篇文章 | a1        | 小明         |
+| 2       | 第二篇文章 | a1        | 小明         |
+
+**post_tags**
+
+| post_id | tag |
+|---------|-----|
+| 1       | Vue |
+| 1       | JS  |
+| 2       | JS  |
+
+### 3NF
+第三正規化是指欄位不能依賴其他非主鍵欄位。  
+`posts` 表裡的 `author_name` 是由 `author_id` 決定的，不是由 `post_id` 直接決定。小明一旦改名，得更新每一筆他寫過的文章。  
+
+所以 3NF 可以再拆一張表：
+
+**posts**
+
+| post_id | title    | author_id |
+|---------|----------|-----------|
+| 1       | 第一篇文章 | a1        |
+| 2       | 第二篇文章 | a1        |
+
+**authors**
+
+| author_id | author_name |
+|-----------|-------------|
+| a1        | 小明         |
+
+### 正規化程度決定 API 長相
+正規化程度的不同，直接影響資料庫的選型與 API 的設計風格。  
+常見的設計大概就兩種：
+
+1. 關聯式資料庫（如 SQL）：設計上鼓勵正規化，將資料拆成多張表透過 id 關聯。要拿完整資料得做 join，API 因此常回傳扁平結構，比如回傳 `authorId` 而不是完整的 `author` 物件。
+2. 文件式資料庫（如 MongoDB）：允許將關聯資料直接內嵌成巢狀物件存在同一個 document 裡（反正規化）。少了 join 的需求，API 自然可以一次回傳完整結構。
+
+| | SQL | MongoDB |
+|---|---|---|
+| 資料結構 | 多張表，透過 id 關聯 | 單一 document，可內嵌巢狀物件 |
+| 正規化 | 鼓勵正規化 | 允許反正規化 |
+| API 風格 | 扁平，回傳 id | 巢狀，回傳完整物件 |
+| 結構彈性 | 低，欄位需提前定義 | 高，每筆資料欄位可以不同 |
+| 適合場景 | 電商訂單、會員系統 | 文章內容、使用者設定、商品規格 |
+
+所謂結構彈性，是指每筆資料的欄位可以不一樣。以商品規格為例，衣服有尺寸、顏色，手機有容量、螢幕尺寸，食品有保存期限、成分——每個品類需要的欄位都不同。SQL 得提前定死所有欄位；MongoDB 的每個 document 可以各自長得不一樣，不需要事先知道會有哪些欄位。
+
+### 補充：屬於前端的 `join`
+有時我們會用到這種寫法，這其實就是在前端手動做一次 `join`：
+
+```javascript
+const authorIndex = Object.fromEntries(authors.map(author => [author.id, author]))
+const enrichedPosts = posts.map(post => ({
+  ...post,
+  authorName: authorIndex[post.authorId]?.name
+}))
+```
