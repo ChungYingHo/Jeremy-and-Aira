@@ -7,27 +7,19 @@ sameDateSort: 1
 changelog: []
 ---
 
-## 資料在元件之間怎麼流動？
+## 單向資料流（One-way Data Flow）
 
-用 Vue 寫到一定程度，一定會碰到一個問題：**元件之間怎麼傳資料？**
+Vue 元件間資料傳遞的核心原則：
 
-一個頁面可能有 Header、Sidebar、Content、Footer，每個又拆成更小的元件。當 A 元件的資料需要給 B 元件用的時候，怎麼辦？
-
-Vue 提供了好幾種方式，但核心觀念只有一個：
-
-> **單向資料流（One-way Data Flow）**
-
-簡單來說就是：資料從父元件往下流到子元件，就像水從上往下流一樣。子元件不能直接改父元件的資料，它只能「通知」父元件說：「欸，我這邊有事情發生了，你自己決定要不要改。」
-
-為什麼要這樣設計？因為如果每個元件都能隨便改別人的資料，當 bug 出現的時候你根本不知道「到底是誰改的」。單向資料流讓資料的來源和流向都很清楚，debug 的時候不會想砸電腦。
-
-好，概念講完了，來看實際怎麼做。
+- 資料從父元件往下流到子元件
+- 子元件不能直接修改父元件的資料，只能透過事件通知父元件
+- 確保資料來源與流向可追蹤，降低 debug 難度
 
 ---
 
 ## props — 父傳子
 
-最基本的傳資料方式。父元件透過屬性把資料傳給子元件。
+父元件透過屬性將資料傳給子元件。
 
 ```vue
 <!-- 父元件 -->
@@ -61,11 +53,9 @@ const props = defineProps({
 </template>
 ```
 
-### defineProps 的幾種寫法
+### defineProps 寫法
 
-Vue 3 提供了兩種定義 props 的方式：
-
-**Runtime 宣告（傳統寫法）：**
+**Runtime 宣告：**
 ```js
 const props = defineProps({
   name: String,
@@ -89,7 +79,7 @@ const props = defineProps<{
 }>()
 ```
 
-如果用 TS 寫法又想要預設值，可以搭配 `withDefaults`：
+TS 寫法搭配 `withDefaults` 設定預設值：
 ```ts
 const props = withDefaults(defineProps<{
   name: string
@@ -99,21 +89,20 @@ const props = withDefaults(defineProps<{
 })
 ```
 
-### props 是唯讀的！
+### props 是唯讀的
 
-這很重要。子元件**不能直接修改**父元件傳下來的 props：
+子元件**不能直接修改**父元件傳下來的 props：
 
 ```js
 // ❌ 這樣會噴警告
 props.name = 'Aira'
 ```
 
-想改的話有兩個選擇：
-1. 用 `emit` 通知父元件去改（推薦）
-2. 在子元件內複製一份到本地的 `ref`（某些情境適用）
+修改方式：
+1. 用 `emit` 通知父元件修改（推薦）
+2. 複製到本地 `ref`（特定情境適用）
 
 ```js
-// 複製一份到本地 ref
 const localName = ref(props.name)
 // 注意：之後 props.name 再變，localName 不會跟著變
 ```
@@ -122,9 +111,7 @@ const localName = ref(props.name)
 
 ## emit — 子傳父
 
-子元件不能改 props，但它可以「發射事件」告訴父元件：「嘿，我這邊出事了！」
-
-用生活比喻：你是餐廳服務生（子元件），客人點了餐你不能直接去廚房煮，但你可以按鈴通知廚師（父元件）：「一號桌點了牛排！」
+子元件透過「發射事件」通知父元件，由父元件決定如何處理。
 
 ```vue
 <!-- 子元件 Counter.vue -->
@@ -165,7 +152,7 @@ function handleDecrement(n) {
 </template>
 ```
 
-### TypeScript 的 emit 定義
+### TypeScript 寫法
 
 ```ts
 const emit = defineEmits<{
@@ -178,7 +165,7 @@ const emit = defineEmits<{
 
 ## provide / inject — 跨層級傳資料
 
-props 和 emit 適合父子之間傳資料。但如果你的元件結構是這樣的：
+props / emit 適合父子層級。當元件巢狀較深時：
 
 ```
 App
@@ -188,15 +175,15 @@ App
             └── Avatar    ← 它需要 App 層的 user 資料
 ```
 
-難道要每一層都用 props 傳下去嗎？
+若每一層都用 props 逐層傳遞：
 
 ```
 App (user) → Layout (:user) → Sidebar (:user) → UserInfo (:user) → Avatar (:user)
 ```
 
-這就是所謂的 **props drilling**（道具鑽孔），每一層都要「鑽一個洞」讓資料穿過去，中間那些元件根本不需要用到這個資料，但為了傳遞不得不接收。維護起來超級痛苦。
+即為 **props drilling** — 中間層不使用該資料卻被迫接收，維護成本高。
 
-`provide` / `inject` 就是來解決這個問題的。祖先元件用 `provide` 提供資料，後代元件用 `inject` 直接取用，中間層不用管。
+`provide` / `inject` 解決此問題：祖先元件用 `provide` 提供資料，後代元件用 `inject` 直接取用，中間層無需介入。
 
 ```vue
 <!-- 祖先元件 App.vue -->
