@@ -27,7 +27,7 @@ import MedianOfMediansDiagram from '@/components/ArticleRelated/algorithm/Median
 - 判斷成本為 $O(1)$：$T(n) = T(n/c) + O(1) = O(\log_c n)$
 - 判斷成本為 $O(n)$：$T(n) = T(n/c) + O(n) = O(n)$
 
-底數 $c$ 不是隨意的，由「一次比較能產生多少種結果」決定，這點在下面的偽幣問題中會清楚展示。
+底數 $c$ 由「一次比較能產生多少種互斥結果」決定。
 
 ## 偽幣問題
 
