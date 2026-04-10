@@ -11,10 +11,9 @@ import GraphDiagram from '@/components/ArticleRelated/data-structure/graph/Graph
 import AdjacencyDiagram from '@/components/ArticleRelated/data-structure/graph/AdjacencyDiagram.svelte'
 import DirectedGraphDiagram from '@/components/ArticleRelated/data-structure/graph/DirectedGraphDiagram.svelte'
 
-**圖 (Graph)** 是一種非線性資料結構，由**頂點 (Vertex)** 與**邊 (Edge)** 所組成，用來描述現實世界中各種「物件與物件之間的關係」，是資料結構裡表達能力最強的一種。
+**圖 (Graph)** 是一種非線性資料結構，由**頂點 (Vertex)** 與**邊 (Edge)** 組成，描述物件之間的關係，是資料結構中表達能力最強的一種。
 
-說到圖，最直觀的生活例子就是**捷運路線圖**：每一站是一個頂點，站與站之間的鐵路是一條邊，整張路線圖就是一個圖。
-社群媒體的好友關係、Google Maps 的導航路徑、電腦網路中的連線拓樸，都可以用圖來表示與分析。
+應用範例：捷運路線圖、社群媒體好友關係、Google Maps 導航路徑、電腦網路連線拓樸。
 
 :::info
 樹其實是圖的一種特例——「無環的連通圖」。
@@ -39,8 +38,8 @@ import DirectedGraphDiagram from '@/components/ArticleRelated/data-structure/gra
 
 最基本的分類是依照邊是否有方向性：
 
-- **無向圖 (Undirected Graph)**：邊沒有方向，A 連 B 代表 A 可以到 B、B 也可以到 A。就像捷運，台北車站到中山站可以雙向搭乘。
-- **有向圖 (Directed Graph / Digraph)**：邊有方向，只能從箭頭的起點走向終點。就像 Instagram 的追蹤功能：你追蹤了某人，不代表對方也追蹤你。
+- **無向圖 (Undirected Graph)**：邊沒有方向，A 連 B 代表雙向可通行
+- **有向圖 (Directed Graph / Digraph)**：邊有方向，A → B 不代表 B → A
 
 <DirectedGraphDiagram client:only="svelte" />
 
@@ -76,12 +75,11 @@ static void addEdge(Map<Integer, List<Integer>> graph, int u, int v) {
 
 ### 有權圖 (Weighted Graph)
 
-邊上帶有數值（**權重 Weight**），通常代表距離、成本或時間。
-Google Maps 的導航就是典型的有權圖：每條路線的邊有對應的距離或預估時間，演算法會找出總權重最小的路徑。
+邊上帶有數值（**權重 Weight**），通常代表距離、成本或時間。典型應用：Google Maps 導航——演算法找出總權重最小的路徑。
 
 ## 圖的表示方式
 
-有兩種主流的方式在程式裡儲存圖的結構：
+兩種主流方式：
 
 ### 鄰接矩陣 (Adjacency Matrix)
 
@@ -117,8 +115,7 @@ public class AdjacencyMatrix {
 
 ### 鄰接串列 (Adjacency List)
 
-讓每個頂點對應到一個串列，存放它的所有相鄰頂點。
-實務中更常見，因為大多數的圖「邊的數量遠少於頂點的平方」，使用鄰接串列可以節省大量記憶體。
+每個頂點對應一個串列，存放所有相鄰頂點。實務中更常見——大多數圖的邊數遠少於頂點數的平方，鄰接串列可節省大量記憶體。
 
 ```java
 import java.util.*;
@@ -163,16 +160,13 @@ public class AdjacencyList {
 
 ## 圖的走訪 (Traversal)
 
-圖的走訪和樹一樣，也分為 DFS 與 BFS 兩種。但因為圖可能存在「環」，需要額外記錄**已拜訪的節點**，避免無限迴圈。
+與樹相同，分為 DFS 與 BFS 兩種。差別在於圖可能存在環，需額外記錄**已拜訪的節點**以避免無限迴圈。
 
 <GraphDiagram client:only="svelte" />
 
 ### 深度優先搜尋 (DFS)
 
-DFS 的思路是「一條路走到底，走不通再回頭」。
-就像在百貨公司找人，先搭電梯到最頂層，把那層逐間店找完，再下一層，直到每一層每一間都找過為止。
-
-DFS 通常用**遞迴**來實作。
+思路：一條路走到底，走不通再回頭。通常用**遞迴**實作。
 
 ```java
 import java.util.*;
@@ -214,10 +208,7 @@ public class GraphDFS {
 
 ### 廣度優先搜尋 (BFS)
 
-BFS 的思路是「先把附近的都看完，再往遠處走」。
-就像在廣場上找人，先搜尋半徑 10 公尺內的，找完再擴大到 20 公尺，一圈一圈往外搜尋。
-
-BFS 使用**佇列 (Queue)** 來實作，確保「先進來的鄰居先被處理」。
+思路：先探索所有鄰居，再往更遠處走。使用**佇列 (Queue)** 實作，確保先發現的鄰居先被處理。
 
 ```java
 import java.util.*;
