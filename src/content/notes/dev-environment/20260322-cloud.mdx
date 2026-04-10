@@ -12,15 +12,14 @@ import CloudServiceModelDiagram from '@/components/ArticleRelated/web/CloudServi
 
 ## 雲端是什麼
 
-雲端運算（Cloud Computing）的核心概念很簡單：**把運算資源（伺服器、儲存空間、資料庫、網路等）從你自己管理，變成向雲端服務商租用。**
+雲端運算（Cloud Computing）：**將運算資源（伺服器、儲存、資料庫、網路等）從自行管理改為向雲端服務商租用。**
 
-以前想架一個網站，你需要：買一台伺服器 → 放到機房 → 申請固定 IP → 自己安裝作業系統和軟體 → 自己維護硬體。
-
-「上雲」之後：開一個帳號 → 幾個點擊（或幾行指令）就能得到一台虛擬伺服器，按使用量付費，不用時關掉就不再計費。
+- 傳統：購買伺服器 → 機房託管 → 申請固定 IP → 自行安裝 OS 和軟體 → 自行維護硬體
+- 上雲：開帳號 → 幾個點擊或幾行指令取得虛擬伺服器，按用量付費
 
 ## 三大雲端平台
 
-目前市場上有三大主要雲端服務商：
+三大主要雲端服務商：
 
 | | AWS | Google Cloud (GCP) | Microsoft Azure |
 | :--- | :--- | :--- | :--- |
@@ -36,15 +35,15 @@ import CloudServiceModelDiagram from '@/components/ArticleRelated/web/CloudServi
 
 <CloudServiceModelDiagram client:only="svelte" />
 
-對開發者來說最常接觸的是 **IaaS**（自己管伺服器）和 **PaaS**（只部署程式碼）。現在也有更新的 **Serverless** 模式，在這之上又進一步——連伺服器都不用管，只寫函式就好。
+開發者最常接觸 **IaaS**（自己管伺服器）和 **PaaS**（只部署程式碼）。**Serverless** 模式則更進一步——只寫函式，連伺服器都不用管。
 
 ## 常見的雲端服務類型
 
 ### 運算
 
-- **虛擬機（VM）**：最基本的，就是一台你可以 SSH 進去的雲端電腦。AWS 叫 EC2，GCP 叫 Compute Engine，Azure 叫 Virtual Machine。
-- **容器服務**：跑 Docker Container，不用管底層 OS。AWS 有 ECS/EKS，GCP 有 Cloud Run/GKE，Azure 有 Container Apps/AKS。
-- **Serverless**：寫一個函式，觸發時才執行，沒有請求就不跑也不收費。AWS Lambda、Google Cloud Functions、Azure Functions。
+- **虛擬機（VM）**：一台可 SSH 登入的雲端電腦。AWS EC2 / GCP Compute Engine / Azure Virtual Machine
+- **容器服務**：執行 Docker Container，無需管理底層 OS。AWS ECS/EKS / GCP Cloud Run/GKE / Azure Container Apps/AKS
+- **Serverless**：按需執行函式，無請求時不計費。AWS Lambda / Google Cloud Functions / Azure Functions
 
 ### 儲存
 
@@ -54,7 +53,7 @@ import CloudServiceModelDiagram from '@/components/ArticleRelated/web/CloudServi
 
 ### 資料庫
 
-雲端平台提供託管的資料庫，你不需要自己安裝、備份、管版本：
+雲端平台提供託管的資料庫，無需自行安裝、備份、管理版本：
 
 - **關聯式資料庫**：AWS RDS（支援 PostgreSQL、MySQL 等）、Google Cloud SQL、Azure Database
 - **NoSQL**：AWS DynamoDB、Google Firestore、Azure Cosmos DB
@@ -97,7 +96,7 @@ import CloudServiceModelDiagram from '@/components/ArticleRelated/web/CloudServi
 雲端平台的地理概念很重要：
 
 - **Region（區域）**：地理上的一個位置，例如 `ap-northeast-1`（AWS 東京）、`asia-east1`（GCP 台灣）
-- **Availability Zone（可用區，AZ）**：同一個 Region 內的多個獨立資料中心，互相有物理隔離。同一個 Region 通常有 3 個以上的 AZ，讓你把服務分散部署，即使一個 AZ 斷電也不影響服務
+- **Availability Zone（可用區，AZ）**：同一個 Region 內的多個獨立資料中心，互相有物理隔離。同一個 Region 通常有 3 個以上的 AZ，可將服務分散部署，即使一個 AZ 斷電也不影響服務
 
 選 Region 時主要考量兩件事：**使用者在哪**（越近延遲越低）和**法規要求**（某些行業要求資料必須存放在特定國家）。
 
