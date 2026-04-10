@@ -10,63 +10,57 @@ import TcpIpLayersDiagram from '@/components/ArticleRelated/web/TcpIpLayersDiagr
 import DnsResolutionDiagram from '@/components/ArticleRelated/web/DnsResolutionDiagram.svelte'
 import CdnDiagram from '@/components/ArticleRelated/web/CdnDiagram.svelte'
 
-## 按下 Enter 之後，發生了什麼事？
-
-你每天都在做這件事：打開瀏覽器，輸入網址，按下 Enter，然後頁面就出現了。整個過程大概 0.幾秒，但在這段時間裡，你的電腦、幾台遠在世界各地的伺服器、還有一堆你從來沒聽說過的協定，全都默默配合完成了一套複雜的流程。
-
 ## IP 位址
 
-每台連上網路的裝置都有一個 IP 位址，你可以把它想成門牌號碼。沒有門牌，郵差不知道要把信送去哪裡；網路也一樣，沒有 IP，資料封包不知道要送去哪台機器。
+每台連上網路的裝置都有一個 IP 位址，作為裝置在網路上的唯一識別。資料封包依靠 IP 位址決定送達目標。
 
-現在最常見的格式是 **IPv4**，長這樣：
+**IPv4** 格式：
 
 ```
 93.184.216.34
 ```
 
-四組數字，每組 0 到 255，用小數點隔開。IPv4 理論上能提供大約 43 億個位址，聽起來很多，但全球現在有幾十億台裝置在上網，早就不夠用了。
+四組數字，每組 0–255，以小數點分隔。IPv4 位址空間約 43 億個，已不敷全球裝置使用。
 
-所以後來出現了 **IPv6**，長這樣：
+**IPv6** 格式：
 
 ```
 2606:2800:220:1:248:1893:25c8:1946
 ```
 
-用十六進位加冒號，位址空間大到幾乎不可能耗盡。目前兩個版本並存，大部分的服務都同時支援。
+十六進位加冒號，位址空間近乎無限。目前 IPv4 與 IPv6 並存，多數服務同時支援。
 
-問題來了：人類記不住這串數字。你不會說「我去 `93.184.216.34` 查一下」，你會說「我去 `example.com` 查一下」。這就是 Domain 跟 DNS 出現的原因。
+人類無法記憶 IP 位址，因此需要 Domain 與 DNS 將可讀名稱對應至 IP。
 
 ## Domain 與 DNS
 
-Domain（網域）就是人類可以讀懂的名稱，像 `google.com`、`github.com`。DNS（Domain Name System）則是把這個名稱翻譯成 IP 位址的系統，它就是網路世界的翻譯官，或者說電話簿。
+Domain（網域）是人類可讀的名稱，如 `google.com`、`github.com`。DNS（Domain Name System）負責將 domain 解析為 IP 位址。
 
-一個 domain 的結構，從右到左讀比較好理解：
+Domain 結構由右至左：
 
 - **TLD（頂級網域）**：最右邊，像 `.com`、`.org`、`.tw`
 - **二級網域**：你登記的名字，像 `google`、`github`
 - **子網域**：最左邊，像 `www`、`mail`、`api`
 
-所以 `mail.google.com` 裡，`.com` 是 TLD，`google` 是二級網域，`mail` 是子網域。
+例：`mail.google.com` — `.com` 是 TLD，`google` 是二級網域，`mail` 是子網域。
 
 ### DNS 解析流程
 
-你輸入 `example.com` 之後，瀏覽器不是直接就知道它的 IP，要經過一連串的查詢：
+瀏覽器不直接持有 domain 對應的 IP，需經過多層查詢：
 
 <DnsResolutionDiagram client:visible />
 
-整個過程大概分五步：瀏覽器先問 Recursive Resolver（通常是你的 ISP 或 Google 的 8.8.8.8），Resolver 再逐層往上問，從 Root Nameserver → TLD Nameserver → Authoritative Nameserver，最後拿到 IP 位址回傳給你。
+流程：瀏覽器 → Recursive Resolver（ISP 或如 Google `8.8.8.8`）→ Root Nameserver → TLD Nameserver → Authoritative Nameserver → 取得 IP 位址。
 
 :::info
-這個過程聽起來很慢，但實際上通常只要幾毫秒，因為每一層都有快取。一旦查過一次，結果會被暫存一段時間（由 TTL 設定），下次直接用快取，不用重新跑完整個流程。
+實際查詢通常僅需數毫秒，因為每一層皆有快取。查詢結果依 TTL 設定暫存，期間內不需重新查詢。
 :::
 
-快取的重要性很高。如果你改了網域的 DNS 設定（比如換了主機），全球各地的快取要過期才會生效，這段等待時間叫做 **DNS propagation**，可能需要幾小時到 48 小時。
+變更 DNS 設定後，全球各地快取須逐步過期才會生效，此等待期稱為 **DNS propagation**，通常需數小時至 48 小時。
 
 ## TCP/IP
 
-光知道 IP 位址還不夠。資料要怎麼從你的電腦傳到遠端伺服器、怎麼確保不漏掉、怎麼處理大量同時連線，這些都需要一套規則，也就是**協定（Protocol）**。
-
-TCP/IP 是目前網路通訊的基礎協定組，它把網路通訊分成四層：
+TCP/IP 是網路通訊的基礎協定組，將通訊分為四層：
 
 <TcpIpLayersDiagram client:visible />
 
