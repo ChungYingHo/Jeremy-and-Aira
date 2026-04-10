@@ -211,18 +211,18 @@ const user = inject('user')
 </template>
 ```
 
-### provide / inject 的注意事項
+### 注意事項
 
-1. **只能往下**：inject 只能取到祖先 provide 的資料，不能反過來。
-2. **預設值**：如果沒有祖先 provide 對應的 key，可以給預設值：
+1. **只能往下**：inject 只能取到祖先 provide 的資料，不能反向。
+2. **預設值**：無對應 provide 時可指定預設值：
    ```js
    const user = inject('user', { name: 'Guest' })
    ```
-3. **唯讀**：如果你希望注入的資料不被子孫改掉，可以用 `readonly`：
+3. **唯讀**：防止子孫修改，搭配 `readonly`：
    ```js
    provide('user', readonly(user))
    ```
-4. **用 Symbol 當 key**：避免命名衝突，在大型專案裡建議用 Symbol：
+4. **用 Symbol 當 key**：避免命名衝突，大型專案建議使用：
    ```js
    // keys.js
    export const USER_KEY = Symbol('user')
@@ -234,19 +234,19 @@ const user = inject('user')
    const user = inject(USER_KEY)
    ```
 
-### 什麼時候用 provide / inject？
+### 適用場景
 
-- 跨很多層的資料（theme、locale、user 資訊）
-- 跟一組元件共享狀態（比如 `<Form>` 跟它底下的所有 `<Input>` 共享驗證邏輯）
-- 不想引入全域狀態管理（Pinia）但又需要跨元件共享
+- 跨多層的資料（theme、locale、user 資訊）
+- 一組元件共享狀態（如 `<Form>` 與其下所有 `<Input>` 共享驗證邏輯）
+- 不需要全域狀態管理（Pinia）但需跨元件共享
 
-但如果你的狀態需要在**不相關的元件**之間共享（比如 Header 和 Footer），或者狀態邏輯很複雜，那還是用 Pinia 吧。
+不相關的元件間共享（如 Header 和 Footer），或狀態邏輯複雜時，使用 Pinia。
 
 ---
 
 ## v-model — 雙向綁定的語法糖
 
-`v-model` 大家應該都用過，最常見的就是表單：
+最常見用於表單：
 
 ```vue
 <input v-model="name" />

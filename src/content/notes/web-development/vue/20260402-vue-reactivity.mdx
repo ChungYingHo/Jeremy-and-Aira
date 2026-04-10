@@ -127,18 +127,18 @@ const { count } = state
 // count 只是普通數字 0，不會觸發更新
 ```
 
-**坑 3：不能用在基本型別**
+**限制 3：不能用在基本型別**
 
 ```js
 // ❌ 這不行，reactive 只接受物件
 const count = reactive(0)
 ```
 
-`ref` 就沒有這些問題。所以實務上大部分情境直接用 `ref` 就對了。
+`ref` 不受上述限制，大部分情境適用。
 
-### 什麼時候用 reactive？
+### 適合使用 reactive 的場景
 
-當你有一組「相關的狀態」想放在一起，而且你確定不會整個替換掉它的時候：
+一組相關狀態，且不會整個替換：
 
 ```js
 // 表單資料很適合用 reactive
@@ -149,7 +149,7 @@ const form = reactive({
 })
 ```
 
-但老實說，你用 `ref` 包一個物件也完全沒問題：
+用 `ref` 包物件也可以達到同樣效果：
 
 ```js
 const form = ref({
@@ -166,7 +166,7 @@ form.value.username = 'jeremy'
 
 ## computed — 計算屬性
 
-`computed` 就是那個 Google Sheets 的公式。它會根據其他響應式資料「算出一個新值」，而且有快取。
+`computed` 根據其他響應式資料衍生出新值，具備快取機制。
 
 ```vue
 <script setup>
@@ -184,9 +184,7 @@ const total = computed(() => price.value * quantity.value)
 </template>
 ```
 
-### computed vs method — 差在哪？
-
-這是面試很愛考的題目。
+### computed vs method
 
 ```js
 // computed

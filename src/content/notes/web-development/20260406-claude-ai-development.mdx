@@ -37,9 +37,7 @@ Claude 有多個模型，適用於不同場景。
 | **Sonnet** | 速度和品質的平衡點 | 日常開發、code review、寫文件、一般問答 |
 | **Haiku** | 最快、最便宜 | 簡單的格式轉換、快速查詢、批次處理 |
 
-用白話講就是：Opus 是你請來的資深顧問，Sonnet 是你的日常 pair programming 夥伴，Haiku 是幫你跑腿的實習生。
-
-在 Claude Code 裡面可以用 `/model` 指令切換模型：
+Claude Code 中以 `/model` 指令切換模型：
 
 ```bash
 # 切換到 Opus（處理複雜任務）
@@ -54,7 +52,7 @@ Claude 有多個模型，適用於不同場景。
 
 ### System Prompt 設定
 
-如果你是透過 API 或 Claude 網頁版的 Project 功能在用，可以設定 **System Prompt**，也就是給 Claude 的「角色說明書」。
+透過 API 或 Claude 網頁版的 Project 功能可設定 **System Prompt**，定義 Claude 的行為規範。
 
 ```
 你是一個資深前端工程師，專精 Vue 3 和 TypeScript。
@@ -64,17 +62,15 @@ Claude 有多個模型，適用於不同場景。
 - 解釋時搭配程式碼範例
 ```
 
-這樣 Claude 在整個對話中都會遵守這些規則，不用每次都重複說明。
+Claude 在整個對話中會遵守這些規則。
 
-而在 Claude Code 裡面，這個角色就是交給 `CLAUDE.md` 來扮演。你可以在專案層級、使用者層級、甚至資料夾層級放不同的設定，Claude 會全部讀進去。
+在 Claude Code 中，對應機制為 `CLAUDE.md`，支援專案層級、使用者層級、資料夾層級的分層設定，Claude 啟動時全部讀入。
 
 ---
 
 ## Claude Code：直接在終端機裡協作
 
-如果你只用過網頁版的 Claude，那你一定要試試 **Claude Code**。
-
-Claude Code 是 Anthropic 官方的 CLI 工具，它不是那種只能問問題的聊天機器人，而是可以直接讀你的 codebase、改檔案、跑指令的 AI agent。講白了就是：你在 terminal 裡面開一個對話，Claude 可以直接看到你整個專案，然後幫你改 code。
+**Claude Code** 是 Anthropic 官方的 CLI 工具，屬於 AI agent 等級 — 可直接讀取 codebase、修改檔案、執行指令。
 
 ```bash
 # 安裝

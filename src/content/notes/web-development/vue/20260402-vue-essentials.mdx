@@ -169,9 +169,9 @@ onUnmounted(() => {
 | `onBeforeUnmount` | 卸載前 | 清理工作（計時器等） |
 | `onUnmounted` | 卸載完成 | 最終清理 |
 
-老實說，**90% 的情況你只會用到 `onMounted` 和 `onUnmounted`**。
+實務上最常用的是 `onMounted` 和 `onUnmounted`。
 
-### 典型範例：打 API
+### 範例：打 API
 
 ```vue
 <script setup>
@@ -191,7 +191,7 @@ onMounted(async () => {
 </script>
 ```
 
-### 典型範例：清理計時器
+### 範例：清理計時器
 
 ```vue
 <script setup>
@@ -216,11 +216,11 @@ onUnmounted(() => {
 
 ## Composable — 組合式函數
 
-Composable 是 Vue 3 Composition API 最強大的設計之一。簡單來說就是：**把可以複用的邏輯抽出來變成一個函式**。
+Composable 將可複用的響應式邏輯抽成獨立函式，供多個元件共享。
 
-### 先看痛點
+### 問題：重複邏輯
 
-假設你有三個元件都需要「追蹤滑鼠位置」的功能。不用 composable 的話，你得在每個元件裡面都寫一遍：
+多個元件需要相同功能（如追蹤滑鼠位置）時，不使用 composable 須在每個元件重複撰寫：
 
 ```js
 // 元件 A
@@ -233,8 +233,6 @@ onUnmounted(() => window.removeEventListener('mousemove', update))
 // 元件 B — 又寫一遍
 // 元件 C — 再寫一遍
 ```
-
-三份一模一樣的程式碼，改一個要改三個地方。
 
 ### 用 Composable 抽出來
 
@@ -258,7 +256,7 @@ export function useMouse() {
 }
 ```
 
-然後在任何元件裡面：
+元件中使用：
 
 ```vue
 <script setup>

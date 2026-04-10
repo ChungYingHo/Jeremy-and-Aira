@@ -64,34 +64,41 @@ TCP/IP 是網路通訊的基礎協定組，將通訊分為四層：
 
 <TcpIpLayersDiagram client:visible />
 
-每一層各司其職：
+各層職責：
 
-- **應用層**：你直接碰到的那層，HTTP 請求、Email、DNS 查詢都在這裡
-- **傳輸層**：負責把資料切成封包、確保送達、處理流量控制
-- **網路層**：決定封包要走哪條路，IP 位址的邏輯在這層
-- **網路存取層**：最底下，負責實際的訊號傳輸，不管是電纜、Wi-Fi 還是光纖
+| 層級 | 負責內容 |
+| :--- | :--- |
+| **應用層** | HTTP、Email、DNS 等應用協定 |
+| **傳輸層** | 資料分段、送達確認、流量控制 |
+| **網路層** | 封包路由、IP 定址 |
+| **網路存取層** | 實體訊號傳輸（電纜、Wi-Fi、光纖） |
 
 ### TCP vs UDP
 
-傳輸層有兩個主要協定，個性截然不同：
+傳輸層兩大協定：
 
-**TCP（Transmission Control Protocol）** 是可靠派。它會三次握手建立連線、確認每個封包都送到、封包丟了就重送。代價是比較慢，有額外的確認開銷。適合需要完整傳輸的情境，像載入網頁、下載檔案。
-
-**UDP（User Datagram Protocol）** 是快速派。它不管封包有沒有送到，丟了就丟了。好處是延遲極低。適合即時性優先的情境，像線上遊戲、視訊通話，一幀畫面掉了沒關係，但不能等重送。
+| | TCP | UDP |
+| :--- | :--- | :--- |
+| 全名 | Transmission Control Protocol | User Datagram Protocol |
+| 連線方式 | 三次握手建立連線 | 無連線 |
+| 可靠性 | 確認送達，遺失重送 | 不保證送達 |
+| 延遲 | 較高（確認開銷） | 極低 |
+| 適用場景 | 網頁載入、檔案下載 | 線上遊戲、視訊通話 |
 
 :::tip
-TCP 的「三次握手」是建立連線的確認儀式：Client 說「我想連」，Server 說「好，我在」，Client 說「收到，開始吧」——這三個步驟確保雙方都準備好了。
+TCP 三次握手流程：Client → SYN → Server → SYN-ACK → Client → ACK，三步驟確保雙方準備就緒後才開始傳輸。
 :::
 
 ## HTTP 與 HTTPS
 
-建立 TCP 連線之後，瀏覽器跟伺服器怎麼溝通？靠的是 **HTTP（HyperText Transfer Protocol）**。
+**HTTP（HyperText Transfer Protocol）** 定義瀏覽器與伺服器間的通訊格式：
 
-HTTP 就是一套語言規格：瀏覽器發出「請求（Request）」，伺服器回傳「回應（Response）」。請求裡有方法（GET、POST 等）、路徑、Header；回應裡有狀態碼（200 OK、404 Not Found 等）、Header、Body。
+- **Request**：方法（GET、POST 等）、路徑、Header
+- **Response**：狀態碼（200 OK、404 Not Found 等）、Header、Body
 
-問題是，HTTP 本身是明文傳輸。資料在網路上跑的時候，中間任何一個節點都能讀到內容。你登入帳號的密碼、信用卡號碼，全部都是裸奔狀態。
+HTTP 為明文傳輸，中間節點可讀取所有內容。
 
-**HTTPS** 在 HTTP 底下加了一層 **TLS（Transport Layer Security）** 加密。連線建立時，瀏覽器跟伺服器會協商一把只有彼此知道的金鑰，之後所有傳輸的內容都用這把金鑰加密，就算中途被攔截，對方看到的也是一堆亂碼。
+**HTTPS** 在 HTTP 下加入 **TLS（Transport Layer Security）** 加密層。連線時雙方協商金鑰，後續傳輸皆以該金鑰加密，即使被攔截也無法解讀。
 
 :::warning
 現在幾乎所有網站都應該用 HTTPS。瀏覽器會對 HTTP 網站顯示「不安全」警告，搜尋引擎也偏好 HTTPS 網站。如果你在架站，讓 TLS 憑證這件事盡早處理好。

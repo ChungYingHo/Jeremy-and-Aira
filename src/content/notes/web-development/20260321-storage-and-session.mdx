@@ -90,25 +90,20 @@ Session 與 cookie 並非完全分開的概念——session 通常透過 cookie 
 
 ### JWT 的運作流程
 
-傳統的 server-side session 在早期的多頁式網頁 (MPA) 架構裡運作得很好，但隨著 SPA (Single Page Application) 與前後端分離的普及，它開始遇到一些麻煩。
+傳統 server-side session 在 MPA 架構下運作良好，但 SPA 與前後端分離普及後遇到問題：
 
-最主要的問題是**狀態集中在 server**。
-每個登入的使用者，server 都要在記憶體裡維護一筆 session 資料，使用者一多，記憶體就吃緊了。
-更麻煩的是當服務需要橫向擴展，也就是同時開多台 server 來分擔流量的時候，問題就來了——使用者第一次登入時，session 是建在 A server 上，但下一個請求可能被路由到 B server，B server 根本找不到這筆 session，使用者就這樣莫名其妙被登出了。
-要解決這個問題，要麼讓同一個使用者的請求永遠打到同一台 server（sticky session），要麼把所有 server 的 session 集中存到一個共享的地方（例如 Redis）。
-這些都是可行的，但都需要額外的架構成本。
+- **狀態集中在 server**：每個登入使用者都需要在記憶體維護一筆 session 資料，使用者量大時記憶體吃緊
+- **橫向擴展困難**：使用者登入時 session 建在 A server，下一個請求被路由到 B server 時找不到該 session，導致被登出
+- 解法包含 sticky session（固定路由到同一台 server）或共享 session store（如 Redis），但都有額外架構成本
 
-於是，**JWT (JSON Web Token)** 這種 token-based 的驗證方式應運而生，成為現代 Web 應用，尤其是前後端分離架構下的主流選擇。
+**JWT (JSON Web Token)** 是 token-based 驗證方式，核心概念與 session 相反：**server 不儲存任何狀態。**
 
-JWT 的核心概念跟 session 完全相反：**server 不儲存任何狀態。**
-流程是這樣的：
-
-1. 使用者登入，**server** 驗證帳密成功後，產生一個 JWT token，裡面用編碼的方式寫入使用者的基本資訊（例如使用者 ID、角色、token 有效時間等），再把這個 token 傳回給前端。
-2. **前端**拿到 token 後，負責把它存起來。存放位置有兩種主流做法：
-    - 存在 **`HttpOnly` cookie**：由瀏覽器自動管理，JavaScript 碰不到，安全性較高，但需要處理 CSRF 問題。
-    - 存在**記憶體**（例如框架的 state/store）：每次 refresh 頁面就消失，需要搭配 refresh token 機制自動續期，但完全不受 XSS 威脅竊取。
-3. 之後每次發出請求，前端把 token 放進 HTTP request header 的 `Authorization` 欄位帶過去（格式通常是 `Bearer <token>`）。
-4. **Server** 收到請求後，只需要驗證 token 的簽名是否合法，不需要查資料庫或記憶體，就能確認使用者身份。不管有幾台 server，每一台都能獨立驗證，不再需要共享 session store。
+1. 使用者登入，server 驗證成功後產生 JWT token，內含使用者 ID、角色、有效時間等資訊，回傳給前端。
+2. 前端存放 token，兩種主流做法：
+    - **`HttpOnly` cookie**：瀏覽器自動管理，JavaScript 無法存取，安全性較高，但需處理 CSRF。
+    - **記憶體**（框架 state/store）：refresh 頁面即消失，需搭配 refresh token 機制續期，但不受 XSS 竊取威脅。
+3. 每次請求時，前端將 token 放入 `Authorization` header（格式 `Bearer <token>`）。
+4. Server 僅需驗證 token 簽名是否合法即可確認身份，無需查資料庫或記憶體。任何一台 server 都能獨立驗證，不需共享 session store。
 
 :::info
 JWT 看起來像一串亂碼，但其實結構是三段 Base64 編碼用 `.` 串起來的：`header.payload.signature`。

@@ -161,13 +161,13 @@ const { count, name } = storeToRefs(counter)
 const { increment } = counter
 ```
 
-為什麼？因為 `counter.count` 本質上是一個 `ref`，直接解構出來你拿到的只是當時的「值」而不是「ref 物件」。`storeToRefs` 會幫你保留 ref 的連結。
+原因：`counter.count` 本質上是 `ref`，直接解構取得的是當下的原始值而非 ref 物件。`storeToRefs` 會保留 ref 連結。
 
 ---
 
 ## Getters — 計算屬性
 
-Getters 就是 store 版的 `computed`。它根據 state 算出衍生資料，而且有快取。
+Getter 等同 `computed`，根據 state 計算衍生資料，具快取特性。
 
 ```js
 export const useCartStore = defineStore('cart', () => {
@@ -187,7 +187,7 @@ export const useCartStore = defineStore('cart', () => {
 })
 ```
 
-在元件裡直接用：
+元件中使用：
 
 ```vue
 <template>
@@ -219,7 +219,7 @@ export const useCartStore = defineStore('cart', () => {
 
 ## Actions — 操作
 
-Actions 就是修改 state 的函式。跟 Vuex 不同，**Pinia 沒有 mutation 的概念**。你就直接寫函式去改 state。
+Action 是修改 state 的函式。與 Vuex 不同，**Pinia 沒有 mutation**，直接以函式修改 state。
 
 ```js
 export const useAuthStore = defineStore('auth', () => {
@@ -249,13 +249,11 @@ export const useAuthStore = defineStore('auth', () => {
 })
 ```
 
-看到了嗎？Actions 可以是同步的也可以是非同步的（async/await），直接寫就好，超自然。
+Action 支援同步與非同步（async/await）。
 
 ---
 
 ## 跟 Vuex 的差別
-
-如果你有接觸過 Vuex，可能會好奇為什麼要換成 Pinia。
 
 | | Vuex | Pinia |
 |---|---|---|
