@@ -9,17 +9,12 @@ changelog: []
 
 ## 什麼是「響應式」？
 
-學 Vue 一定會聽到「響應式」這三個字。但什麼是響應式？
+- **核心概念**：資料變了，畫面自動跟著變
+- 不需要手動操作 DOM（`document.querySelector` / `innerHTML`），Vue 自動處理
 
-其實概念很簡單：**資料變了，畫面自動跟著變**。
+### 底層原理
 
-想像你在 Google Sheets 寫了一個公式 `=A1+B1`，當你改了 A1 的數字，結果會自動更新對吧？這就是響應式。你不需要手動按「重新計算」，試算表自己知道要更新。
-
-Vue 的響應式也是這個概念 — 你改了資料，Vue 自動幫你更新畫面上對應的 DOM，不用你自己去操作 `document.querySelector` 再手動改 `innerHTML`。
-
-### 底層原理（知道就好）
-
-Vue 3 的響應式是靠 JavaScript 的 `Proxy` 實現的。簡單來說，Vue 會把你的資料「包一層」，當你讀取或修改資料時，Vue 就知道了，然後去更新相關的畫面。
+Vue 3 的響應式透過 JavaScript `Proxy` 實現。Vue 將資料包裝為 Proxy 物件，在讀取或修改時攔截操作，觸發對應的畫面更新。
 
 ```js
 // 概念上大概長這樣（不是真正的原始碼）
@@ -38,15 +33,14 @@ const data = new Proxy({ count: 0 }, {
 })
 ```
 
-Vue 2 用的是 `Object.defineProperty`，但它有個致命缺點 — 沒辦法偵測到「新增屬性」和「刪除屬性」。所以 Vue 2 才會需要 `Vue.set()` 這種 API。Vue 3 改用 `Proxy` 之後這些問題就消失了。
-
-好啦，底層原理知道這樣就夠了，我們來看實際怎麼用。
+- Vue 2 使用 `Object.defineProperty`，無法偵測「新增屬性」與「刪除屬性」，因此需要 `Vue.set()` API
+- Vue 3 改用 `Proxy`，上述限制不再存在
 
 ---
 
 ## ref — 最常用的響應式 API
 
-`ref` 是你在 Vue 3 Composition API 裡最常用的東西，沒有之一。
+`ref` 是 Vue 3 Composition API 中最常用的響應式 API。
 
 ```vue
 <script setup>
@@ -64,11 +58,11 @@ function increment() {
 </template>
 ```
 
-### 重點筆記
+### 重點
 
-1. **在 JS 裡要加 `.value`**：`ref` 回傳的是一個「包裝物件」，真正的值存在 `.value` 裡面。所以在 `<script>` 裡要用 `count.value`。
-2. **在 template 裡不用加**：Vue 會自動幫你解包（unwrap），所以直接寫 `{{ count }}` 就好。
-3. **什麼都能包**：字串、數字、布林、陣列、物件，通通可以用 `ref`。
+- **在 JS 裡要加 `.value`** — `ref` 回傳包裝物件，值存在 `.value`
+- **在 template 裡不用加** — Vue 自動解包（unwrap），直接寫 `{{ count }}`
+- **任意型別皆可** — 字串、數字、布林、陣列、物件皆適用
 
 ```js
 const name = ref('Jeremy')        // 字串
@@ -79,15 +73,13 @@ const user = ref({ name: 'Aira' }) // 物件
 
 ### 為什麼需要 `.value`？
 
-這是很多新手的疑問。原因是 JavaScript 的基本型別（string、number、boolean）是「傳值」的，沒辦法被追蹤。所以 Vue 需要把它包成一個物件，用 `.value` 來存取，這樣才能透過 Proxy 去偵測變化。
-
-用生活來比喻的話，`ref` 就像一個「信封」。信封裡面裝的才是你的信（值），你要看信就得打開信封（`.value`）。但收件人（template）Vue 會幫你自動拆信封，所以收件人可以直接看到信的內容。
+JavaScript 基本型別（string、number、boolean）是傳值的，無法被 Proxy 追蹤。`ref` 將值包成物件，透過 `.value` 存取，使 Proxy 能偵測變化。Template 中 Vue 自動解包，不需手動存取 `.value`。
 
 ---
 
 ## reactive — 物件的響應式
 
-`reactive` 是另一種宣告響應式資料的方式，專門給物件用的。
+`reactive` 專門用於物件的響應式宣告，不需要 `.value` 即可存取屬性。
 
 ```vue
 <script setup>
@@ -108,17 +100,13 @@ function increment() {
 </template>
 ```
 
-看到了嗎？用 `reactive` 不需要 `.value`，直接存取屬性就好。感覺很方便對吧？
-
-### 那到底用 ref 還是 reactive？
-
-這是 Vue 社群裡爭論已久的話題。先說結論：
+### ref vs reactive
 
 > **Vue 官方推薦優先使用 `ref`。**
 
-為什麼？因為 `reactive` 有幾個坑：
+`reactive` 有以下限制：
 
-**坑 1：不能整個替換**
+**限制 1：不能整個替換**
 
 ```js
 let state = reactive({ count: 0 })
@@ -126,32 +114,31 @@ let state = reactive({ count: 0 })
 // ❌ 這樣會失去響應式！
 state = reactive({ count: 1 })
 
-// 因為你把變數指向了一個新的物件，
-// 舊的 Proxy 連結就斷了
+// 變數指向新物件，舊 Proxy 連結中斷
 ```
 
-**坑 2：解構會失去響應式**
+**限制 2：解構會失去響應式**
 
 ```js
 const state = reactive({ count: 0, name: 'Jeremy' })
 
 // ❌ 解構出來的值不是響應式的！
 const { count } = state
-// count 現在只是一個普通的數字 0，改它不會觸發更新
+// count 只是普通數字 0，不會觸發更新
 ```
 
-**坑 3：不能用在基本型別**
+**限制 3：不能用在基本型別**
 
 ```js
 // ❌ 這不行，reactive 只接受物件
 const count = reactive(0)
 ```
 
-`ref` 就沒有這些問題。所以實務上大部分情境直接用 `ref` 就對了。
+`ref` 不受上述限制，大部分情境適用。
 
-### 什麼時候用 reactive？
+### 適合使用 reactive 的場景
 
-當你有一組「相關的狀態」想放在一起，而且你確定不會整個替換掉它的時候：
+一組相關狀態，且不會整個替換：
 
 ```js
 // 表單資料很適合用 reactive
@@ -162,7 +149,7 @@ const form = reactive({
 })
 ```
 
-但老實說，你用 `ref` 包一個物件也完全沒問題：
+用 `ref` 包物件也可以達到同樣效果：
 
 ```js
 const form = ref({
@@ -179,7 +166,7 @@ form.value.username = 'jeremy'
 
 ## computed — 計算屬性
 
-`computed` 就是那個 Google Sheets 的公式。它會根據其他響應式資料「算出一個新值」，而且有快取。
+`computed` 根據其他響應式資料衍生出新值，具備快取機制。
 
 ```vue
 <script setup>
@@ -197,9 +184,7 @@ const total = computed(() => price.value * quantity.value)
 </template>
 ```
 
-### computed vs method — 差在哪？
-
-這是面試很愛考的題目。
+### computed vs method
 
 ```js
 // computed

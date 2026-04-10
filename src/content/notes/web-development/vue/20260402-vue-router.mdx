@@ -7,21 +7,18 @@ sameDateSort: 3
 changelog: []
 ---
 
-## 為什麼前端需要路由？
+## 前端路由的作用
 
-在傳統的網站架構裡，你點一個連結，瀏覽器就會向伺服器要一個全新的 HTML 頁面，整個畫面閃一下然後重新載入。
-
-但 SPA（Single Page Application，單頁式應用）不一樣。整個網站其實只有一個 HTML 頁面，切換頁面的時候不會真的跟伺服器要新頁面，而是透過 JavaScript 動態替換畫面上的內容。
-
-問題來了：如果整個 app 只有一個頁面，那 URL 怎麼辦？使用者按上一頁會發生什麼事？直接輸入 URL 能到正確的頁面嗎？
-
-這就是 **前端路由** 要解決的事。Vue Router 就是 Vue 官方的路由解決方案，它幫你把 URL 和元件對應起來，讓 SPA 的使用體驗跟傳統多頁網站一樣自然。
+- 傳統網站：每次點連結，瀏覽器向伺服器請求新的 HTML 頁面，整頁重新載入
+- SPA（Single Page Application）：只有一個 HTML 頁面，透過 JavaScript 動態替換內容
+- SPA 需要 **前端路由** 處理 URL 對應、瀏覽器上一頁/下一頁、直接輸入 URL 等行為
+- Vue Router 是 Vue 官方路由方案，負責 URL 與元件的對應
 
 ---
 
 ## 基本設定
 
-先裝套件（如果你用 `create-vue` 建專案時有選 Router 就已經裝好了）：
+安裝套件（`create-vue` 建專案時若已選 Router 則不需要）：
 
 ```bash
 npm install vue-router
@@ -82,7 +79,8 @@ createApp(App).use(router).mount('#app')
 </template>
 ```
 
-`<RouterLink>` 就是 Vue Router 版的 `<a>` 標籤，它不會觸發整頁刷新，而是用前端路由切換。`<RouterView>` 則是一個「佔位框」，告訴 Vue「把匹配到的元件放這裡」。
+- `<RouterLink>` — Vue Router 版的 `<a>` 標籤，不觸發整頁刷新，使用前端路由切換
+- `<RouterView>` — 佔位元件，渲染當前路由匹配到的元件
 
 ### createWebHistory vs createWebHashHistory
 
@@ -94,15 +92,16 @@ createWebHistory()
 createWebHashHistory()
 ```
 
-**Web History** 的 URL 比較乾淨，但需要後端配合（所有路徑都要導向 index.html）。現在主流的部署平台（Vercel、Netlify）都有自動處理，所以通常都用 `createWebHistory`。
-
-**Hash History** 不需要後端配合（因為 `#` 後面的東西瀏覽器不會送到伺服器），但 URL 比較醜。
+| 模式 | URL 格式 | 後端配合 | 備註 |
+|---|---|---|---|
+| `createWebHistory` | `example.com/about` | 需要（所有路徑導向 index.html） | 主流部署平台（Vercel、Netlify）自動處理，推薦使用 |
+| `createWebHashHistory` | `example.com/#/about` | 不需要（`#` 後的內容不送到伺服器） | URL 較不美觀 |
 
 ---
 
 ## 動態路由
 
-很多頁面的 URL 是動態的，比如 `/user/123`、`/post/456`。這種用動態路由：
+URL 含動態片段（如 `/user/123`、`/post/456`）時，使用動態路由：
 
 ```js
 const routes = [
@@ -114,7 +113,7 @@ const routes = [
 ]
 ```
 
-`:id` 就是動態參數。在元件裡可以這樣取得：
+`:id` 為動態參數，在元件中透過 `useRoute()` 取得：
 
 ```vue
 <script setup>
@@ -137,9 +136,7 @@ console.log(route.params.id) // '123'
 
 ### 監聽參數變化
 
-如果使用者從 `/user/123` 跳到 `/user/456`，Vue 不會銷毀再重建元件（因為用的是同一個），而是**複用**。所以 `onMounted` 不會再執行一次。
-
-你需要用 `watch` 監聽路由參數的變化：
+從 `/user/123` 導航到 `/user/456` 時，Vue **複用**同一元件實例，`onMounted` 不會重新執行。需用 `watch` 監聽參數變化：
 
 ```vue
 <script setup>
@@ -162,7 +159,7 @@ watch(
 
 ## 巢狀路由
 
-很多頁面的版面結構是這樣的：外面有一個共用的 layout（比如 sidebar），裡面的內容區域會根據子路由切換。
+外層共用 layout（如 sidebar），內容區域根據子路由切換。
 
 ```
 /settings
@@ -171,7 +168,7 @@ watch(
 └── /settings/notify     → 通知設定
 ```
 
-這種就用巢狀路由：
+使用巢狀路由實作：
 
 ```js
 const routes = [
@@ -200,7 +197,7 @@ const routes = [
 ]
 ```
 
-然後在 `SettingsLayout.vue` 裡面放一個 `<RouterView>`：
+在 `SettingsLayout.vue` 中放置 `<RouterView>` 作為子路由出口：
 
 ```vue
 <!-- SettingsLayout.vue -->
@@ -220,15 +217,13 @@ const routes = [
 </template>
 ```
 
-巢狀路由的概念就是：**外層的 `<RouterView>` 渲染父路由，裡面還可以有 `<RouterView>` 渲染子路由**。一層一層像俄羅斯娃娃一樣。
+核心概念：外層 `<RouterView>` 渲染父路由元件，內層 `<RouterView>` 渲染子路由元件，可多層巢狀。
 
 ---
 
 ## 導航守衛
 
-導航守衛就是「路由的保全」。使用者要進某個頁面之前，你可以攔截他，檢查條件是否符合，再決定放不放行。
-
-最常見的用途就是**權限控制**：沒登入不能進 dashboard、沒有 admin 權限不能進管理頁面。
+導航守衛在路由切換前攔截請求，檢查條件後決定是否放行。最常見用途為**權限控制**。
 
 ### 全域守衛
 
@@ -264,7 +259,7 @@ const routes = [
 
 ### 路由獨享守衛
 
-只針對某個路由設定：
+針對單一路由設定：
 
 ```js
 {
@@ -281,7 +276,7 @@ const routes = [
 
 ### 元件內守衛
 
-在元件裡面用 `onBeforeRouteLeave`，常見用途是「離開前提醒使用者有未儲存的修改」：
+透過 `onBeforeRouteLeave` 在元件內攔截離開事件，常用於未儲存修改的提醒：
 
 ```vue
 <script setup>
@@ -300,15 +295,13 @@ onBeforeRouteLeave((to, from) => {
 
 ### 守衛的執行順序
 
-當你從 A 頁面導航到 B 頁面：
+從 A 頁面導航到 B 頁面的執行順序：
 
 1. A 的 `onBeforeRouteLeave`
 2. 全域 `beforeEach`
 3. B 的 `beforeEnter`（如果有）
 4. B 的元件被解析
 5. 全域 `afterEach`
-
-知道就好，實務上不太需要記這麼細。
 
 ---
 
