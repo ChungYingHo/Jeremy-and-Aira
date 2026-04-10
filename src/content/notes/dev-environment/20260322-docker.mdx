@@ -9,42 +9,37 @@ sameDateSort: 0
 
 ## 容器是什麼
 
-在 Docker 出現之前，要把一個應用程式搬到另一台電腦上執行，你必須確保那台電腦有一樣的作業系統、一樣版本的 Node.js / Python / Java、一樣的系統函式庫……一旦有任何差異，程式就可能跑不起來。
+**容器（Container）** 將應用程式及其所有依賴（執行環境、套件、設定檔）打包成一個獨立單元，確保在任何機器上行為一致。
 
-**容器（Container）** 的想法是：把應用程式和它所需的所有東西（執行環境、依賴套件、設定檔）打包成一個獨立的單元，無論放到哪台機器上，行為都完全一致。
-
-可以把容器想像成一個輕量的「隔離箱」，裡面有程式跑起來需要的一切，但又不像虛擬機那樣需要完整模擬一套作業系統。
+- 解決傳統部署中作業系統、語言版本、系統函式庫不一致導致程式無法執行的問題
+- 輕量級隔離——包含程式執行所需的一切，但不需要完整模擬作業系統
 
 ## 容器 vs 虛擬機
 
-這兩個概念常常被混淆，但它們的層次不同：
-
 | | 虛擬機 (VM) | 容器 (Container) |
 | :--- | :--- | :--- |
-| 隔離層級 | 完整模擬硬體，跑獨立的 OS | 共用 Host OS 的核心，只隔離應用程式 |
-| 啟動速度 | 分鐘級 | 秒級甚至毫秒 |
+| 隔離層級 | 完整模擬硬體，跑獨立的 OS | 共用 Host OS 核心，只隔離應用程式 |
+| 啟動速度 | 分鐘級 | 秒級至毫秒級 |
 | 大小 | GB 等級 | MB 等級 |
 | 用途 | 需要完全隔離的環境 | 應用程式部署與開發環境 |
 
-虛擬機是「蓋一棟獨立的房子」，容器更像是「在同一棟大樓裡租一個隔間」——共用建築結構，但各自獨立。
+虛擬機模擬完整硬體並運行獨立 OS；容器共用 Host OS 核心，僅隔離應用層。
 
 ## Docker 的核心概念
 
 ### Image（映像檔）
 
-Image 是容器的「模板」，就像蓋房子的設計圖。它是唯讀的，描述了容器裡有什麼、怎麼啟動。
-
-Image 通常從 **Dockerfile** 建構出來，也可以直接從 [Docker Hub](https://hub.docker.com/) 下載現成的（例如官方的 Node.js、PostgreSQL、Nginx image）。
+- 容器的唯讀模板，定義容器內容與啟動方式
+- 從 **Dockerfile** 建構，或從 [Docker Hub](https://hub.docker.com/) 下載現成 image（如 Node.js、PostgreSQL、Nginx）
 
 ### Container（容器）
 
-Container 是 Image 的「執行實例」，就像根據設計圖蓋好的房子。同一個 Image 可以同時跑多個 Container，彼此互不干擾。
-
-Container 是暫時的：刪掉容器，裡面的資料就消失了。如果需要資料持久化，要掛載 **Volume**。
+- Image 的執行實例；同一個 Image 可同時運行多個 Container，彼此隔離
+- Container 為暫時性——刪除後資料消失，需透過 **Volume** 實現資料持久化
 
 ### Dockerfile
 
-Dockerfile 是描述「如何建構 Image」的腳本。每一行指令都會在 Image 裡新增一層：
+描述如何建構 Image 的腳本，每一行指令在 Image 中新增一層：
 
 ```dockerfile
 # 從官方 Node.js 20 image 開始
@@ -66,7 +61,7 @@ CMD ["node", "index.js"]
 
 ### Docker Compose
 
-單一 Container 只跑一個服務。實際應用通常有好幾個服務同時運作（例如：Web Server + 資料庫 + Cache），這時就用 **Docker Compose** 用一個 `compose.yml` 描述所有服務，一個指令全部啟動。
+用於多服務場景（如 Web Server + 資料庫 + Cache）。透過單一 `compose.yml` 定義所有服務，一個指令全部啟動。
 
 ```yaml
 services:
@@ -88,34 +83,26 @@ volumes:
 
 ## Docker 解決了什麼
 
-### 開發環境一致性
-
-每個開發者 `docker compose up` 就能得到完全一樣的環境，不再有「我這邊沒問題」的對話。新人加入時也不需要逐一安裝各種工具，直接跑 Docker 就好。
-
-### 應用程式隔離
-
-不同專案可能需要不同版本的 Python 或 Node.js。用 Docker，每個專案放在自己的容器，版本互不衝突。
-
-### 部署一致性
-
-在本機測試通過的 Image，部署到伺服器上跑的是完全一樣的東西，大幅減少「開發環境沒問題，但 production 壞了」的情況。
+- **開發環境一致性**：`docker compose up` 即可取得統一環境，新人 onboarding 無需逐一安裝工具
+- **應用程式隔離**：不同專案各自運行於獨立容器，語言與套件版本互不衝突
+- **部署一致性**：本機測試通過的 Image 與 production 環境完全相同，減少環境差異導致的問題
 
 ## Registry：Image 的倉庫
 
-Image 建好之後要存放在某個地方，這個地方叫 **Registry**。
+**Registry** 是存放 Image 的遠端儲存庫。
 
-- **Docker Hub**：最常用的公開 Registry，大多數官方 image 都在這裡
+- **Docker Hub**：最常用的公開 Registry，大多數官方 image 存放於此
 - **GitHub Container Registry (GHCR)**：整合 GitHub，適合開源專案
-- **Amazon ECR / Google Artifact Registry / Azure Container Registry**：各大雲端平台的私有 Registry
+- **Amazon ECR / Google Artifact Registry / Azure Container Registry**：各雲端平台的私有 Registry
 
 ## 和雲端的關係
 
-Docker 本身是在本機或伺服器上跑容器的工具。當需要大規模部署、自動擴縮容、高可用性時，就需要更上一層的**容器編排**工具，最主流的是 **Kubernetes（K8s）**。
+Docker 在本機或伺服器上運行容器。大規模部署、自動擴縮容、高可用性場景需要**容器編排**工具，主流為 **Kubernetes（K8s）**。
 
-雲端平台提供託管的容器服務，讓你不需要自己管理這些基礎設施：
+各雲端平台提供託管容器服務：
 
 - **AWS ECS / EKS**：Amazon 的容器服務
 - **Google Cloud Run / GKE**：Google 的容器服務
 - **Azure Container Apps / AKS**：Microsoft 的容器服務
 
-這些服務的基礎都是 Docker Image——你只需要把 Image 推上去，剩下的交給雲端平台處理。
+這些服務皆以 Docker Image 為基礎，推送 Image 後由平台處理部署與維運。
