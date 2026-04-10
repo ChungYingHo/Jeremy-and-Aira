@@ -9,9 +9,7 @@ changelog: []
 
 ## 為什麼需要狀態管理？
 
-先來看一個場景：你的 app 有一個 Header 元件顯示使用者名字，一個 Sidebar 元件顯示使用者頭像，還有一個 Settings 頁面可以修改使用者資料。
-
-這三個元件在元件樹上可能長這樣：
+當多個不具直接父子關係的元件需要共享同一份資料時，props 逐層傳遞或 `provide/inject` 的維護成本會隨規模增長。範例：
 
 ```
 App
@@ -21,19 +19,15 @@ App
     └── Settings    ← 需要修改 user
 ```
 
-它們之間沒有直接的父子關係。如果用 props 傳，你得從 App 一路往下傳到每個元件。如果用 `provide/inject`，App 得 provide、每個元件得 inject，改一個要更新好多地方。
+三者不具直接父子關係，用 props 需逐層向下傳遞；用 `provide/inject` 則需每處分別注入，修改時牽連範圍大。
 
-當 app 越來越大、共享狀態越來越多的時候，這種「散落在各處的狀態」會讓你的程式碼變成一團義大利麵。
-
-**狀態管理** 的概念就是：把這些需要跨元件共享的資料集中到一個地方管理。任何元件都可以直接存取和修改，而且改動會自動反映到所有使用它的元件。
-
-用生活比喻：props + emit 像是面對面傳紙條，provide/inject 像是在大樓裡設一個公佈欄只有同棟的人看得到。而 Pinia 就像一個**共用的雲端硬碟** — 不管你在哪裡，打開就能看到最新的檔案，改了之後所有人都會看到更新。
+**狀態管理**：將跨元件共享的資料集中於單一位置。任何元件皆可直接存取或修改，變動自動反映至所有使用端。
 
 ---
 
 ## Pinia 是什麼？
 
-Pinia 是 Vue 官方的狀態管理套件，也是 Vuex 的後繼者。名字來自西班牙文的「鳳梨」（piña），所以它的 logo 是一顆鳳梨 🍍。
+Pinia 是 Vue 官方的狀態管理套件，Vuex 的後繼者。名稱源自西班牙文「鳳梨」（piña）。
 
 ```bash
 npm install pinia
@@ -56,11 +50,9 @@ app.mount('#app')
 
 ## 建立 Store
 
-Store 就是一個「倉庫」，裡面放的是你要集中管理的狀態。Pinia 有兩種定義 store 的語法。
+Store 是集中管理狀態的單元。Pinia 提供兩種定義語法。
 
 ### Option Store（選項式）
-
-跟 Vue 2 的 Options API 很像：
 
 ```js
 // stores/counter.js
@@ -84,7 +76,7 @@ export const useCounterStore = defineStore('counter', {
 
 ### Setup Store（組合式）— 推薦
 
-跟 Composition API 的寫法一模一樣，如果你已經在用 `<script setup>`，這種寫法會非常直覺：
+與 Composition API 寫法相同：
 
 ```js
 // stores/counter.js
@@ -108,13 +100,13 @@ export const useCounterStore = defineStore('counter', () => {
 })
 ```
 
-兩種寫法效果完全一樣，選你看順眼的就好。但如果你是新手而且已經習慣 Composition API 的話，**Setup Store** 比較直覺，因為 `ref` 就是 state、`computed` 就是 getter、function 就是 action。
+兩種寫法效果相同。Setup Store 的對應關係：`ref` → state、`computed` → getter、function → action。
 
 ---
 
 ## State — 狀態
 
-State 就是 store 裡面的資料。它就是一堆 `ref`（或者 Option Store 裡的 `state()`）。
+State 是 store 內的資料，對應 `ref`（Option Store 則為 `state()` 回傳值）。
 
 ### 在元件裡使用
 
