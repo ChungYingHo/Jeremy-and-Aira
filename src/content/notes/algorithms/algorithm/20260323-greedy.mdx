@@ -86,7 +86,7 @@ import BinPackingDiagram from '@/components/ArticleRelated/algorithm/BinPackingD
 
 ## 圖的基本概念
 
-Prim、Kruskal、Sollin、Dijkstra 都以圖作為輸入，先整理基本術語。以下複雜度分析中，$V$ 代表頂點數，$E$ 代表邊數。
+Prim、Kruskal、Sollin、Dijkstra 都以圖作為輸入，先整理基本術語。以下複雜度分析中，$|V|$ 代表頂點數，$|E|$ 代表邊數。
 
 ### 無向圖與有向圖
 
@@ -100,7 +100,7 @@ Prim、Kruskal、Sollin、Dijkstra 都以圖作為輸入，先整理基本術語
 
 ### 樹是什麼
 
-圖論裡的**樹（Tree）** 是「連通、無環的無向圖」。有 $V$ 個節點的樹恰好有 $V - 1$ 條邊。
+圖論裡的**樹（Tree）** 是「連通、無環的無向圖」。有 $|V|$ 個節點的樹恰好有 $|V| - 1$ 條邊。
 
 樹有一個關鍵性質：**任意兩個節點之間只有唯一一條路徑。** 這讓樹的路徑問題比一般圖簡單很多——不需要 Dijkstra，直接用 BFS 或 DFS 找就行了。
 
@@ -153,7 +153,7 @@ def prim(graph, start):
     return total
 ```
 
-時間複雜度：$O(E \log V)$，使用優先佇列（min-heap）。
+時間複雜度：$O(|E| \log |V|)$，使用優先佇列（min-heap）。
 
 ### Kruskal 演算法
 
@@ -197,7 +197,7 @@ def kruskal(nodes, edges):
     return total
 ```
 
-時間複雜度：$O(E \log E)$，主要來自排序。
+時間複雜度：$O(|E| \log |E|)$，主要來自排序。
 
 ### Sollin 演算法
 
@@ -249,7 +249,7 @@ def sollin(nodes, edges):
     return total
 ```
 
-時間複雜度：$O(E \log V)$。每輪至少讓分量數量減半（因為每個分量都會跟至少一個鄰居合併），所以最多 $\lceil \log V \rceil$ 輪。
+時間複雜度：$O(|E| \log |V|)$。每輪至少讓分量數量減半（因為每個分量都會跟至少一個鄰居合併），所以最多 $\lceil \log |V| \rceil$ 輪。
 
 ### 三種 MST 演算法比較
 
@@ -258,7 +258,7 @@ def sollin(nodes, edges):
 | 方向 | 從節點出發，逐步擴張 | 從邊出發，合併集合 | 每輪每個分量各挑最小邊 |
 | 適合 | 稠密圖（邊多） | 稀疏圖（邊少） | 平行運算場景 |
 | 需要 | 優先佇列 | Union-Find + 排序 | Union-Find |
-| 複雜度 | $O(E \log V)$ | $O(E \log E)$ | $O(E \log V)$ |
+| 複雜度 | $O(|E| \log |V|)$ | $O(|E| \log |E|)$ | $O(|E| \log |V|)$ |
 | 特色 | 直觀好理解 | 實作簡潔 | 天生可平行化 |
 
 三個演算法的 MST 總權重一定相同（若有多棵 MST，選到的具體邊可能不同）。
@@ -310,10 +310,10 @@ def dijkstra(graph, start):
     return dist  # {'A': 0, 'B': 2, 'C': 4, 'D': 5, 'E': 9}
 ```
 
-時間複雜度：$O((V + E) \log V)$，使用優先佇列。
+時間複雜度：$O((|V| + |E|) \log |V|)$，使用優先佇列。
 
 :::warning
-Dijkstra 不適用於含有負權重邊的圖。有負邊要改用 Bellman-Ford（$O(VE)$），它不是貪婪，而是反覆對所有邊做鬆弛。
+Dijkstra 不適用於含有負權重邊的圖。有負邊要改用 Bellman-Ford（$O(|V| \cdot |E|)$），它不是貪婪，而是反覆對所有邊做鬆弛。
 :::
 
 ### 有向圖 vs 無向圖建法
