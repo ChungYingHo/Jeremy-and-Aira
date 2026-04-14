@@ -7,7 +7,6 @@ changelog: []
 ---
 
 import BigOChart from '@/components/ArticleRelated/algorithm/BigOChart.svelte'
-import EventLoopDiagram from '@/components/ArticleRelated/algorithm/EventLoopDiagram.svelte'
 
 ## 演算法與前端
 
@@ -27,7 +26,7 @@ function containsDuplicate(nums: number[]): boolean {
 }
 ```
 
-然後就發現 `includes` 通過了絕大分的測試，但在遇到超~~~ 多內容的陣列就會遇到 TLE (Time Limit Exceeded)。  
+然後就發現 `includes` 通過了絕大部分的測試，但在遇到超~~~ 多內容的陣列就會遇到 TLE (Time Limit Exceeded)。  
 所以改用一個不是陣列本身的方式來解題，透過 `new Set` 來解題：
 
 ```ts
@@ -96,7 +95,7 @@ function containsDuplicate(nums: number[]): boolean {
 | 程式碼 | 速度 | 為什麼 |
 | :--- | :---: | :--- |
 | `arr[5]` | $O(1)$ | 用位置直接拿 |
-| `arr.find(x => ...)` | $O(n)$ | 從頭掃到尾 |
+| `arr.find(item => ...)` | $O(n)$ | 從頭掃到尾 |
 | `arr.filter(...)` | $O(n)$ | 每個看一遍 |
 | `arr.sort()` | $O(n \log n)$ | 排序就是這個等級 |
 | `.map()` 裡面套 `.find()` | $O(n^2)$ | 迴圈套迴圈 |
@@ -120,7 +119,7 @@ function containsDuplicate(nums: number[]): boolean {
 如同前述所說，JS object 其實底層是 hash table。  
 Hash table 這個資料結構的特點是存資料時，key 會先經過一個 hash function 轉換成一個數字，這個數字就是該資料在記憶體中的位置（index）。  
 之後要查找時，同樣把 key 丟進 hash function，直接算出位置跳過去，就不需要從頭掃，因此查找的複雜度在一般情況下是 $O(1)$。  
-這個 hash 概念其實跟登入系統輸入密碼時的 hash 是一樣的，不過登入系統這便是為了安全性更多一點。
+這個 hash 概念其實跟登入系統輸入密碼時的 hash 是一樣的，不過登入系統這邊是為了安全性更多一點。
 
 ### Call stack
 前端在探討非同步時多少都會提到一點 call stack。     
@@ -149,7 +148,7 @@ html
         └── p
 ```
 
-`querySelector` 本質上就是在這顆樹上透過 DFS (Depth-First Search) 去找節點，一路往最深的子節點鑽，找不到再回頭換下一條路，直到找到第一個符合的元素為止。   
+`querySelector` 本質上就是在這棵樹上透過 DFS (Depth-First Search) 去找節點，一路往最深的子節點鑽，找不到再回頭換下一條路，直到找到第一個符合的元素為止。   
 所以在最壞的情況下，`querySelector` 就是把整個 DOM tree 都給爬完，複雜度是 $O(n)$。  
 因此有時候會建議把搜尋的範圍縮小，比如：
 
@@ -177,8 +176,8 @@ const props = defineProps({
 
 const enrichedPosts = computed(() =>
   props.posts.map(post => {
-    const author = props.authors.find(a => a.id === post.authorId)
-    return { ...post, authorName: author?.name }
+    const matched = props.authors.find(author => author.id === post.authorId)
+    return { ...post, authorName: matched?.name }
   })
 )
 </script>
@@ -186,8 +185,8 @@ const enrichedPosts = computed(() =>
 
 `.map()` 裡面用 `.find()` 查作者名稱，邏輯清楚、撰寫直覺。  
 但對每一個 post 而言，`.find()` 都要把 authors 從頭掃到尾。  
-如果有 500 篇 post、100 個 author，每次 computed 重算就是 500 × 100 = 50000 次比較，其複雜度為 $O(n^2)$。  
-而且只要 `items` 一變動（比如搜尋結果改變），整個 computed 就會重跑一次。  
+如果有 500 篇 post、100 個 author，每次 computed 重算就是 500 × 100 = 50000 次比較，嚴格來說其複雜度為 $O(n \times m)$，但由於複雜度討論的是最壞情況，當 $n$ 與 $m$ 規模相近時即退化為 $O(n^2)$，因此慣例上會直接以 $O(n^2)$ 稱之。  
+而且只要 `posts` 一變動（比如搜尋結果改變），整個 computed 就會重跑一次。  
 這在資料量大時就是個災難。
 
 解決這種在資料量大時極耗效能的方式是改成先建一個「索引簿」（也就是 Hash Table），下面的查找複雜度為 $O(n)$：
@@ -201,18 +200,24 @@ const props = defineProps({
   authors: Array, // [{ id: 'a1', name: '小明' }, ...]
 })
 
-// 先把 authors 建成一個 Map（索引簿）
+// 先把 authors 建成一個索引簿（plain object）
 // key 是作者 ID，value 是作者物件
 // 這一步跑一遍 authors 就做完了
-const authorMap = computed(() =>
-  new Map(props.authors.map(a => [a.id, a]))
+// 結果長這樣：
+// {
+//   a1: { id: 'a1', name: '小明' },
+//   a2: { id: 'a2', name: '小華' },
+//   ...
+// }
+const authorIndex = computed(() =>
+  Object.fromEntries(props.authors.map(author => [author.id, author]))
 )
 
-// 現在查作者名稱不用掃了，直接用 ID 去 Map 裡面撈
+// 現在查作者名稱不用掃了，直接用 ID 去索引簿裡撈
 const enrichedPosts = computed(() =>
   props.posts.map(post => ({
     ...post,
-    authorName: authorMap.value.get(post.authorId)?.name
+    authorName: authorIndex.value[post.authorId]?.name
   }))
 )
 </script>
@@ -276,7 +281,7 @@ function isNew(post) {
 <script setup>
 import { computed } from 'vue'
 
-// ✅ 只算一次，結果被 computed 快取起來
+// ✅ 只算一次，結果由 computed 快取起來
 const newPosts = computed(() => {
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
   return props.posts.filter(post => post.createdAt > sevenDaysAgo)
@@ -351,7 +356,7 @@ const userName = userIndex[currentId]?.name
 正規化就是把這張表一步步整理乾淨的過程，目的是提升儲存效率、減少資料異常。
 
 ### 1NF
-第一正規是為了讓每一張表都有一個 primary key，且每個欄位只存一個值。  
+第一正規化是為了讓每一張表都有一個 primary key，且每個欄位只存一個值。  
 比如這裡 `tags` 欄位塞了多個值，資料庫無法直接查詢或索引裡面的單一標籤。
 
 改成每個值獨立一筆：
