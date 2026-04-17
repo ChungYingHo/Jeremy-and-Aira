@@ -97,6 +97,22 @@ createWebHashHistory()
 | `createWebHistory` | `example.com/about` | 需要（所有路徑導向 index.html） | 主流部署平台（Vercel、Netlify）自動處理，推薦使用 |
 | `createWebHashHistory` | `example.com/#/about` | 不需要（`#` 後的內容不送到伺服器） | URL 較不美觀 |
 
+若自行部署，後端需配置 rewrite 把所有路徑指回 `index.html`，否則重新整理會 404：
+
+```json
+// vercel.json
+{
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
+```
+
+```nginx
+# nginx.conf
+location / {
+  try_files $uri $uri/ /index.html;
+}
+```
+
 ---
 
 ## 動態路由
