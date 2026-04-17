@@ -1,0 +1,305 @@
+---
+title: "[Data Structure] 堆積"
+author: "Jeremy & Claude"
+date: "2026-04-17"
+tags: [data structure, heap, priority queue, heap sort]
+changelog: []
+sameDateSort: 2
+---
+
+**堆積 (Heap)** 是一種以**完全二元樹 (Complete Binary Tree)** 為形狀約束、並滿足**堆積性質 (Heap Property)** 的資料結構。堆積讓「取出最大值（或最小值）」的操作穩定為 $O(\log n)$，是**優先佇列 (Priority Queue)** 的標準實作。
+
+## 完全二元樹
+
+- 除了最後一層，其餘每層都要填滿
+- 最後一層的節點全部靠左排列
+
+這個形狀限制是為了讓整棵樹可以用一個連續陣列表達，不需要節點物件 + 指標。
+
+## Max-heap 與 Min-heap
+
+兩種堆積的差別只在「誰在上面」：
+
+| 類型 | 堆積性質 | 根節點 | 典型用途 |
+| :--- | :--- | :--- | :--- |
+| Max-heap | 每個節點值 $\ge$ 其子節點值 | 最大值 | 取最大、Heap Sort（遞增排序） |
+| Min-heap | 每個節點值 $\le$ 其子節點值 | 最小值 | 取最小、Dijkstra、Prim、Huffman |
+
+:::info
+堆積**不是**排序過的結構——只保證父子之間的大小關係，不保證兄弟之間的順序，也不保證層與層之間嚴格遞增 / 遞減。因此 heap 不能取代 BST 做任意查詢。
+:::
+
+## 陣列表示法
+
+把完全二元樹「層序」攤平到陣列。以 **1-indexed** 為例（實作較直觀）：
+
+- 節點 $i$ 的父節點：$\lfloor i / 2 \rfloor$
+- 節點 $i$ 的左子：$2i$
+- 節點 $i$ 的右子：$2i + 1$
+
+若用 **0-indexed**：
+
+- 父節點：$\lfloor (i - 1) / 2 \rfloor$
+- 左子：$2i + 1$
+- 右子：$2i + 2$
+
+以 max-heap `[_, 6, 5, 4, 1, 2, 3]`（1-indexed，索引 0 空著）為例：
+
+```
+         6  (index 1)
+        / \
+       5   4
+      /|   |
+     1 2   3
+```
+
+| index | 1 | 2 | 3 | 4 | 5 | 6 |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 值 | 6 | 5 | 4 | 1 | 2 | 3 |
+| 父 | — | 6 | 6 | 5 | 5 | 4 |
+
+---
+
+## 核心操作
+
+### Insert — 向上浮 (Sift Up)
+
+步驟：
+
+1. 把新元素放在陣列尾端（維持完全二元樹形狀）
+2. 與父節點比較，若違反堆積性質就交換
+3. 持續向上，直到符合性質或到達根節點
+
+從空的 max-heap 依序 insert `[3, 1, 6, 5, 2, 4]`（1-indexed）：
+
+| 步驟 | 動作 | 陣列狀態 |
+| :---: | :--- | :--- |
+| 1 | insert 3，放 index 1（根） | [_, 3] |
+| 2 | insert 1，放 index 2；1 < 3，不動 | [_, 3, 1] |
+| 3 | insert 6，放 index 3；6 > 父 3，swap → 6 上到 index 1 | [_, 6, 1, 3] |
+| 4 | insert 5，放 index 4；5 > 父 1，swap → 5 上到 index 2；5 < 父 6，停 | [_, 6, 5, 3, 1] |
+| 5 | insert 2，放 index 5；2 < 父 5，不動 | [_, 6, 5, 3, 1, 2] |
+| 6 | insert 4，放 index 6；4 > 父 3，swap → 4 上到 index 3；4 < 父 6，停 | [_, 6, 5, 4, 1, 2, 3] |
+
+最終 max-heap：
+
+```
+         6
+        / \
+       5   4
+      /|   |
+     1 2   3
+```
+
+- 時間複雜度：$O(\log n)$（最多爬樹高那麼多層）
+
+### Extract Max — 向下沉 (Sift Down)
+
+取出根（最大值）的步驟：
+
+1. 記錄根節點值當作回傳結果
+2. 把**最後一個**元素搬到根（維持完全二元樹形狀）
+3. 比較當前節點與兩個子節點，與**較大的**子節點交換（若需要）
+4. 持續向下，直到符合性質或成為葉節點
+
+承上例 `[_, 6, 5, 4, 1, 2, 3]`，連續執行兩次 extract max：
+
+**第一次 extract：**
+
+| 步驟 | 動作 | 陣列狀態 |
+| :---: | :--- | :--- |
+| 1 | 記 max = 6 | [_, 6, 5, 4, 1, 2, 3] |
+| 2 | 把尾端 3 搬到根，刪尾 | [_, 3, 5, 4, 1, 2] |
+| 3 | index 1 值 3，子為 5 (idx 2)、4 (idx 3)；最大 5，swap | [_, 5, 3, 4, 1, 2] |
+| 4 | index 2 值 3，子為 1、2；最大 3 本身，停 | [_, 5, 3, 4, 1, 2] |
+
+回傳 6，剩下 `[_, 5, 3, 4, 1, 2]`。
+
+**第二次 extract：**
+
+| 步驟 | 動作 | 陣列狀態 |
+| :---: | :--- | :--- |
+| 1 | 記 max = 5 | [_, 5, 3, 4, 1, 2] |
+| 2 | 尾端 2 搬到根 | [_, 2, 3, 4, 1] |
+| 3 | index 1 值 2，子 3、4；最大 4 (idx 3)，swap | [_, 4, 3, 2, 1] |
+| 4 | index 3 值 2 已無子節點，停 | [_, 4, 3, 2, 1] |
+
+回傳 5。
+
+- 時間複雜度：$O(\log n)$
+
+### Build Heap — 一次蓋好整個堆積
+
+把無序陣列轉成堆積的兩種做法：
+
+1. **連續 insert**：空堆積起，對每個元素呼叫 insert。總成本 $O(n \log n)$
+2. **Floyd's Heapify**：從最後一個非葉節點（index $\lfloor n / 2 \rfloor$）開始，逐一向下 sift down。總成本 $O(n)$
+
+Floyd's 版本較快的直覺：越接近葉子節點越多、但下沉高度越小；越接近根節點下沉高度越大、但數量越少。整體可證明為 $O(n)$。
+
+以 `[3, 1, 6, 5, 2, 4]`（$n = 6$）做 Floyd's heapify，1-indexed 為 `[_, 3, 1, 6, 5, 2, 4]`，從 index $\lfloor 6/2 \rfloor = 3$ 開始往 1 做 sift down：
+
+| 步驟 | 處理 index | 值 | 動作 | 陣列狀態 |
+| :---: | :---: | :---: | :--- | :--- |
+| 1 | 3 | 6 | 子 4 (idx 6)；6 > 4，停 | [_, 3, 1, 6, 5, 2, 4] |
+| 2 | 2 | 1 | 子 5 (idx 4)、2 (idx 5)；最大 5，swap idx 2 與 idx 4 | [_, 3, 5, 6, 1, 2, 4] |
+| 3 | （承上）idx 4 值 1，無子，停 | — | — | [_, 3, 5, 6, 1, 2, 4] |
+| 4 | 1 | 3 | 子 5 (idx 2)、6 (idx 3)；最大 6，swap idx 1 與 idx 3 | [_, 6, 5, 3, 1, 2, 4] |
+| 5 | （承上）idx 3 值 3，子 4 (idx 6)；最大 4，swap | [_, 6, 5, 4, 1, 2, 3] |
+| 6 | （承上）idx 6 值 3，無子，停 | — | — | [_, 6, 5, 4, 1, 2, 3] |
+
+最終與 insert 版結果相同：`[_, 6, 5, 4, 1, 2, 3]`。
+
+---
+
+## 複雜度總覽
+
+| 操作 | 時間 |
+| :--- | :---: |
+| 取極值（看根） | $O(1)$ |
+| Insert | $O(\log n)$ |
+| Extract | $O(\log n)$ |
+| Build Heap（Floyd's） | $O(n)$ |
+| 任意查詢（找某個值） | $O(n)$ |
+
+- 查詢 $O(n)$ 是因為堆積只保證父子關係、沒有排序結構，只能線性掃描
+
+---
+
+## Heap Sort（堆積排序）
+
+把堆積拿來排序的自然應用，原地排序、$O(n \log n)$、不穩定：
+
+1. 對陣列做 Build Heap（max-heap）→ $O(n)$
+2. 反覆：把根（最大值）與當前堆積尾端交換，堆積大小減 1，對新根做 sift down → 共 $n - 1$ 次、每次 $O(\log n)$
+
+以 `[3, 1, 6, 5, 2, 4]` 為例（1-indexed，排序區以粗體標記在陣列尾端）：
+
+| 步驟 | 動作 | 陣列狀態（排序區用 `|` 分隔）|
+| :---: | :--- | :--- |
+| 1 | Build max-heap | [_, 6, 5, 4, 1, 2, 3] |
+| 2 | swap idx 1 與 6（堆積大小 6 → 5），sift down 3 | [_, 5, 3, 4, 1, 2 \| 6] |
+| 3 | swap idx 1 與 5（5 → 4），sift down 2 | [_, 4, 3, 2, 1 \| 5, 6] |
+| 4 | swap idx 1 與 4（4 → 3），sift down 1 | [_, 3, 1, 2 \| 4, 5, 6] |
+| 5 | swap idx 1 與 3（3 → 2），sift down 2 | [_, 2, 1 \| 3, 4, 5, 6] |
+| 6 | swap idx 1 與 2（2 → 1），sift down 1 | [_, 1 \| 2, 3, 4, 5, 6] |
+| 7 | 堆積只剩 1 個元素，結束 | [1, 2, 3, 4, 5, 6] |
+
+結果為遞增陣列。若想遞減排序則改用 min-heap。
+
+:::info
+與 Merge Sort 相比：兩者都是 $O(n \log n)$，但 Heap Sort 是**原地排序 (in-place)**（$O(1)$ 額外空間），Merge Sort 需要 $O(n)$ 輔助空間。代價是 Heap Sort 不穩定、cache 友善性略差，所以實務上純排序常選 Quick Sort / Merge Sort / 混合排序（如 Timsort），Heap 更常用於優先佇列而非直接排序。
+:::
+
+---
+
+## 優先佇列 (Priority Queue)
+
+**優先佇列** 抽象資料型別：每個元素帶有「優先級 (priority)」，每次取出的都是當前優先級最高（或最低）者。
+
+| 底層結構 | Insert | Extract | 適用 |
+| :--- | :---: | :---: | :--- |
+| 未排序陣列 | $O(1)$ | $O(n)$ | 幾乎不插入、很少取 |
+| 已排序陣列 | $O(n)$ | $O(1)$ | 大量查詢、少量插入 |
+| **Heap** | $O(\log n)$ | $O(\log n)$ | **兩者兼顧，實務標準** |
+
+Java 的 `PriorityQueue`、Python 的 `heapq`、C++ STL 的 `priority_queue` 底層皆為堆積。
+
+```java
+import java.util.PriorityQueue;
+
+public class PQExample {
+    public static void main(String[] args) {
+        PriorityQueue<Integer> pq = new PriorityQueue<>();  // 預設 min-heap
+        pq.offer(3); pq.offer(1); pq.offer(6); pq.offer(5); pq.offer(2); pq.offer(4);
+
+        while (!pq.isEmpty()) {
+            System.out.print(pq.poll() + " ");  // 1 2 3 4 5 6
+        }
+    }
+}
+```
+
+---
+
+## Heap 的實作
+
+以 1-indexed max-heap 為例：
+
+```java
+import java.util.ArrayList;
+
+public class MaxHeap {
+    private ArrayList<Integer> heap = new ArrayList<>();
+
+    public MaxHeap() {
+        heap.add(0);  // index 0 當作保留
+    }
+
+    public int size() { return heap.size() - 1; }
+    public boolean isEmpty() { return size() == 0; }
+    public int peek() { return heap.get(1); }
+
+    public void insert(int value) {
+        heap.add(value);
+        siftUp(heap.size() - 1);
+    }
+
+    public int extractMax() {
+        int max = heap.get(1);
+        int last = heap.remove(heap.size() - 1);
+        if (!isEmpty()) {
+            heap.set(1, last);
+            siftDown(1);
+        }
+        return max;
+    }
+
+    private void siftUp(int i) {
+        while (i > 1) {
+            int parent = i / 2;
+            if (heap.get(i) > heap.get(parent)) {
+                swap(i, parent);
+                i = parent;
+            } else break;
+        }
+    }
+
+    private void siftDown(int i) {
+        int n = heap.size() - 1;
+        while (2 * i <= n) {
+            int left = 2 * i;
+            int right = 2 * i + 1;
+            int largest = (right <= n && heap.get(right) > heap.get(left)) ? right : left;
+            if (heap.get(largest) > heap.get(i)) {
+                swap(i, largest);
+                i = largest;
+            } else break;
+        }
+    }
+
+    private void swap(int a, int b) {
+        int tmp = heap.get(a);
+        heap.set(a, heap.get(b));
+        heap.set(b, tmp);
+    }
+}
+```
+
+---
+
+## 堆積在經典演算法中的角色
+
+許多圖論與貪婪演算法的效能關鍵就在於優先佇列——而優先佇列的主流實作就是堆積。
+
+| 演算法 | 用途 | 堆積的功能 |
+| :--- | :--- | :--- |
+| **Dijkstra** | 單源最短路徑 | min-heap 每次取出距離最小的未訪頂點 |
+| **Prim** | 最小生成樹 (MST) | min-heap 每次取出連接已選樹的最輕邊 |
+| **Huffman** | 最小前綴編碼 | min-heap 每次取出兩個頻率最小的節點合併 |
+| **K-way Merge** | 多路歸併（如 external sort） | min-heap 每次取 $k$ 條串列當前最小值 |
+| **Top-K 問題** | 找前 $K$ 大（小）元素 | 大小為 $K$ 的 min-heap（或 max-heap） |
+
+:::tip
+這些演算法改用堆積的效果：Dijkstra 從 $O(|V|^2)$ 降到 $O((|V| + |E|) \log |V|)$；Prim 同理；Huffman 從 $O(n^2)$ 降到 $O(n \log n)$。換句話說，**堆積是把「每回合找最值」從 $O(n)$ 壓到 $O(\log n)$ 的核心工具**，這也是為什麼優先佇列在演算法課程裡反覆出現。
+:::
