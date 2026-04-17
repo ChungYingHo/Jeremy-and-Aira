@@ -1,0 +1,259 @@
+---
+title: "[Data Structure] 雜湊表"
+author: "Jeremy & Claude"
+date: "2026-04-17"
+tags: [data structure, hash table, hashing, collision]
+changelog: []
+sameDateSort: 1
+---
+
+**雜湊表 (Hash Table)** 是以「鍵 (Key)」直接定位「值 (Value)」的資料結構。透過 **雜湊函式 (Hash Function)** 把 key 映射到陣列索引，平均時間複雜度達 $O(1)$，是實務上最常見的查詢結構。
+
+典型應用：字典、集合、資料庫索引、快取、編譯器符號表。
+
+## 核心觀念
+
+- 底層是一個固定大小的陣列（**桶 Bucket** 或**槽 Slot**）
+- 透過 `index = hash(key) % table_size` 決定資料該放哪個 slot
+- 讀、寫、刪除都只要一次 hash 運算 + 一次陣列存取，所以平均是 $O(1)$
+
+## 雜湊函式 (Hash Function)
+
+把任意 key 轉成固定範圍整數的函式，好的 hash 函式要滿足：
+
+- **確定性**：同一個 key 每次算出的 hash 值要相同
+- **快速**：計算成本要低（通常要求 $O(1)$）
+- **均勻分布**：不同 key 應盡量分散，避免大量碰撞
+
+最常見的簡化做法是「除法 hash」：
+
+$$
+h(k) = k \bmod m
+$$
+
+其中 $m$ 是表的大小，通常取質數以分散 key。
+
+## 碰撞 (Collision)
+
+不同的 key 經過 hash 函式後對應到同一個 index，稱為**碰撞**。
+
+- **鴿籠原理 (Pigeonhole Principle)** 保證：只要 key 的數量超過 slot 數，碰撞一定發生
+- 即使未超過，hash 函式分布不均也可能提前產生碰撞
+
+解法分兩大陣營：**鏈結法 (Chaining)** 與 **開放定址法 (Open Addressing)**。
+
+---
+
+## 鏈結法 (Chaining)
+
+每個 slot 指向一個串列（或其他容器），碰撞到的 key 都掛在同一個 slot 的串列上。
+
+以 $m = 7$、$h(k) = k \bmod 7$，依序插入 `[15, 22, 8, 36, 29]`（這組 key 全部 hash 到 1，是最壞情況的示範）：
+
+| Key | hash | slot | 串列狀態 |
+| :---: | :---: | :---: | :--- |
+| 15 | 1 | 1 | slot 1 → [15] |
+| 22 | 1 | 1 | slot 1 → [15, 22] |
+| 8 | 1 | 1 | slot 1 → [15, 22, 8] |
+| 36 | 1 | 1 | slot 1 → [15, 22, 8, 36] |
+| 29 | 1 | 1 | slot 1 → [15, 22, 8, 36, 29] |
+
+最終表：
+
+| slot | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+| :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
+| 內容 | — | [15, 22, 8, 36, 29] | — | — | — | — | — |
+
+查詢時先算 hash 找到 slot，再在串列內逐一比對 key。
+
+```java
+import java.util.LinkedList;
+
+public class HashTableChaining {
+    private LinkedList<Entry>[] table;
+    private int size;
+
+    public HashTableChaining(int size) {
+        this.size = size;
+        this.table = new LinkedList[size];
+        for (int i = 0; i < size; i++) table[i] = new LinkedList<>();
+    }
+
+    private int hash(int key) {
+        return key % size;
+    }
+
+    public void put(int key, String value) {
+        int idx = hash(key);
+        for (Entry e : table[idx]) {
+            if (e.key == key) { e.value = value; return; }
+        }
+        table[idx].add(new Entry(key, value));
+    }
+
+    public String get(int key) {
+        for (Entry e : table[hash(key)]) {
+            if (e.key == key) return e.value;
+        }
+        return null;
+    }
+
+    static class Entry {
+        int key;
+        String value;
+        Entry(int k, String v) { key = k; value = v; }
+    }
+}
+```
+
+:::info
+鏈結法的優點是實作直觀、不怕表被填滿；缺點是每個 slot 要多存一個串列指標，且 cache locality 較差。Java 的 `HashMap` 在 JDK 8 之後採用鏈結法，當單一 bucket 的串列長度超過門檻（預設 8）時，會把該串列升級成紅黑樹，以改善最壞情況效能。
+:::
+
+---
+
+## 開放定址法 (Open Addressing)
+
+碰撞時不另外開串列，直接在表內找下一個可用的 slot。探測策略有三種主流做法。
+
+### 線性探測 (Linear Probing)
+
+碰撞後一次跳一格：$h(k, i) = (h(k) + i) \bmod m$。
+
+同樣以 $m = 7$、$h(k) = k \bmod 7$，依序插入 `[15, 22, 8, 36, 29]`：
+
+| Key | 探測順序 | 最終 slot |
+| :---: | :--- | :---: |
+| 15 | slot 1 空 | 1 |
+| 22 | slot 1 被占 → slot 2 空 | 2 |
+| 8 | slot 1 → 2 被占 → slot 3 空 | 3 |
+| 36 | slot 1 → 2 → 3 被占 → slot 4 空 | 4 |
+| 29 | slot 1 → 2 → 3 → 4 被占 → slot 5 空 | 5 |
+
+最終表：
+
+| slot | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 值 | — | 15 | 22 | 8 | 36 | 29 | — |
+
+:::warning
+線性探測會產生**主叢集 (Primary Clustering)**——連續被占用的 slot 會越長越大，越後面插入的 key 平均探測次數越高。上例中 5 個 key 都擠在 1 ~ 5 這段，若要查詢不存在的 key（hash 到 1），還得一路探測到 slot 6 才能確認。
+:::
+
+### 平方探測 (Quadratic Probing)
+
+每次跳的距離變成平方：$h(k, i) = (h(k) + i^2) \bmod m$。
+
+同 key、同表：
+
+| Key | 探測順序 | 最終 slot |
+| :---: | :--- | :---: |
+| 15 | $i = 0$：1 空 | 1 |
+| 22 | $i = 0$：1 占 → $i = 1$：$(1+1) = 2$ 空 | 2 |
+| 8 | $i = 0$：1 占 → $i = 1$：2 占 → $i = 2$：$(1+4) = 5$ 空 | 5 |
+| 36 | $i = 0$：1 占 → $i = 1$：2 占 → $i = 2$：5 占 → $i = 3$：$(1+9) \bmod 7 = 3$ 空 | 3 |
+| 29 | $i = 0$：1 占 → $i = 1$：2 占 → $i = 2$：5 占 → $i = 3$：3 占 → $i \ge 4$ 循環回到已占 slot | 插入失敗 |
+
+:::info
+平方探測可以打散主叢集，但代價是：當表近滿時可能無法覆蓋所有 slot。以 $m = 7$ 為例，$1 + i^2 \bmod 7$ 在 $i = 0 \sim 6$ 只走過 1、2、5、3 這四個不同位置，碰到第 5 個 key 就卡住。實務上通常要求表大小為 $4k + 3$ 型的質數，並維持 load factor $\le 0.5$，才能保證探測序列遍歷整張表。
+:::
+
+### 雙雜湊 (Double Hashing)
+
+跳步長度由第二個 hash 函式決定：$h(k, i) = (h_1(k) + i \cdot h_2(k)) \bmod m$。
+
+設 $h_1(k) = k \bmod 7$、$h_2(k) = 1 + (k \bmod 5)$（$h_2$ 不能為 0，否則會退化成線性探測）：
+
+| Key | $h_1$ | $h_2$ | 探測順序 | 最終 slot |
+| :---: | :---: | :---: | :--- | :---: |
+| 15 | 1 | 1 | $i = 0$：1 空 | 1 |
+| 22 | 1 | 3 | $i = 0$：1 占 → $i = 1$：$(1 + 3) = 4$ 空 | 4 |
+| 8 | 1 | 4 | $i = 0$：1 占 → $i = 1$：$(1 + 4) = 5$ 空 | 5 |
+| 36 | 1 | 2 | $i = 0$：1 占 → $i = 1$：$(1 + 2) = 3$ 空 | 3 |
+| 29 | 1 | 5 | $i = 0$：1 占 → $i = 1$：$(1 + 5) = 6$ 空 | 6 |
+
+最終表：
+
+| slot | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 值 | — | 15 | — | 36 | 22 | 8 | 29 |
+
+:::tip
+雙雜湊相當於每個 key 都有自己的跳步節奏，分布最均勻、碰撞叢集最少，是三種開放定址法中效能最穩定的。代價是每次碰撞要多算一次 hash 函式。
+:::
+
+### 三種探測法的比較
+
+| 探測法 | 跳步公式 | 叢集程度 | 探測涵蓋範圍 |
+| :--- | :--- | :--- | :--- |
+| 線性 | $h(k) + i$ | 主叢集最嚴重 | 保證走完整張表 |
+| 平方 | $h(k) + i^2$ | 可分散主叢集，但仍有次叢集 | $m$ 為 $4k+3$ 質數且 $\alpha \le 0.5$ 才保證涵蓋 |
+| 雙雜湊 | $h_1(k) + i \cdot h_2(k)$ | 最均勻 | $\gcd(h_2(k), m) = 1$ 時涵蓋全表 |
+
+---
+
+## 時間複雜度
+
+| 操作 | 平均 | 最差 |
+| :--- | :---: | :---: |
+| 查詢 | $O(1)$ | $O(n)$ |
+| 插入 | $O(1)$ | $O(n)$ |
+| 刪除 | $O(1)$ | $O(n)$ |
+
+- 平均情況假設 hash 均勻分布、load factor 控制得宜
+- 最差情況出現在所有 key 都 hash 到同一個 slot（鏈結法退化為鏈結串列、開放定址退化為線性搜尋）
+
+## 負載因子與 Rehash
+
+**負載因子 (Load Factor)** 定義為：
+
+$$
+\alpha = \frac{n}{m}
+$$
+
+其中 $n$ 是元素數、$m$ 是表的大小。
+
+- $\alpha$ 越大，碰撞越頻繁，效能越差
+- 開放定址法通常要求 $\alpha \le 0.75$
+- 鏈結法允許 $\alpha > 1$，但超過後效能會快速下滑
+
+當 $\alpha$ 超過門檻時觸發 **Rehash**：
+
+1. 建立更大的新表（通常是原本的 2 倍，且保持質數）
+2. 逐一把舊表的每個 entry 重新 hash 到新表
+3. 釋放舊表
+
+Rehash 單次成本是 $O(n)$，但因為每插入 $n$ 個元素才會重建一次（等比擴張），插入操作的**均攤時間複雜度 (Amortized Time)** 仍是 $O(1)$。
+
+## 實務：JavaScript 的 Object / Map / Set
+
+JS 內建三個 hash-table 類型，底層皆是 hash 表：
+
+| 類型 | 用途 | key 型別限制 |
+| :--- | :--- | :--- |
+| `Object` | 最常見的字典，早期被當 map 用 | key 自動轉字串 |
+| `Map` | ES2015 引入，正統 key-value 容器 | 任何型別（含物件） |
+| `Set` | 只存 key、無 value 的集合 | 任何型別 |
+
+常見差異：
+
+```js
+const o = {}
+o[1] = 'a'
+o['1'] = 'b'
+console.log(o)           // \{ '1': 'b' \}  — 數字 key 被轉成字串，後面會覆蓋前面
+
+const m = new Map()
+m.set(1, 'a')
+m.set('1', 'b')
+console.log(m.size)      // 2 — key 型別嚴格區分
+
+const s = new Set([1, 1, 2, '2'])
+console.log(s.size)      // 3 — 數字 2 與字串 '2' 不同
+```
+
+`Map` 與 `Set` 的查詢、插入、刪除皆為 $O(1)$ 平均，且保留插入順序；`Object` 雖然也是 hash 表，但多了原型鏈與字串轉換等附帶邏輯，純 key-value 場景優先用 `Map`。
+
+:::tip
+Python 的 `dict` 與 `set`、Java 的 `HashMap` 與 `HashSet`、Go 的 `map`，底層原理都是 hash 表。不同語言對碰撞處理、rehash 策略、記憶體配置略有差異，但對使用者來說介面都類似——要查某個 key 有沒有、要建立 key 到 value 的對應，就用 hash 表。
+:::
