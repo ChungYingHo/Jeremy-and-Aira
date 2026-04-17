@@ -7,6 +7,10 @@ changelog: []
 sameDateSort: 2
 ---
 
+import HeapArrayMappingDiagram from '@/components/ArticleRelated/data-structure/heap/HeapArrayMappingDiagram.svelte'
+import HeapInsertVisualizer from '@/components/ArticleRelated/data-structure/heap/HeapInsertVisualizer.svelte'
+import HeapExtractVisualizer from '@/components/ArticleRelated/data-structure/heap/HeapExtractVisualizer.svelte'
+
 **堆積 (Heap)** 是一種以**完全二元樹 (Complete Binary Tree)** 為形狀約束、並滿足**堆積性質 (Heap Property)** 的資料結構。堆積讓「取出最大值（或最小值）」的操作穩定為 $O(\log n)$，是**優先佇列 (Priority Queue)** 的標準實作。
 
 ## 完全二元樹
@@ -58,6 +62,8 @@ sameDateSort: 2
 | 值 | 6 | 5 | 4 | 1 | 2 | 3 |
 | 父 | — | 6 | 6 | 5 | 5 | 4 |
 
+<HeapArrayMappingDiagram client:only="svelte" />
+
 ---
 
 ## 核心操作
@@ -90,6 +96,8 @@ sameDateSort: 2
       /|   |
      1 2   3
 ```
+
+<HeapInsertVisualizer client:only="svelte" />
 
 - 時間複雜度：$O(\log n)$（最多爬樹高那麼多層）
 
@@ -125,6 +133,8 @@ sameDateSort: 2
 | 4 | index 3 值 2 已無子節點，停 | [_, 4, 3, 2, 1] |
 
 回傳 5。
+
+<HeapExtractVisualizer client:only="svelte" />
 
 - 時間複雜度：$O(\log n)$
 
