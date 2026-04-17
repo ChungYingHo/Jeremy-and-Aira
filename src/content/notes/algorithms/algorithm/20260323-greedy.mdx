@@ -6,8 +6,6 @@ tags: [algorithm, greedy, prim, kruskal, sollin, dijkstra, huffman, convex hull,
 changelog: ['2026-04-02']
 ---
 
-import DirectedGraphDiagram from '@/components/ArticleRelated/data-structure/graph/DirectedGraphDiagram.svelte'
-import WeightedTreeDiagram from '@/components/ArticleRelated/algorithm/WeightedTreeDiagram.svelte'
 import MstDiagram from '@/components/ArticleRelated/algorithm/MstDiagram.svelte'
 import PrimVisualizer from '@/components/ArticleRelated/algorithm/PrimVisualizer.svelte'
 import KruskalVisualizer from '@/components/ArticleRelated/algorithm/KruskalVisualizer.svelte'
@@ -84,37 +82,11 @@ import BinPackingDiagram from '@/components/ArticleRelated/algorithm/BinPackingD
 
 經典適用場景：最小生成樹、單源最短路徑、Huffman 編碼、活動選擇、分數背包。
 
-## 圖的基本概念
-
-Prim、Kruskal、Sollin、Dijkstra 都以圖作為輸入，先整理基本術語。以下複雜度分析中，$|V|$ 代表頂點數，$|E|$ 代表邊數。
-
-### 無向圖與有向圖
-
-**無向圖（Undirected Graph）** 的邊沒有方向，A 連到 B 就等於 B 連到 A，像雙向道路或朋友關係。
-
-**有向圖（Directed Graph）** 的邊有方向，A → B 不代表 B → A，像單行道或 Twitter 追蹤關係。
-
-**加權圖（Weighted Graph）** 在每條邊上附一個數值（權重），代表距離、成本或時間。
-
-<DirectedGraphDiagram client:visible />
-
-### 樹是什麼
-
-圖論裡的**樹（Tree）** 是「連通、無環的無向圖」。有 $|V|$ 個節點的樹恰好有 $|V| - 1$ 條邊。
-
-樹有一個關鍵性質：**任意兩個節點之間只有唯一一條路徑。** 這讓樹的路徑問題比一般圖簡單很多——不需要 Dijkstra，直接用 BFS 或 DFS 找就行了。
-
-<WeightedTreeDiagram client:visible />
-
-### 路徑與最短路徑
-
-- **路徑（Path）**：從一個節點走到另一個節點，經過的節點與邊的序列
-- **距離（Distance）**：路徑上所有邊的權重總和
-- **最短路徑（Shortest Path）**：距離最小的那條路徑
-
-樹因為路徑唯一，不需要最短路徑演算法。一般的圖就需要 Dijkstra 或 Bellman-Ford。
-
 ## 最小生成樹
+
+:::info
+Prim、Kruskal、Sollin、Dijkstra 都以圖作為輸入。無向圖、有向圖、加權圖、路徑、樹等基本術語與圖解，請見《[Data Structure] 圖》與《[Data Structure] 樹》。以下複雜度分析中，$|V|$ 代表頂點數，$|E|$ 代表邊數。
+:::
 
 **最小生成樹（Minimum Spanning Tree，MST）** 解的問題是：在一個連通加權無向圖裡，找出一棵包含所有節點、且邊的權重總和最小的樹。
 
@@ -395,7 +367,7 @@ graph['B'].append(('A', weight))
 
 ### 樹上路徑
 
-樹是無環的連通圖，任意兩點間路徑唯一，所以不需要 Dijkstra——直接 BFS 從起點找到終點就行了：
+樹的任意兩點間路徑唯一，不需要 Dijkstra——直接 BFS 從起點找到終點就行了：
 
 ```python
 from collections import deque
