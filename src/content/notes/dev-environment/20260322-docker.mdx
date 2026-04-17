@@ -95,6 +95,29 @@ volumes:
 - **GitHub Container Registry (GHCR)**：整合 GitHub，適合開源專案
 - **Amazon ECR / Google Artifact Registry / Azure Container Registry**：各雲端平台的私有 Registry
 
+### 推送與拉取流程
+
+以推到 GHCR 為例：
+
+```bash
+# 1. 登入（使用 GitHub personal access token）
+echo $GHCR_TOKEN | docker login ghcr.io -u <username> --password-stdin
+
+# 2. 把本機 image 打上遠端 tag
+docker tag my-app:latest ghcr.io/<username>/my-app:1.0.0
+
+# 3. 推到 Registry
+docker push ghcr.io/<username>/my-app:1.0.0
+
+# 4. 在另一台機器拉下來直接跑
+docker pull ghcr.io/<username>/my-app:1.0.0
+docker run ghcr.io/<username>/my-app:1.0.0
+```
+
+- Tag 格式：`<registry>/<namespace>/<image>:<version>`
+- 省略 `<registry>` 預設 Docker Hub
+- 同一個 image 可以打多個 tag（例如 `1.0.0` 與 `latest`）同時推送
+
 ## 和雲端的關係
 
 Docker 在本機或伺服器上運行容器。大規模部署、自動擴縮容、高可用性場景需要**容器編排**工具，主流為 **Kubernetes（K8s）**。
