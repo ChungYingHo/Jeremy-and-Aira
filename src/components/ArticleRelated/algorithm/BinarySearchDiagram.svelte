@@ -2,19 +2,18 @@
   const arr = [3, 7, 12, 18, 25, 31, 42, 56, 64, 78, 85, 91]
   const target = 56
 
-  // build steps
   function buildSteps() {
-    const steps = []
+    const out = []
     let lo = 0, hi = arr.length - 1
     while (lo <= hi) {
       const mid = Math.floor((lo + hi) / 2)
       const cmp = arr[mid] === target ? 'eq' : arr[mid] < target ? 'lt' : 'gt'
-      steps.push({ lo, hi, mid, cmp })
+      out.push({ lo, hi, mid, cmp })
       if (cmp === 'eq') break
       if (cmp === 'lt') lo = mid + 1
       else hi = mid - 1
     }
-    return steps
+    return out
   }
 
   const steps = buildSteps()
@@ -27,20 +26,23 @@
   const startX = (W - arr.length * cellW) / 2
   const startY = 60
 
-  function cellFill(i) {
-    if (i === step.mid) return step.cmp === 'eq' ? '#166534' : '#7c2d12'
-    if (i < step.lo || i > step.hi) return '#0f172a'
-    return '#1e293b'
-  }
-  function cellStroke(i) {
-    if (i === step.mid) return step.cmp === 'eq' ? '#22c55e' : '#fb923c'
-    if (i < step.lo || i > step.hi) return '#1e293b'
-    return '#475569'
-  }
-  function cellText(i) {
-    if (i < step.lo || i > step.hi) return '#475569'
-    return '#e2e8f0'
-  }
+  $: cells = arr.map((v, i) => {
+    const isMid = i === step.mid
+    const isPruned = i < step.lo || i > step.hi
+    let fill, stroke, textFill
+    if (isMid) {
+      fill = step.cmp === 'eq' ? '#166534' : '#7c2d12'
+      stroke = step.cmp === 'eq' ? '#22c55e' : '#fb923c'
+    } else if (isPruned) {
+      fill = '#0f172a'
+      stroke = '#1e293b'
+    } else {
+      fill = '#1e293b'
+      stroke = '#475569'
+    }
+    textFill = isPruned ? '#475569' : '#e2e8f0'
+    return { v, i, x: startX + i * cellW, fill, stroke, textFill }
+  })
 </script>
 
 <div class="w-full max-w-2xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
@@ -62,19 +64,17 @@
       {#if step.cmp === 'eq'}→ 找到了！{:else if step.cmp === 'lt'}→ 太小，淘汰左半{:else}→ 太大，淘汰右半{/if}
     </text>
 
-    {#each arr as v, i}
-      {@const x = startX + i * cellW}
-      <rect x={x + 1} y={startY} width={cellW - 2} height={cellH} rx="3"
-        fill={cellFill(i)} stroke={cellStroke(i)} stroke-width="1.5" />
-      <text x={x + cellW / 2} y={startY + cellH / 2 + 4} fill={cellText(i)} font-size="11" text-anchor="middle" font-weight="bold">{v}</text>
-      <text x={x + cellW / 2} y={startY + cellH + 12} fill="#475569" font-size="8" text-anchor="middle">{i}</text>
+    {#each cells as cell (cell.i)}
+      <rect x={cell.x + 1} y={startY} width={cellW - 2} height={cellH} rx="3"
+        fill={cell.fill} stroke={cell.stroke} stroke-width="1.5"
+        style="transition: fill 0.2s, stroke 0.2s" />
+      <text x={cell.x + cellW / 2} y={startY + cellH / 2 + 4} fill={cell.textFill} font-size="11" text-anchor="middle" font-weight="bold"
+        style="transition: fill 0.2s">{cell.v}</text>
+      <text x={cell.x + cellW / 2} y={startY + cellH + 12} fill="#475569" font-size="8" text-anchor="middle">{cell.i}</text>
     {/each}
 
-    <!-- lo / hi markers -->
-    {#if step.cmp !== 'eq' || true}
-      <text x={startX + step.lo * cellW + cellW / 2} y={startY - 6} fill="#3b82f6" font-size="9" text-anchor="middle" font-weight="bold">lo</text>
-      <text x={startX + step.hi * cellW + cellW / 2} y={startY - 6} fill="#a855f7" font-size="9" text-anchor="middle" font-weight="bold">hi</text>
-    {/if}
+    <text x={startX + step.lo * cellW + cellW / 2} y={startY - 6} fill="#3b82f6" font-size="9" text-anchor="middle" font-weight="bold">lo</text>
+    <text x={startX + step.hi * cellW + cellW / 2} y={startY - 6} fill="#a855f7" font-size="9" text-anchor="middle" font-weight="bold">hi</text>
 
     <text x={W / 2} y={H - 8} fill="#64748b" font-size="9" text-anchor="middle">深色 = 已淘汰，亮框 = 搜尋區間，橘 = mid 比較中，綠 = 命中</text>
   </svg>

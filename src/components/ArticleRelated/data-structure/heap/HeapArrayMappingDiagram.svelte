@@ -1,9 +1,7 @@
 <script>
-  // 1-indexed max-heap: index 0 is placeholder
   const HEAP = [null, 6, 5, 4, 1, 2, 3]
   const N = HEAP.length - 1
 
-  // fixed positions for 1-indexed complete binary tree
   const POS = {
     1: { x: 250, y: 55  },
     2: { x: 150, y: 135 },
@@ -24,24 +22,15 @@
   $: left   = 2 * selected <= N     ? 2 * selected     : null
   $: right  = 2 * selected + 1 <= N ? 2 * selected + 1 : null
 
-  function nodeFill(i) {
-    if (i === selected) return '#4c1d95'
-    if (i === parent) return '#1e3a5f'
-    if (i === left || i === right) return '#14532d'
-    return '#0f172a'
-  }
-  function nodeStroke(i) {
-    if (i === selected) return '#a78bfa'
-    if (i === parent) return '#3b82f6'
-    if (i === left || i === right) return '#22c55e'
-    return '#334155'
-  }
-  function nodeText(i) {
-    if (i === selected) return '#ede9fe'
-    if (i === parent) return '#93c5fd'
-    if (i === left || i === right) return '#86efac'
-    return '#64748b'
-  }
+  $: nodes = HEAP.slice(1).map((val, idx) => {
+    const i = idx + 1
+    let fill, stroke, text
+    if (i === selected)                 { fill = '#4c1d95'; stroke = '#a78bfa'; text = '#ede9fe' }
+    else if (i === parent)              { fill = '#1e3a5f'; stroke = '#3b82f6'; text = '#93c5fd' }
+    else if (i === left || i === right) { fill = '#14532d'; stroke = '#22c55e'; text = '#86efac' }
+    else                                { fill = '#0f172a'; stroke = '#334155'; text = '#64748b' }
+    return { val, i, x: POS[i].x, y: POS[i].y, fill, stroke, text }
+  })
 </script>
 
 <div class="w-full max-w-2xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
@@ -61,33 +50,32 @@
         stroke-linecap="round"
       />
     {/each}
-    {#each HEAP.slice(1) as val, idx}
-      {@const i = idx + 1}
-      <g on:click={() => selected = i} style="cursor: pointer">
+    {#each nodes as n (n.i)}
+      <g on:click={() => selected = n.i} style="cursor: pointer">
         <circle
-          cx={POS[i].x} cy={POS[i].y} r="22"
-          fill={nodeFill(i)}
-          stroke={nodeStroke(i)}
+          cx={n.x} cy={n.y} r="22"
+          fill={n.fill}
+          stroke={n.stroke}
           stroke-width="2"
           style="transition: fill 0.25s, stroke 0.25s"
         />
         <text
-          x={POS[i].x} y={POS[i].y + 5}
+          x={n.x} y={n.y + 5}
           text-anchor="middle"
           font-size="15"
           font-weight="bold"
           font-family="'JetBrains Mono', monospace"
-          fill={nodeText(i)}
-          style="user-select: none; pointer-events: none"
-        >{val}</text>
+          fill={n.text}
+          style="user-select: none; pointer-events: none; transition: fill 0.25s"
+        >{n.val}</text>
         <text
-          x={POS[i].x} y={POS[i].y - 30}
+          x={n.x} y={n.y - 30}
           text-anchor="middle"
           font-size="10"
           font-family="'JetBrains Mono', monospace"
           fill="#475569"
           style="user-select: none; pointer-events: none"
-        >idx {i}</text>
+        >idx {n.i}</text>
       </g>
     {/each}
   </svg>
