@@ -88,6 +88,46 @@ Session 也用於解決 HTTP 無狀態問題，與 cookie 的最大差別：**se
 
 Session 與 cookie 並非完全分開的概念——session 通常透過 cookie 傳遞 Session ID。差異在於：cookie 將資料放在 client，session 將資料留在 server，client 只持有一把「鑰匙」（Session ID）。
 
+登入後，server 回傳的實際 HTTP header 大致長這樣：
+
+```http
+HTTP/1.1 200 OK
+Set-Cookie: connect.sid=s%3A7xT...abc; Path=/; HttpOnly; Secure; SameSite=Lax
+```
+
+後續請求瀏覽器會自動帶上：
+
+```http
+GET /profile HTTP/1.1
+Cookie: connect.sid=s%3A7xT...abc
+```
+
+Express 搭配 `express-session` 的最小實作：
+
+```js
+import express from 'express'
+import session from 'express-session'
+
+const app = express()
+
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { httpOnly: true, secure: true, sameSite: 'lax' },
+}))
+
+app.post('/login', (req, res) => {
+  req.session.userId = 42  // session 資料存在 server，cookie 只帶 session id
+  res.sendStatus(200)
+})
+
+app.get('/profile', (req, res) => {
+  if (!req.session.userId) return res.sendStatus(401)
+  res.json({ userId: req.session.userId })
+})
+```
+
 ### JWT 的運作流程
 
 傳統 server-side session 在 MPA 架構下運作良好，但 SPA 與前後端分離普及後遇到問題：
