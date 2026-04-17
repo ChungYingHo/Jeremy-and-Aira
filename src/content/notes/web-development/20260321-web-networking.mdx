@@ -96,6 +96,28 @@ TCP 三次握手流程：Client → SYN → Server → SYN-ACK → Client → AC
 - **Request**：方法（GET、POST 等）、路徑、Header
 - **Response**：狀態碼（200 OK、404 Not Found 等）、Header、Body
 
+拆開看實際文字格式——Request：
+
+```http
+POST /api/login HTTP/1.1
+Host: example.com
+Content-Type: application/json
+Content-Length: 42
+
+{"email":"aira@example.com","pw":"****"}
+```
+
+Response：
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+Set-Cookie: sid=abc123; HttpOnly; Secure
+Content-Length: 25
+
+{"ok":true,"userId":42}
+```
+
 HTTP 為明文傳輸，中間節點可讀取所有內容。
 
 **HTTPS** 在 HTTP 下加入 **TLS（Transport Layer Security）** 加密層。連線時雙方協商金鑰，後續傳輸皆以該金鑰加密，即使被攔截也無法解讀。
