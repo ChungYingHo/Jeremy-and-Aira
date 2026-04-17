@@ -7,6 +7,9 @@ changelog: []
 sameDateSort: 1
 ---
 
+import ChainingDiagram from '@/components/ArticleRelated/data-structure/hash-table/ChainingDiagram.svelte'
+import OpenAddressingDiagram from '@/components/ArticleRelated/data-structure/hash-table/OpenAddressingDiagram.svelte'
+
 **雜湊表 (Hash Table)** 是以「鍵 (Key)」直接定位「值 (Value)」的資料結構。透過 **雜湊函式 (Hash Function)** 把 key 映射到陣列索引，平均時間複雜度達 $O(1)$，是實務上最常見的查詢結構。
 
 典型應用：字典、集合、資料庫索引、快取、編譯器符號表。
@@ -64,6 +67,8 @@ $$
 | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
 | 內容 | — | [15, 22, 8, 36, 29] | — | — | — | — | — |
 
+<ChainingDiagram client:only="svelte" />
+
 查詢時先算 hash 找到 slot，再在串列內逐一比對 key。
 
 ```java
@@ -115,6 +120,8 @@ public class HashTableChaining {
 ## 開放定址法 (Open Addressing)
 
 碰撞時不另外開串列，直接在表內找下一個可用的 slot。探測策略有三種主流做法。
+
+<OpenAddressingDiagram client:only="svelte" />
 
 ### 線性探測 (Linear Probing)
 
