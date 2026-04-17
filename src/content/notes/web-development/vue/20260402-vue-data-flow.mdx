@@ -107,6 +107,17 @@ const localName = ref(props.name)
 // 注意：之後 props.name 再變，localName 不會跟著變
 ```
 
+若需要本地可改、同時隨 props 更新，搭配 `watch` 同步：
+
+```js
+import { ref, watch } from 'vue'
+
+const localName = ref(props.name)
+watch(() => props.name, (v) => {
+  localName.value = v
+})
+```
+
 ---
 
 ## emit — 子傳父
