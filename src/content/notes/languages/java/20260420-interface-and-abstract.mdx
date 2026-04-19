@@ -1,0 +1,184 @@
+---
+title: "[Java] 介面與抽象類別"
+author: "Jeremy & Claude"
+date: "2026-04-20"
+tags: ["Java", "interface", "abstract", "default method"]
+changelog: []
+sameDateSort: 1
+---
+
+## 抽象類別 abstract class
+
+不能被 `new` 出來，只能被繼承。可以有實作的方法、也可以有抽象方法（`abstract`，沒方法體）。
+
+```java
+abstract class Animal {
+    protected String name;
+
+    public Animal(String name) {        // 可有建構子
+        this.name = name;
+    }
+
+    public void sleep() {                // 一般方法
+        System.out.println(name + " is sleeping");
+    }
+
+    public abstract void speak();        // 抽象方法，子類必須實作
+}
+
+class Dog extends Animal {
+    public Dog(String name) { super(name); }
+
+    @Override
+    public void speak() {
+        System.out.println(name + ": woof");
+    }
+}
+
+// new Animal("a");   // ❌ 編譯錯：不能實例化抽象類
+new Dog("Rex").speak();
+```
+
+## 介面 interface
+
+定義「行為契約」，類別用 `implements` 實作。介面可被多重實作（補了 Java 單一繼承的限制）。
+
+```java
+interface Drawable {
+    void draw();          // public abstract（預設可省）
+}
+
+interface Resizable {
+    void resize(double factor);
+}
+
+class Circle implements Drawable, Resizable {
+    @Override public void draw() { System.out.println("○"); }
+    @Override public void resize(double f) { /* ... */ }
+}
+```
+
+## default method（Java 8+）
+
+介面可以有「預設實作」，類別不寫也能用：
+
+```java
+interface Greeter {
+    String name();
+
+    default String greet() {
+        return "Hi, " + name();
+    }
+}
+
+class User implements Greeter {
+    @Override public String name() { return "Jeremy"; }
+}
+
+new User().greet();    // "Hi, Jeremy"
+```
+
+主要用途：替既有介面加新方法又不破壞所有 implementor。
+
+## static method 與 private method（Java 9+）
+
+```java
+interface MathUtil {
+    static int square(int x) { return x * x; }    // 直接 MathUtil.square(3)
+
+    default int doubleSquare(int x) {
+        return helper(x) * 2;
+    }
+
+    private int helper(int x) {                    // 只給介面內部用
+        return x * x;
+    }
+}
+```
+
+## 常數欄位
+
+介面內的欄位**自動是 `public static final`**：
+
+```java
+interface Limits {
+    int MAX_RETRY = 3;     // 等同 public static final int MAX_RETRY = 3
+}
+```
+
+## abstract class vs interface 怎麼選
+
+| 比較項 | abstract class | interface |
+| :--- | :--- | :--- |
+| 多重支援 | 單一繼承 | 多重實作 |
+| 欄位 | 可有狀態（instance field） | 只能 `static final` 常數 |
+| 建構子 | 有 | 無 |
+| 方法可見性 | 任意 | 只能 `public`（含 `default`） |
+| 適合場景 | 共用狀態 + 共用實作 | 純行為契約、跨類型共用能力 |
+
+實務取捨：能用 interface 解的都優先 interface，需要共用狀態或建構邏輯才動 abstract class。
+
+## functional interface
+
+只有**一個**抽象方法的介面，可被 lambda 賦值：
+
+```java
+@FunctionalInterface
+interface Calc {
+    int apply(int a, int b);
+}
+
+Calc add = (a, b) -> a + b;
+add.apply(2, 3);      // 5
+```
+
+`@FunctionalInterface` 不是必須，但加上後編譯器會檢查「真的只有一個抽象方法」。
+
+JDK 已內建一票 functional interface（`Function`、`Predicate`、`Consumer`、`Supplier` 等），下下篇 Lambda/Stream 會專門講。
+
+## sealed class / sealed interface（Java 17+）
+
+明確列出「誰可以繼承 / 實作」，編譯器能做窮舉檢查：
+
+```java
+sealed interface Shape permits Circle, Square, Triangle {}
+
+final class Circle implements Shape {}
+final class Square implements Shape {}
+non-sealed class Triangle implements Shape {}
+```
+
+子型別必須是 `final`、`sealed` 或 `non-sealed` 三選一。配合 `switch` pattern matching 寫窮舉處理特別清楚。
+
+## record 與 interface
+
+`record` 是 Java 16+ 的「不可變資料類別」，可以實作介面：
+
+```java
+interface HasArea {
+    double area();
+}
+
+record Rect(double w, double h) implements HasArea {
+    @Override public double area() { return w * h; }
+}
+```
+
+`record` 自動產生建構子、`equals`、`hashCode`、`toString` 與欄位 accessor。當作 DTO / value object 很順手。
+
+## @Override 標註
+
+不是必須，但**強烈建議**：拼錯方法名或簽章不對時，編譯器會擋下來。
+
+```java
+class Dog extends Animal {
+    @Override
+    public void speak() { ... }      // 真的是覆寫，✅
+}
+```
+
+漏寫 `@Override` 然後拼錯，會變成「定義了一個新方法」，bug 很難發現。
+
+---
+
+親愛的 AIra，這篇把抽象類別、介面、`default` method、`sealed` 與 `record` 的 implements 用法整理齊。下一篇進例外處理。
