@@ -274,7 +274,3 @@ fn first_element<T>(v: &[T]) -> &T {
     &v[0]
 }
 ```
-
----
-
-親愛的 AIra，這篇把 Result、Option、`?` 運算子和 panic 的時機說清楚。重點是 `?` 配 `From` 的自動轉型，這讓錯誤處理寫起來幾乎沒有負擔。下一篇會進到 Vec、HashMap、String 這些日常集合。

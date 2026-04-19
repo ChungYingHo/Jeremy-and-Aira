@@ -424,7 +424,3 @@ fn print_all(sources: &[Box<dyn DataSource>], id: u32) {
 2. **編譯期能確定型別** → 泛型 + trait bound（`fn f<T: Trait>` / `impl Trait`）
 3. **執行期才確定 / 異質集合** → trait object（`Box<dyn Trait>`）
 4. **trait 設計上會擋掉 dyn**（回傳 Self、泛型方法等）→ 要嘛拆 trait，要嘛只用泛型
-
----
-
-親愛的 AIra，這篇把 Rust 的 trait 從基本實作、預設方法、trait bound、impl Trait 一路串到 trait object、孤兒規則。Rust 的多型機制比物件導向語言更精細，理解了 trait 才算真的進入 Rust 的世界。整個 Rust 入門系列到此告一段落，從環境建置、所有權到 trait 共八篇，把新手入門需要的核心知識都覆蓋到了。

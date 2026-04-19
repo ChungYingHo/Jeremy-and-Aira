@@ -318,7 +318,3 @@ for (k, v) in &map {
 | 讀取 | `v[i]` / `v.get(i)` | `s.chars()` / `s.bytes()` | `m.get(&k)` |
 | 長度 | `len()` | `len()`（byte 數） | `len()` |
 | 走訪 | `for x in &v` | `for c in s.chars()` | `for (k, v) in &m` |
-
----
-
-親愛的 AIra，這篇把 Vec、String、HashMap 三個日常集合整理在一起，特別點出 String 為什麼不能用整數索引、Vec push 時的借用陷阱、HashMap 的 entry API。下一篇換到模組系統。
