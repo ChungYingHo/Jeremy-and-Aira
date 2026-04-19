@@ -1,0 +1,312 @@
+---
+title: "[Python] 基本語法與型別"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["Python", "type", "list", "tuple", "dict", "set"]
+changelog: []
+sameDateSort: 2
+---
+
+## 縮排即區塊
+
+Python 沒有大括號，**縮排決定區塊**。慣例 4 個空白，全檔統一。
+
+```python
+def greet(name):
+    if name:
+        print(f'Hello, {name}')
+    else:
+        print('Anonymous')
+```
+
+混用 tab 與 space 會炸（`TabError`）。編輯器設定「tab 自動轉 4 spaces」最省事。
+
+## 變數與賦值
+
+```python
+x = 5             # int
+name = 'Jeremy'   # str
+pi = 3.14         # float
+ok = True         # bool
+
+# 多重賦值
+a, b, c = 1, 2, 3
+
+# 解包
+nums = [1, 2, 3]
+x, y, z = nums
+
+# 星號收集剩下
+first, *rest = [1, 2, 3, 4]   # first=1, rest=[2,3,4]
+
+# 鏈式賦值
+a = b = c = 0
+```
+
+## 數字
+
+```python
+i = 42
+f = 3.14
+big = 10_000_000      # 底線分隔，純粹可讀性
+hex_n = 0xff
+bin_n = 0b1010
+
+# 整數無精度上限
+n = 2 ** 100   # OK，不會溢位
+```
+
+整除與取餘：
+
+```python
+7 / 2    # 3.5（永遠回傳 float）
+7 // 2   # 3（向下整除）
+7 % 2    # 1
+divmod(7, 2)  # (3, 1)
+```
+
+## 字串
+
+```python
+s = 'hello'
+s = "hello"        # 單引、雙引等價
+s = '''多行
+字串'''
+s = """同上"""
+```
+
+f-string（推薦的格式化方式）：
+
+```python
+name = 'Jeremy'
+age = 30
+print(f'{name} is {age} years old')
+
+# 表達式、格式規格
+val = 3.14159
+print(f'pi = {val:.2f}')        # pi = 3.14
+print(f'{1 + 1 = }')             # 1 + 1 = 2  （Python 3.8+ debug 寫法）
+```
+
+常用方法：
+
+```python
+s = '  Hello, World  '
+s.strip()                # 'Hello, World'
+s.lower()                # '  hello, world  '
+s.upper()
+s.replace('World', 'Py') # '  Hello, Py  '
+s.split(',')             # ['  Hello', ' World  ']
+','.join(['a', 'b'])     # 'a,b'
+s.startswith('  H')      # True
+s.find('World')          # 9（找不到回傳 -1）
+len(s)                   # 16
+```
+
+字串不可變，所有「修改」操作都回傳新字串。
+
+## 布林與邏輯
+
+```python
+True and False    # False
+True or False     # True
+not True          # False
+```
+
+falsy 值：`False`、`None`、`0`、`0.0`、`''`、`[]`、`{}`、`()`、`set()`。其餘都是 truthy。
+
+```python
+if []:
+    print('won\'t run')
+
+xs = [1, 2]
+if xs:        # 等同 if len(xs) > 0
+    print('has items')
+```
+
+`and` / `or` 回傳的是運算元本身（短路求值），不一定是 boolean：
+
+```python
+'a' or 'b'    # 'a'
+'' or 'b'     # 'b'
+'a' and 'b'   # 'b'
+```
+
+常拿來當預設值：`name = input_name or 'Anonymous'`。
+
+## list（陣列）
+
+可變、有序、可混型別：
+
+```python
+nums = [1, 2, 3]
+mix = [1, 'a', 3.14, True, [10, 20]]
+
+nums.append(4)         # [1, 2, 3, 4]
+nums.insert(0, 0)      # [0, 1, 2, 3, 4]
+nums.pop()             # 取出尾端
+nums.pop(0)            # 取出指定 index
+nums.remove(2)         # 刪掉第一個值為 2 的元素
+del nums[0]
+nums.sort()
+nums.reverse()
+len(nums)
+```
+
+切片：
+
+```python
+xs = [10, 20, 30, 40, 50]
+xs[1]        # 20
+xs[-1]       # 50（負 index 從尾算）
+xs[1:4]      # [20, 30, 40]
+xs[:3]       # [10, 20, 30]
+xs[::2]      # [10, 30, 50]（step）
+xs[::-1]     # [50, 40, 30, 20, 10]（反轉）
+```
+
+切片**回傳新 list**，不會改原本。
+
+## tuple
+
+不可變的 list。常用來表「固定結構的小組合」：
+
+```python
+point = (1, 2)
+point[0]   # 1
+# point[0] = 9  ❌ TypeError
+
+# 單元素 tuple 要加逗號
+single = (5,)
+not_tuple = (5)   # 這只是個括號內的整數
+
+# 解包
+x, y = point
+```
+
+慣例：返回多值用 tuple。
+
+```python
+def divmod_(a, b):
+    return a // b, a % b   # 回傳 tuple
+
+q, r = divmod_(7, 2)
+```
+
+## dict（字典）
+
+key-value 表。Python 3.7+ 保證插入順序。
+
+```python
+user = {'name': 'Jeremy', 'age': 30}
+
+user['name']         # 'Jeremy'
+user['email']        # ❌ KeyError
+user.get('email')    # None（key 不存在回傳 None，不會炸）
+user.get('email', 'unknown')  # 帶預設值
+
+user['email'] = 'a@b.com'   # 新增 / 更新
+del user['age']
+
+'name' in user       # True
+list(user.keys())
+list(user.values())
+list(user.items())   # [('name', 'Jeremy'), ...]
+
+for k, v in user.items():
+    print(k, v)
+```
+
+合併（Python 3.9+）：
+
+```python
+a = {'x': 1}
+b = {'y': 2}
+c = a | b           # {'x': 1, 'y': 2}
+a |= b              # a 就地合併
+```
+
+setdefault / 計數慣用法：
+
+```python
+counts = {}
+for word in 'the quick brown fox the'.split():
+    counts[word] = counts.get(word, 0) + 1
+# 或
+from collections import defaultdict
+counts = defaultdict(int)
+for word in 'the quick brown fox the'.split():
+    counts[word] += 1
+```
+
+## set（集合）
+
+無序、不重複的容器：
+
+```python
+s = {1, 2, 3}
+s = set([1, 2, 2, 3])   # {1, 2, 3}
+empty = set()           # 注意：{} 是空 dict，不是空 set
+
+s.add(4)
+s.discard(2)            # 刪不存在的元素不會炸
+s.remove(3)             # 不存在會 KeyError
+
+a = {1, 2, 3}
+b = {2, 3, 4}
+a | b      # {1, 2, 3, 4}（聯集）
+a & b      # {2, 3}      （交集）
+a - b      # {1}         （差集）
+a ^ b      # {1, 4}      （對稱差）
+```
+
+去重一行搞定：`unique = list(set(items))`。
+
+## comprehension：簡潔產生集合
+
+```python
+# list comprehension
+squares = [x * x for x in range(5)]
+# [0, 1, 4, 9, 16]
+
+evens = [x for x in range(10) if x % 2 == 0]
+
+# dict comprehension
+inv = {v: k for k, v in user.items()}
+
+# set comprehension
+unique_lengths = {len(w) for w in ['a', 'ab', 'abc', 'a']}
+
+# 巢狀
+matrix = [[i * 3 + j for j in range(3)] for i in range(3)]
+```
+
+## None：Python 的「無值」
+
+```python
+x = None
+
+if x is None:        # 慣例用 is，不是 ==
+    print('empty')
+```
+
+## 型別查詢與轉換
+
+```python
+type(5)              # <class 'int'>
+isinstance(5, int)   # True
+isinstance(5, (int, float))  # True
+
+int('42')            # 42
+float('3.14')        # 3.14
+str(42)              # '42'
+list('abc')          # ['a', 'b', 'c']
+tuple([1, 2])        # (1, 2)
+set([1, 1, 2])       # {1, 2}
+```
+
+判斷型別**一律用 `isinstance`**，不要用 `type(x) == int`，因為前者支援子類別。
+
+---
+
+親愛的 AIra，這篇把 Python 的核心型別 list / tuple / dict / set，加上字串、數字、None、comprehension 整理在一起。下一篇進控制流程與函式。
