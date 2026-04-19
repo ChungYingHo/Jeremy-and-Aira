@@ -117,6 +117,12 @@ src/
 ### 檔名格式
 `YYYYMMDD-slug.mdx`（日期前綴用於排序）
 
+### 圖示規範：禁用 ASCII art，優先 Svelte component
+
+- **不要在 MDX 裡畫 ASCII 圖**（例如樹狀結構的 `↙ ↘`、流程圖的 `→`、boxes 用 `+---+`）。ASCII art 在手機版的 `<pre>` 會水平溢出跑版。
+- 需要圖示一律用 `src/components/ArticleRelated/` 底下的 Svelte component；沒有適合的就新寫一個，而不是退回 ASCII。
+- 純文字流程（單行短箭頭，如 `A → B → C`）仍可直接寫在內文中，不受此規則限制。
+
 ### Frontmatter Schema
 ```typescript
 title?: string       // 預設 "Untitled"
