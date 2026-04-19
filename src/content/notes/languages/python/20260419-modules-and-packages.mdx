@@ -1,0 +1,259 @@
+---
+title: "[Python] 模組與套件"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["Python", "module", "package", "import", "pip"]
+changelog: []
+sameDateSort: 5
+---
+
+## 名詞釐清
+
+| 名稱 | 是什麼 |
+| :--- | :--- |
+| **module** | 一個 `.py` 檔 |
+| **package** | 一個含 `__init__.py`（或符合 namespace package 規則）的資料夾，內裝多個 module |
+| **distribution** | 可安裝的 package（PyPI 上的東西，例如 `requests`） |
+
+## 基本 import
+
+假設目錄：
+
+```
+my_app/
+├── main.py
+└── utils/
+    ├── __init__.py
+    └── math.py
+```
+
+`utils/math.py`：
+
+```python
+def add(a, b):
+    return a + b
+
+PI = 3.14159
+```
+
+`main.py`：
+
+```python
+import utils.math
+print(utils.math.add(1, 2))
+
+from utils import math
+print(math.add(1, 2))
+
+from utils.math import add, PI
+print(add(1, 2))
+
+from utils.math import add as plus
+plus(1, 2)
+
+import utils.math as m
+m.add(1, 2)
+```
+
+慣例上不要寫 `from xxx import *`，會污染命名空間、讓 IDE 跳轉與 lint 都很痛苦。
+
+## __init__.py 在做什麼
+
+1. 標明這個資料夾是 package（Python 3.3+ 不寫也可成 namespace package，但有限制）
+2. 在 import package 時被執行
+3. 可在裡面 re-export 子模組的東西
+
+`utils/__init__.py`：
+
+```python
+from .math import add, PI
+```
+
+之後可以：
+
+```python
+from utils import add, PI    # 不用透過 utils.math
+```
+
+## 相對 import vs 絕對 import
+
+**絕對 import**：從專案根開始的完整路徑。
+
+```python
+from utils.math import add
+```
+
+**相對 import**：以 `.` / `..` 表示當前 / 上層 package。
+
+```python
+# utils/helpers.py
+from .math import add        # 同 package 內
+from ..other import x        # 上一層 package
+```
+
+慣例：跨 package 用絕對、同 package 內用相對。**頂層腳本（`python xxx.py` 直接跑的那個）裡不能用相對 import**，因為它的 `__package__` 是 None。
+
+## 模組是怎麼被找到的：sys.path
+
+```python
+import sys
+print(sys.path)
+```
+
+import 時 Python 依 `sys.path` 順序找：
+
+1. 目前執行的腳本所在資料夾
+2. `PYTHONPATH` 環境變數列出的路徑
+3. 安裝的 site-packages
+
+只要某個 `.py` 在 `sys.path` 內就找得到。常見問題「找不到模組」幾乎都是 `sys.path` 不對。
+
+## __name__ == '__main__'
+
+```python
+# greet.py
+def greet(name):
+    return f'Hi, {name}'
+
+if __name__ == '__main__':
+    print(greet('Jeremy'))
+```
+
+| 情境 | `__name__` |
+| :--- | :--- |
+| 直接 `python greet.py` | `'__main__'` |
+| 被 `import greet` | `'greet'` |
+
+實作 CLI 工具與 library 兩用時的標準做法。
+
+## 套件結構：兩種風格
+
+### 1. 簡單 package
+
+```
+my_lib/
+├── __init__.py
+├── client.py
+├── errors.py
+└── models/
+    ├── __init__.py
+    └── user.py
+```
+
+`__init__.py` 集中暴露 API：
+
+```python
+# my_lib/__init__.py
+from .client import Client
+from .errors import MyError
+from .models.user import User
+```
+
+對外：
+
+```python
+from my_lib import Client, User, MyError
+```
+
+### 2. src layout（推薦）
+
+```
+my_app/
+├── pyproject.toml
+├── src/
+│   └── my_lib/
+│       ├── __init__.py
+│       └── client.py
+└── tests/
+    └── test_client.py
+```
+
+優點：`pip install -e .` 之後 import 走的是真正安裝過的 package，避免「測試誤用了當前資料夾」這類問題。
+
+## pip / requirements / pyproject
+
+`requirements.txt`（傳統）：
+
+```
+requests==2.32.0
+flask>=3.0
+```
+
+`pyproject.toml`（現代標準，PEP 621）：
+
+```toml
+[project]
+name = "my-lib"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+  "requests>=2.30",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "mypy"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+```
+
+安裝：
+
+```bash
+pip install -r requirements.txt
+pip install -e .              # 把當前專案以「可編輯」模式裝進去
+pip install -e .[dev]         # 含 optional dependency 群組
+```
+
+## __all__：控制 from xxx import *
+
+```python
+# greet.py
+__all__ = ['greet']
+
+def greet(name): ...
+def _internal(): ...
+```
+
+`from greet import *` 只會帶進 `__all__` 裡列的名字。對 lint / IDE 也有提示作用。
+
+## namespace package（Python 3.3+）
+
+沒有 `__init__.py` 也能成 package，且能跨多個目錄合成單一 namespace。多用於大型框架（plugin 系統）。一般專案都加 `__init__.py` 比較穩。
+
+## importlib：動態 import
+
+```python
+import importlib
+
+mod = importlib.import_module('utils.math')
+mod.add(1, 2)
+
+# 重載已 import 的模組（debug 用）
+importlib.reload(mod)
+```
+
+寫 plugin 系統會用到。一般情境不要動態 import。
+
+## 常見錯誤
+
+| 錯誤 | 原因 |
+| :--- | :--- |
+| `ModuleNotFoundError` | `sys.path` 找不到，或裝錯 venv |
+| `ImportError: attempted relative import with no known parent package` | 直接 `python xxx.py` 跑了用相對 import 的檔；改用 `python -m package.xxx` |
+| `Circular import` | 兩個模組互相 import；解法：把共用部分抽到第三個模組 |
+
+## 跑 package 內的模組：python -m
+
+```bash
+python -m my_lib.client        # 等同執行 my_lib/client.py，但 __package__ 設定正確
+python -m pytest               # 跑安裝的 pytest CLI
+python -m http.server 8000     # 內建簡易 HTTP server
+```
+
+`-m` 是 Python 跑「以模組方式」執行，能正確處理相對 import。
+
+---
+
+親愛的 AIra，這篇把模組與套件、import 機制、`__init__.py`、`sys.path`、`__main__`、`pyproject.toml` 整理齊全。下一篇是檔案處理與例外。
