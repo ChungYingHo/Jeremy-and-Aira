@@ -1,0 +1,338 @@
+---
+title: "[Rust] 結構體、列舉與模式匹配"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["Rust", "struct", "enum", "impl", "match", "pattern matching"]
+changelog: []
+sameDateSort: 4
+---
+
+## 結構體（struct）
+
+把多個有命名的欄位包成一個型別。
+
+```rust
+struct User {
+    username: String,
+    email: String,
+    age: u32,
+    active: bool,
+}
+
+fn main() {
+    let user = User {
+        username: String::from("jeremy"),
+        email: String::from("jeremy@example.com"),
+        age: 30,
+        active: true,
+    };
+
+    println!("{}", user.username);
+}
+```
+
+要修改欄位，整個 instance 必須是 `mut`（Rust 不允許「只有某幾個欄位 mut」）：
+
+```rust
+let mut user = User { /* ... */ };
+user.age = 31;
+```
+
+### Field init shorthand
+
+變數名跟欄位名一樣時可以省略：
+
+```rust
+fn build_user(username: String, email: String) -> User {
+    User {
+        username,         // 等同 username: username
+        email,
+        age: 0,
+        active: true,
+    }
+}
+```
+
+### Struct update syntax
+
+從另一個 instance 補齊剩下欄位：
+
+```rust
+let user2 = User {
+    email: String::from("new@example.com"),
+    ..user1     // 其餘欄位從 user1 帶過來
+};
+```
+
+注意：`..user1` 對非 Copy 欄位會 **move**，所以 `user1` 之後可能就不能用了（取決於有哪些欄位被 move）。
+
+### Tuple struct
+
+有型別、沒欄位名：
+
+```rust
+struct Color(u8, u8, u8);
+struct Point(f64, f64);
+
+let red = Color(255, 0, 0);
+let p = Point(1.0, 2.0);
+println!("{} {}", red.0, p.1);
+```
+
+適合「我想要一個獨立型別，但欄位本身名字沒意義」的場景，例如顏色三原色、座標。
+
+### Unit struct
+
+沒欄位的型別，常拿來當 marker 或實作 trait 用：
+
+```rust
+struct AlwaysEqual;
+let _x = AlwaysEqual;
+```
+
+## impl：給 struct 加方法
+
+```rust
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+impl Rectangle {
+    // 關聯函式（associated function），沒有 self，類似靜態方法
+    fn new(width: u32, height: u32) -> Self {
+        Rectangle { width, height }
+    }
+
+    fn square(size: u32) -> Self {
+        Rectangle { width: size, height: size }
+    }
+
+    // 方法（method），第一個參數是 self / &self / &mut self
+    fn area(&self) -> u32 {
+        self.width * self.height
+    }
+
+    fn scale(&mut self, factor: u32) {
+        self.width *= factor;
+        self.height *= factor;
+    }
+
+    fn into_square(self) -> Rectangle {
+        // 接收 self（不是 &self）= 取走所有權
+        Rectangle::square(self.width.max(self.height))
+    }
+}
+
+fn main() {
+    let mut rect = Rectangle::new(10, 20);  // :: 呼叫關聯函式
+    println!("{}", rect.area());            // .  呼叫方法
+    rect.scale(2);
+    let sq = rect.into_square();            // rect 被 move 了
+    println!("{}", sq.area());
+}
+```
+
+`self` 三種寫法的差異：
+
+| 寫法 | 意義 | 用途 |
+| :--- | :--- | :--- |
+| `self` | 取走所有權 | 變換、消費掉 instance |
+| `&self` | 不可變借用 | 唯讀方法（getter、計算） |
+| `&mut self` | 可變借用 | 修改欄位 |
+
+## 列舉（enum）
+
+定義一個型別，它的值「是這幾種變體之一」：
+
+```rust
+enum Direction {
+    North,
+    South,
+    East,
+    West,
+}
+
+let d = Direction::North;
+```
+
+Rust 的 enum 比多數語言強大，因為**每個變體可以帶資料**：
+
+```rust
+enum Message {
+    Quit,                       // 沒資料
+    Move { x: i32, y: i32 },    // struct 風格
+    Write(String),              // tuple 風格，1 個值
+    ChangeColor(u8, u8, u8),    // tuple 風格，3 個值
+}
+
+let m1 = Message::Quit;
+let m2 = Message::Move { x: 10, y: 20 };
+let m3 = Message::Write(String::from("hi"));
+let m4 = Message::ChangeColor(255, 0, 0);
+```
+
+這在其他語言通常要寫一堆 class 配繼承才能表達。
+
+### enum 也能 impl 方法
+
+```rust
+impl Message {
+    fn describe(&self) -> &str {
+        match self {
+            Message::Quit => "quit",
+            Message::Move { .. } => "move",
+            Message::Write(_) => "write",
+            Message::ChangeColor(..) => "color",
+        }
+    }
+}
+```
+
+## 內建：Option<T>
+
+Rust 沒有 `null`。要表達「可能有值，可能沒有」用標準庫的 `Option`：
+
+```rust
+enum Option<T> {
+    Some(T),
+    None,
+}
+```
+
+因為太常用，`Some` 和 `None` 不需要 `Option::` 前綴：
+
+```rust
+let x: Option<i32> = Some(5);
+let y: Option<i32> = None;
+```
+
+這個設計強迫程式碼**明確處理「沒值」的情況**，徹底消滅 NullPointerException 這類問題。
+
+## match：模式匹配
+
+`match` 是 Rust 的核心控制流之一，必須**窮舉所有可能**才會編譯通過。
+
+```rust
+fn describe(n: Option<i32>) -> String {
+    match n {
+        Some(0) => String::from("zero"),
+        Some(x) if x < 0 => format!("negative {x}"),  // match guard
+        Some(x) => format!("positive {x}"),
+        None => String::from("nothing"),
+    }
+}
+```
+
+漏掉一個 arm 編譯就過不了：
+
+```rust
+match some_option {
+    Some(x) => println!("{x}"),
+    // ❌ error: non-exhaustive patterns: `None` not covered
+}
+```
+
+### 解構
+
+```rust
+struct Point { x: i32, y: i32 }
+
+let p = Point { x: 1, y: 2 };
+
+match p {
+    Point { x: 0, y: 0 } => println!("origin"),
+    Point { x, y: 0 } => println!("on x-axis at {x}"),
+    Point { x: 0, y } => println!("on y-axis at {y}"),
+    Point { x, y } => println!("({x}, {y})"),
+}
+```
+
+### 範圍與多重匹配
+
+```rust
+let n = 7;
+match n {
+    1 => println!("one"),
+    2 | 3 | 5 | 7 => println!("prime"),  // 多重
+    4..=10 => println!("4 to 10"),       // 範圍（包含）
+    _ => println!("other"),              // 萬用
+}
+```
+
+### enum 變體解構
+
+```rust
+enum Shape {
+    Circle(f64),
+    Rectangle { width: f64, height: f64 },
+}
+
+fn area(s: &Shape) -> f64 {
+    match s {
+        Shape::Circle(r) => std::f64::consts::PI * r * r,
+        Shape::Rectangle { width, height } => width * height,
+    }
+}
+```
+
+## if let：只關心一個 case
+
+整個 `match` 只用一個 arm 太囉嗦：
+
+```rust
+let x = Some(5);
+
+// match 寫法
+match x {
+    Some(v) => println!("{v}"),
+    _ => (),
+}
+
+// if let 寫法（等價，但精簡）
+if let Some(v) = x {
+    println!("{v}");
+}
+```
+
+可以接 else：
+
+```rust
+if let Some(v) = x {
+    println!("{v}");
+} else {
+    println!("nothing");
+}
+```
+
+## while let
+
+只要某個 pattern 還匹配就持續：
+
+```rust
+let mut stack = vec![1, 2, 3];
+
+while let Some(top) = stack.pop() {
+    println!("{top}");
+}
+// 印 3, 2, 1，stack 空了 pop 回 None，迴圈結束
+```
+
+## let else：早退場
+
+值不符合 pattern 就走 else 分支（必須中斷流程）：
+
+```rust
+fn parse_age(s: &str) -> u32 {
+    let Ok(n) = s.parse::<u32>() else {
+        return 0;
+    };
+    n
+}
+```
+
+比 `match` 或巢狀 `if let` 平坦許多。
+
+---
+
+親愛的 AIra，這篇把 struct、enum、impl 與 pattern matching 包在一起，因為它們在 Rust 的設計上是緊密配合的一組。`Option` 提早出現是為了示範「enum 帶資料 + match 強制窮舉」的威力。下一篇會接著講錯誤處理。
