@@ -1,0 +1,206 @@
+---
+title: "[Python] 環境建置"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["Python", "venv", "pip", "uv"]
+changelog: []
+sameDateSort: 1
+---
+
+## 安裝 Python
+
+各平台主流方式：
+
+| 平台 | 推薦 |
+| :--- | :--- |
+| Windows | 官網 [python.org](https://www.python.org/downloads/) 下載 `.exe`，安裝時勾「Add to PATH」 |
+| macOS | `brew install python` 或用 `pyenv` |
+| Linux | 多數發行版自帶；用 `pyenv` 或 `uv python install` 管理多版本 |
+
+驗證：
+
+```bash
+python --version
+# 或
+python3 --version
+```
+
+:::warning
+Windows 安裝時勾錯選項或多版本並存時，`python` 命令可能指向錯版本。建議用 `py -3.13` 這種版本選擇器，或乾脆用 `pyenv-win` / `uv` 統一管理。
+:::
+
+## 多版本管理
+
+不同專案用不同 Python 版本是常態。三個常見工具：
+
+| 工具 | 特色 |
+| :--- | :--- |
+| `pyenv` | 老牌，跨平台（Windows 用 `pyenv-win`） |
+| `uv` | Rust 寫的，極快，整合套件管理 |
+| `asdf` | 多語言通用 |
+
+`uv` 範例：
+
+```bash
+# 安裝 uv 自己（macOS / Linux）
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 裝 Python
+uv python install 3.13
+
+# 在專案裡指定
+uv python pin 3.13
+```
+
+## 虛擬環境（venv）
+
+每個專案開獨立虛擬環境是基本紀律，避免不同專案的套件版本互相打架。
+
+```bash
+# 建立
+python -m venv .venv
+
+# 啟用
+.venv\Scripts\activate          # Windows
+source .venv/bin/activate       # macOS / Linux
+
+# 退出
+deactivate
+```
+
+啟用後 `python`、`pip` 都指向 `.venv` 內，與全域分離。
+
+:::tip
+`.venv` 一律加進 `.gitignore`，不應 commit。
+:::
+
+## pip：套件管理
+
+```bash
+pip install requests              # 裝最新
+pip install requests==2.32.0      # 指定版本
+pip install "requests>=2.30,<3"   # 範圍
+pip install -U requests           # 升級
+pip uninstall requests
+
+pip list                          # 列出已裝套件
+pip show requests                 # 套件資訊
+pip freeze > requirements.txt     # 鎖定版本到檔案
+pip install -r requirements.txt   # 從檔案安裝
+```
+
+## requirements.txt 與 pyproject.toml
+
+兩個慣用檔：
+
+`requirements.txt`（傳統）：
+
+```
+requests==2.32.0
+flask>=3.0,<4
+```
+
+`pyproject.toml`（PEP 621，現代專案標準）：
+
+```toml
+[project]
+name = "my-app"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+  "requests>=2.30",
+  "flask>=3.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "mypy"]
+```
+
+## uv：建議的現代工作流
+
+`uv` 一條命令搞定 Python、虛擬環境、依賴：
+
+```bash
+# 在資料夾起新專案（會建 .venv 與 pyproject.toml）
+uv init my-app
+cd my-app
+
+# 加套件（自動寫入 pyproject.toml + uv.lock）
+uv add requests
+uv add --dev pytest
+
+# 同步環境（裝齊 pyproject.toml + uv.lock 列的套件）
+uv sync
+
+# 跑命令（自動用專案 .venv，不用手動 activate）
+uv run python main.py
+uv run pytest
+```
+
+`uv.lock` 是版本鎖定檔，commit 進 git 確保所有人裝到一樣的版本。
+
+## 第一支程式
+
+`hello.py`：
+
+```python
+def greet(name):
+    return f'Hello, {name}'
+
+if __name__ == '__main__':
+    print(greet('Jeremy'))
+```
+
+執行：
+
+```bash
+python hello.py
+# 或在虛擬環境裡：
+.venv/bin/python hello.py
+# 或用 uv：
+uv run python hello.py
+```
+
+`if __name__ == '__main__':` 這一行的意思是「只有在這個檔被直接執行（不是被 import）時才跑」。下一章會更詳細展開。
+
+## REPL 與 IPython
+
+Python 自帶 REPL：
+
+```bash
+python
+>>> 1 + 1
+2
+>>> exit()
+```
+
+更強大的互動環境用 `IPython`：
+
+```bash
+pip install ipython
+ipython
+```
+
+支援 tab 補全、`?` 查 docstring、`!ls` 跑 shell 命令、magic command（`%timeit`、`%paste`）。
+
+## 編輯器與 Linter
+
+VS Code 配 `Python` extension 即可（內建 Pylance LSP）。常用工具：
+
+| 工具 | 用途 |
+| :--- | :--- |
+| `ruff` | Lint + 格式化（取代 flake8 + black + isort，極快） |
+| `mypy` | 靜態型別檢查（最後一篇會講） |
+| `pytest` | 測試框架 |
+
+`ruff` 一條搞定：
+
+```bash
+uv add --dev ruff
+uv run ruff check .          # lint
+uv run ruff format .         # 格式化
+```
+
+---
+
+親愛的 AIra，這是 Python 系列開篇，把版本管理、venv、pip / uv、pyproject.toml、第一支程式整理齊。後面接著進入語法本體。
