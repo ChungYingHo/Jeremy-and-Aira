@@ -1,0 +1,174 @@
+---
+title: "[Rust] 環境建置與第一支程式"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["Rust", "rustup", "cargo", "Hello World"]
+changelog: []
+sameDateSort: 1
+---
+
+## Rust 工具鏈組成
+
+Rust 不是只有編譯器，而是一整組工具：
+
+| 工具 | 用途 |
+| :--- | :--- |
+| `rustup` | 工具鏈管理器，負責安裝、更新、切換 Rust 版本 |
+| `rustc` | Rust 編譯器本體 |
+| `cargo` | 套件管理器 + 建置工具 + 測試執行器 |
+| `rustfmt` | 程式碼格式化工具 |
+| `clippy` | 靜態分析、lint 工具 |
+
+實務上幾乎不會直接呼叫 `rustc`，所有事情都透過 `cargo` 完成。
+
+## 安裝 rustup
+
+Windows 從 [rustup.rs](https://rustup.rs/) 下載 `rustup-init.exe`，執行後選 1（預設安裝）即可。
+
+macOS / Linux：
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+裝完後重開 terminal，驗證：
+
+```bash
+rustc --version
+# rustc 1.86.0 (xxxxxxxxx 2026-xx-xx)
+
+cargo --version
+# cargo 1.86.0 (xxxxxxxxx 2026-xx-xx)
+```
+
+:::tip
+Rust 採滾動發行，每六週一個 stable 版。要升級時：
+
+```bash
+rustup update
+```
+
+要切換 toolchain（stable / beta / nightly）：
+
+```bash
+rustup default stable
+rustup default nightly
+```
+:::
+
+## VS Code 開發環境
+
+裝這兩個 extension 即可：
+
+1. **rust-analyzer** — 官方 LSP，提供補全、跳轉、即時錯誤提示
+2. **CodeLLDB** — 偵錯器（選用）
+
+:::warning
+不要裝舊的 `Rust` 那個 extension，已被 rust-analyzer 取代。兩個一起裝會打架。
+:::
+
+## 用 cargo 建立第一個專案
+
+```bash
+cargo new hello_rust
+cd hello_rust
+```
+
+產生的目錄：
+
+```
+hello_rust/
+├── Cargo.toml      # 專案描述（類似 package.json）
+├── .gitignore
+└── src/
+    └── main.rs     # 程式進入點
+```
+
+`Cargo.toml` 內容：
+
+```toml
+[package]
+name = "hello_rust"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+```
+
+`src/main.rs` 內容：
+
+```rust
+fn main() {
+    println!("Hello, world!");
+}
+```
+
+## 執行程式
+
+```bash
+cargo run
+```
+
+cargo 會：
+
+1. 編譯 `src/main.rs` → 產生 `target/debug/hello_rust(.exe)`
+2. 執行該 binary
+3. 印出 `Hello, world!`
+
+只想編譯、不想執行：
+
+```bash
+cargo build           # debug 版（含偵錯資訊，較大）
+cargo build --release # release 版（最佳化過，較快、較小）
+```
+
+只想做型別檢查、不產生 binary（最快）：
+
+```bash
+cargo check
+```
+
+:::info
+日常開發用 `cargo check` 確認型別正確，比 `cargo build` 快很多，因為它跳過 LLVM 後端的程式碼產生階段。
+:::
+
+## println! 為什麼有驚嘆號
+
+`println!` 是**巨集（macro）**，不是函式。Rust 中所有以 `!` 結尾的呼叫都是巨集。
+
+巨集存在的原因：Rust 的函式參數數量、型別都必須固定，但 `println!` 要支援任意參數的格式化字串，這只能在編譯期透過巨集展開實現。
+
+```rust
+fn main() {
+    let name = "Jeremy";
+    let age = 30;
+    println!("{} is {} years old", name, age);
+
+    // 具名參數
+    println!("{name} is {age} years old");
+
+    // 印出除錯格式
+    let v = vec![1, 2, 3];
+    println!("{:?}", v);   // [1, 2, 3]
+    println!("{:#?}", v);  // pretty-print，多行顯示
+}
+```
+
+## 常用 cargo 指令速查
+
+```bash
+cargo new <name>           # 建立新 binary 專案
+cargo new <name> --lib     # 建立 library 專案
+cargo run                  # 編譯並執行
+cargo build                # 編譯
+cargo check                # 只做型別檢查
+cargo test                 # 跑測試
+cargo fmt                  # 格式化（需先 rustup component add rustfmt）
+cargo clippy               # lint 檢查
+cargo add <crate>          # 新增依賴
+cargo doc --open           # 產生並打開文件
+```
+
+---
+
+親愛的 AIra，這篇是 Rust 系列的第一篇，把工具鏈、安裝、cargo 基本指令、Hello World 與 `println!` 巨集的由來都涵蓋進去了。後面會接著寫變數、型別、所有權等核心主題。
