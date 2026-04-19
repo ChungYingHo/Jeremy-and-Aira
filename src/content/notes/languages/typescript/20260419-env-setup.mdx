@@ -1,0 +1,181 @@
+---
+title: "[TypeScript] 環境建置"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["TypeScript", "tsconfig", "Node", "Bun", "tsx"]
+changelog: []
+sameDateSort: 1
+---
+
+## TypeScript 是什麼
+
+JavaScript 的超集，在 JS 之上加靜態型別系統。TS 程式經 `tsc` 編譯後輸出純 JS，瀏覽器與 Node 不會直接執行 `.ts` 檔（除非搭配 runtime loader）。
+
+實務上幾乎不會手動跑 `tsc`，而是透過：
+
+| 工具 | 用途 |
+| :--- | :--- |
+| `tsc` | 官方編譯器，做型別檢查與輸出 JS |
+| `tsx` / `ts-node` | Node 上直接執行 `.ts`，內部即時轉譯 |
+| `Bun` | 原生支援 `.ts`，零設定即可跑 |
+| `Vite` / `webpack` | 前端打包工具，內部用 esbuild / SWC 處理 TS |
+
+## 安裝
+
+### 全域 / 專案內
+
+```bash
+# 專案內（推薦，避免版本衝突）
+npm install -D typescript @types/node
+npx tsc --version
+
+# 全域
+npm install -g typescript
+tsc --version
+```
+
+### 搭配 tsx（Node 環境直接跑 .ts）
+
+```bash
+npm install -D tsx
+npx tsx src/index.ts
+```
+
+### 用 Bun
+
+Bun 本身就是 JS / TS runtime，不需要額外裝 TS：
+
+```bash
+bun init                 # 互動式建立專案
+bun run src/index.ts     # 直接執行
+```
+
+:::tip
+原型階段或寫小工具時，`bun run xxx.ts` 是最快的選擇，不用設 tsconfig、不用 build step。
+:::
+
+## 初始化 tsconfig.json
+
+```bash
+npx tsc --init
+```
+
+會產生一份預設 `tsconfig.json`，裡面註解很多。常用設定整理：
+
+```jsonc
+{
+  "compilerOptions": {
+    // 輸出
+    "target": "ES2022",            // 編譯目標 JS 版本
+    "module": "ESNext",            // 模組系統
+    "moduleResolution": "bundler", // 解析方式（bundler / node / nodenext）
+    "outDir": "./dist",
+    "rootDir": "./src",
+
+    // 嚴格性（強烈建議全開）
+    "strict": true,                // 等於下列全部開啟
+    // "noImplicitAny": true,
+    // "strictNullChecks": true,
+    // "strictFunctionTypes": true,
+    // "strictBindCallApply": true,
+    // "strictPropertyInitialization": true,
+    // "noImplicitThis": true,
+    // "alwaysStrict": true,
+
+    // 額外建議開啟
+    "noUncheckedIndexedAccess": true,  // arr[i] 結果一律帶 undefined
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+
+    // 互通性
+    "esModuleInterop": true,           // 允許 import x from 'cjs-module'
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // 開發體驗
+    "skipLibCheck": true,              // 跳過 node_modules 內 .d.ts 的檢查
+    "resolveJsonModule": true,         // 允許 import xxx from './data.json'
+
+    // 路徑別名
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
+```
+
+:::warning
+`strict: true` 是現代 TS 專案的底線，新專案沒有理由不開。從現有 JS 專案遷移時可以暫時關掉，逐步補型別後再開。
+:::
+
+## 第一支程式
+
+`src/hello.ts`：
+
+```typescript
+function greet(name: string): string {
+  return `Hello, ${name}`
+}
+
+console.log(greet('Jeremy'))
+```
+
+跑法（任一）：
+
+```bash
+# 1. tsc 編譯後執行
+npx tsc && node dist/hello.js
+
+# 2. tsx 直接跑
+npx tsx src/hello.ts
+
+# 3. Bun
+bun run src/hello.ts
+```
+
+## 只做型別檢查不輸出
+
+```bash
+npx tsc --noEmit          # 只檢查不產生檔
+```
+
+CI 與 lint-staged 通常用這條，因為 build 是打包工具負責的，TS 只負責驗型別。
+
+## VS Code 設定
+
+VS Code 內建 TS 支援。常用調整：
+
+`.vscode/settings.json`：
+
+```jsonc
+{
+  // 用專案的 TS 版本，避免和 VS Code 內建版本不一致
+  "typescript.tsdk": "node_modules/typescript/lib",
+
+  // 自動 import 用相對路徑或 alias
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+
+  // 存檔時整理 import
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit"
+  }
+}
+```
+
+## 兩種主流的專案類型範本
+
+| 類型 | 推薦 tsconfig 預設 |
+| :--- | :--- |
+| Node 後端 | `module: NodeNext` / `moduleResolution: NodeNext` |
+| 前端（Vite / Next） | `module: ESNext` / `moduleResolution: bundler` |
+| Library | `declaration: true`（產生 .d.ts） + `declarationMap: true` |
+
+直接拷別人的 tsconfig 很常踩雷，先想清楚這份 TS 是要被誰執行的。
+
+---
+
+親愛的 AIra，這是 TypeScript 系列的開篇，把安裝、tsconfig 主要選項、執行方式（tsc / tsx / Bun）整理好。後面會接著進入型別系統本體。
