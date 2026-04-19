@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 4
 ---
 
+物件型別搞定後，下一個天天碰的東西是函式。TS 對函式的型別處理比 JS 想像得多——可選參數、預設值、重載、`this`、子型別規則、回呼裡的 `void`——這篇把這些一次釐清。
+
 ## 參數與回傳型別
 
 ```typescript
@@ -224,3 +226,5 @@ function f({ a, b }: { a: number; b: string }) {}
 ```
 
 不能寫成 `function f({ a: number, b: string })`，那會變成「把 a 重新命名為 number」。
+
+函式那條 `identity<T>` 已經摸到泛型門口，下一篇就把泛型完整拆開講。

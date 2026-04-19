@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 7
 ---
 
+`union` 與 `unknown` 在 type 系統內好用，但呼叫方法時 TS 會逼你「先確定它是什麼」。這篇收齊讓 TS 在 runtime 分流時自動縮型別的工具——`typeof` / `in` / `instanceof` / 自訂 type guard / `asserts`，以及最該優先用的 discriminated union。
+
 「窄化（narrowing）」指的是在某段程式碼分支中，TS 把變數的型別從廣的縮小到具體的某一種。
 
 ## typeof 守衛
@@ -272,3 +274,5 @@ function f(v: string | number) {
 ```
 
 if 內 return / throw 後，下面的程式自動窄化（因為到不了那邊代表前面條件不成立）。
+
+最後一篇進模組與 `.d.ts`，把跨檔案 import / export、ambient 宣告、第三方套件型別這些工程面的東西收尾。

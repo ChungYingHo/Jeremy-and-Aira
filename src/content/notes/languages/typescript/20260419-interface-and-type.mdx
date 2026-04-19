@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 3
 ---
 
+上一篇行內物件型別 `{ name: string; age: number }` 寫多了會崩潰。這一篇用 `interface` 與 `type` 把型別命名、組合、擴充的工具一次補齊，順便釐清 `|`、`&`、discriminated union、結構型別等 TS 賴以為生的觀念。
+
 ## 兩種定義方式
 
 ```typescript
@@ -242,3 +244,5 @@ const t: readonly [string, number] = ['a', 1]
 ```
 
 把陣列宣告成 `readonly` 是傳函式參數時的好習慣，明示「我不會改」。
+
+物件結構與型別組合搞定，下一篇處理另一個天天碰的東西——函式的型別，包含 overload、`this`、回呼簽章與 `void` 的細節。

@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 1
 ---
 
+寫過 JS 才有意義學 TS——它不是新語言，是給 JS 加了一層編譯期檢查。這篇把 Windows 上跑 TS 的最短路徑、`tsconfig.json` 的關鍵旋鈕、第一支程式怎麼跑一次串完，後面所有 TS 篇都假設這份 `tsconfig` 已經就位。
+
 ## TypeScript 是什麼
 
 JavaScript 的超集，在 JS 之上加靜態型別系統。TS 程式經 `tsc` 編譯後輸出純 JS，瀏覽器與 Node 不會直接執行 `.ts` 檔（除非搭配 runtime loader）。
@@ -175,3 +177,5 @@ VS Code 內建 TS 支援。常用調整：
 | Library | `declaration: true`（產生 .d.ts） + `declarationMap: true` |
 
 直接拷別人的 tsconfig 很常踩雷，先想清楚這份 TS 是要被誰執行的。
+
+環境就緒、`tsx`/Bun 跑得起 `.ts`、`tsconfig` 開了 `strict`，下一篇進基本型別，把 TS 型別系統的入口磚塊鋪好。

@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 8
 ---
 
+TS 系列最後一篇。前面把型別系統與窄化打通，這篇收尾在工程面：怎麼跨檔案 import / export、怎麼讓沒有型別的 JS 套件變成型別安全、怎麼擴充全域與第三方型別、library 該怎麼對外暴露 `.d.ts`。
+
 ## ESM 為主
 
 現代 TS 一律以 ES Module 為主。一個檔案只要有 `import` / `export`，就是模組（有自己的 scope）；沒有則是 script（共享全域）。
@@ -277,3 +279,5 @@ src/
 | 非 JS 資源（圖片、CSS） | `declare module '*.ext'` |
 | 擴充全域 | `declare global { interface Window {} }` |
 | 擴充第三方型別 | 在第三方模組 declaration merging |
+
+TS 系列到此告一段落。八篇下來：環境、基本型別、interface/type、函式、泛型、utility types、窄化、模組——剛好構成寫真實 TS 程式所需的最小完整地圖。後續的 `decorator`、TS plugin、各框架延伸是分支，回頭再展開。

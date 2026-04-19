@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 2
 ---
 
+環境就緒後，TS 系列的第一塊磚是型別系統的入口：原始型別、陣列、tuple、object、`any`/`unknown`/`never` 這些日常會反覆碰到的東西。重點不在記語法，而在養成「這個值在型別系統裡是什麼」的直覺。
+
 ## 型別標註的兩種寫法
 
 ```typescript
@@ -281,3 +283,5 @@ const f: Foo = new Foo()   // 第一個 Foo 是型別、第二個 Foo 是值
 ```
 
 `type` 與 `interface` 只存在於型別空間，編譯後會被擦除（type erasure）。執行期沒有 TS 型別資訊，所以不能用 `if (typeof x === 'MyInterface')` 這種寫法。
+
+下一篇正式進 `interface` 與 `type`，把這篇行內物件型別寫起來會亂的問題解掉。

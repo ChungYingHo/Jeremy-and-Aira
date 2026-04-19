@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 6
 ---
 
+上一篇講完泛型、`keyof`、`infer`、mapped、conditional——這些都是「素材」。這一篇看標準庫已經把這些素材組好的成品：`Partial`、`Pick`、`Omit`、`Record`、`ReturnType`...。會用是日常戰力，理解原理能在不夠用時自己擴充。
+
 標準庫提供的 utility types 都用前一篇的機制（mapped、conditional、infer）實作。會用就夠，但理解原理能在不夠用時自己擴充。
 
 ## Partial\<T> / Required\<T>
@@ -232,3 +234,5 @@ type DeepPartial<T> = {
 - 太聰明的型別常常壓不住邊界 case，得加 `as` 收尾
 
 實務原則：**型別應該幫助理解，不是炫技**。能 `Pick` / `Omit` 解的，不要動 mapped + conditional。
+
+下一篇切換到「執行期 + 型別系統的互動」這條線——TS 怎麼用 `typeof` / `instanceof` / 自訂 type guard 在 runtime 縮小型別。前面 discriminated union 在那裡會跟 narrowing 收束在一起。

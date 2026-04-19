@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 5
 ---
 
+上一篇結尾留下 `identity<T>` 的伏筆。這篇把泛型完整展開——從最基礎的型別參數，一路到 `keyof`、`typeof`、conditional type、`infer`、mapped type、template literal type。下一篇 utility types 與本篇是直接相依，先把這裡的工具吃下去再繼續。
+
 ## 為什麼需要泛型
 
 沒有泛型只能寫死型別：
@@ -291,3 +293,5 @@ mapped type + template literal + conditional type + infer 一次到位。
 4. 用 `keyof` / `T[K]` / `infer` / mapped 慢慢精確化
 
 不要一開始就追求最通用，否則會卡在型別系統而忘了實作目標。
+
+下一篇看標準庫已經把這些泛型工具包成的 utility types（`Partial`、`Pick`、`Omit`、`Record`...），多數時候不必自己寫 mapped type，直接組合就有。
