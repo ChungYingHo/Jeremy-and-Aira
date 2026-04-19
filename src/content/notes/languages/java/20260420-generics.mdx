@@ -1,0 +1,268 @@
+---
+title: "[Java] 泛型"
+author: "Jeremy & Claude"
+date: "2026-04-20"
+tags: ["Java", "generics", "wildcard", "type erasure"]
+changelog: []
+sameDateSort: 4
+---
+
+## 為什麼要泛型
+
+沒泛型時：
+
+```java
+List list = new ArrayList();
+list.add("hello");
+String s = (String) list.get(0);   // 要強制轉型，runtime 才會炸
+list.add(123);                     // 沒人擋
+```
+
+有泛型後，編譯期就把型別錯誤擋掉：
+
+```java
+List<String> list = new ArrayList<>();
+list.add("hello");
+String s = list.get(0);            // 不用 cast
+list.add(123);                     // ❌ 編譯錯
+```
+
+## 泛型類別
+
+```java
+class Box<T> {
+    private T value;
+
+    public Box(T value) { this.value = value; }
+    public T get() { return value; }
+    public void set(T value) { this.value = value; }
+}
+
+Box<String> b1 = new Box<>("hi");
+Box<Integer> b2 = new Box<>(42);
+```
+
+`<>`（diamond operator，Java 7+）讓右側型別可省略。
+
+多個型別參數：
+
+```java
+class Pair<K, V> {
+    private final K key;
+    private final V value;
+
+    public Pair(K k, V v) { this.key = k; this.value = v; }
+    public K key() { return key; }
+    public V value() { return value; }
+}
+
+Pair<String, Integer> p = new Pair<>("age", 30);
+```
+
+慣例命名：`T`（type）、`E`（element）、`K`/`V`（key/value）、`R`（return）、`N`（number）。
+
+## 泛型方法
+
+方法自帶型別參數，獨立於 class：
+
+```java
+class Util {
+    public static <T> T firstOrNull(List<T> xs) {
+        return xs.isEmpty() ? null : xs.get(0);
+    }
+
+    public static <K, V> Map<V, K> invert(Map<K, V> m) {
+        Map<V, K> r = new HashMap<>();
+        m.forEach((k, v) -> r.put(v, k));
+        return r;
+    }
+}
+
+String s = Util.firstOrNull(List.of("a", "b"));
+```
+
+`<T>` 寫在回傳型別前。
+
+## 上界 bounded type parameter
+
+`T extends X`：T 必須是 X 或其子型別：
+
+```java
+class NumberBox<T extends Number> {
+    private T value;
+
+    public NumberBox(T v) { this.value = v; }
+
+    public double doubled() {
+        return value.doubleValue() * 2;    // 能呼叫 Number 的方法
+    }
+}
+
+new NumberBox<>(3);        // ✅ Integer extends Number
+new NumberBox<>(3.14);     // ✅ Double extends Number
+// new NumberBox<>("a");   // ❌
+```
+
+多重界（最多一個 class，可多個 interface）：
+
+```java
+<T extends Comparable<T> & Serializable> void f(T t) { ... }
+```
+
+## 萬用字元 wildcard
+
+`?` 代表「任意未知型別」。常見三種用法：
+
+### 無界 \<?\>
+
+只在意「是個泛型容器」、不在乎內容型別：
+
+```java
+void printSize(Collection<?> c) {
+    System.out.println(c.size());
+}
+```
+
+### 上界 `? extends T`
+
+「T 或 T 的子型別」——**生產者 producer**，可讀不可寫：
+
+```java
+double sum(List<? extends Number> nums) {
+    double s = 0;
+    for (Number n : nums) s += n.doubleValue();    // 讀 OK
+    return s;
+}
+
+sum(List.of(1, 2, 3));       // List\<Integer\> ✅
+sum(List.of(1.0, 2.0));      // List\<Double\> ✅
+```
+
+不能寫入（除了 `null`）：
+
+```java
+List<? extends Number> xs = ...;
+// xs.add(1);     ❌ 編譯期不知道實際型別是 Integer 還是 Double
+```
+
+### 下界 `? super T`
+
+「T 或 T 的父型別」——**消費者 consumer**，可寫不可（具體）讀：
+
+```java
+void addInts(List<? super Integer> xs) {
+    xs.add(1);
+    xs.add(2);
+}
+
+addInts(new ArrayList<Integer>());     // ✅
+addInts(new ArrayList<Number>());      // ✅
+addInts(new ArrayList<Object>());      // ✅
+```
+
+讀出來只能當 `Object`：
+
+```java
+Object o = xs.get(0);   // 只知道是某個 Integer 的父類
+```
+
+### PECS 口訣
+
+> **P**roducer **E**xtends, **C**onsumer **S**uper
+
+集合「拿出來給人用」（producer）→ `extends`；集合「給人塞東西進來」（consumer）→ `super`。
+
+`Collections.copy(List<? super T> dest, List<? extends T> src)` 是經典範例。
+
+## type erasure：泛型只活在編譯期
+
+JVM **看不到**泛型，runtime 全被抹成原始型別（`T` → `Object`、`T extends Number` → `Number`）。後果：
+
+### 1. 不能 `new T()`
+
+```java
+class Box<T> {
+    T value = new T();        // ❌
+}
+```
+
+繞法：傳 factory 或 `Class<T>`：
+
+```java
+class Box<T> {
+    T value;
+    Box(Supplier<T> factory) { this.value = factory.get(); }
+}
+
+new Box<>(ArrayList::new);
+```
+
+### 2. 不能 `instanceof T`
+
+```java
+if (x instanceof T) ...     // ❌
+```
+
+### 3. 不能建泛型陣列
+
+```java
+T[] arr = new T[10];        // ❌
+List<String>[] arrays = new List<String>[10];   // ❌
+```
+
+### 4. static 欄位不能用 class 的型別參數
+
+```java
+class Box<T> {
+    static T shared;        // ❌
+}
+```
+
+### 5. 兩個泛型 overload 在 erasure 後一樣 → 編譯錯
+
+```java
+void f(List<String> a) {}
+void f(List<Integer> a) {}     // ❌ 兩者 erasure 都是 List
+```
+
+## 泛型與繼承的反直覺處
+
+`List<Dog>` **不是** `List<Animal>` 的子型別（不變 invariant）：
+
+```java
+List<Dog> dogs = new ArrayList<>();
+List<Animal> animals = dogs;        // ❌ 編譯錯
+```
+
+要相容就用 wildcard：
+
+```java
+void feed(List<? extends Animal> animals) { ... }
+feed(dogs);    // ✅
+```
+
+陣列卻是「協變」（covariant）：
+
+```java
+Object[] arr = new String[3];   // 編譯過
+arr[0] = 1;                     // ❌ runtime ArrayStoreException
+```
+
+陣列協變 + erasure 是 Java 早期的歷史包袱，新程式碼盡量避免混用陣列與泛型。
+
+## 泛型在 record 上
+
+```java
+record Pair<A, B>(A first, B second) {
+    public <C> Pair<A, C> withSecond(C newSecond) {
+        return new Pair<>(first, newSecond);
+    }
+}
+
+Pair<String, Integer> p = new Pair<>("age", 30);
+Pair<String, Double> p2 = p.withSecond(3.14);
+```
+
+---
+
+親愛的 AIra，這篇泛型把 type parameter、bounded、wildcard（PECS）、type erasure 的限制全收齊。下一篇進列舉與字串。
