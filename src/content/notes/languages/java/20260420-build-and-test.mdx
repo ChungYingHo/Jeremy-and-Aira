@@ -1,0 +1,323 @@
+---
+title: "[Java] 建置工具與測試"
+author: "Jeremy & Claude"
+date: "2026-04-20"
+tags: ["Java", "Maven", "Gradle", "JUnit", "test"]
+changelog: []
+sameDateSort: 8
+---
+
+純 `javac` + `java` 開發小程式還行，正式專案就需要建置工具管依賴、編譯、打包、測試。Java 主流兩套：**Maven** 與 **Gradle**。
+
+## Maven 還是 Gradle？
+
+| | Maven | Gradle |
+| :--- | :--- | :--- |
+| 設定檔 | `pom.xml`（XML） | `build.gradle` / `build.gradle.kts`（Groovy / Kotlin） |
+| 學習曲線 | 直觀但囉嗦 | 強大但較難 |
+| 速度 | 普通 | 快（增量編譯、daemon） |
+| 適合 | 標準專案、團隊熟悉度高 | 大型 / Android / 自定建置流程 |
+
+新專案 Spring Boot 系多用 Maven、Android / Kotlin 系多用 Gradle。會其中一個，另一個 README 看得懂就行。
+
+## Maven 標準目錄
+
+```
+my-app/
+├── pom.xml
+└── src/
+    ├── main/
+    │   ├── java/
+    │   │   └── com/example/App.java
+    │   └── resources/
+    │       └── application.properties
+    └── test/
+        └── java/
+            └── com/example/AppTest.java
+```
+
+`src/main/java` 放程式、`src/main/resources` 放 properties / 資源、`src/test/java` 放測試。約定優於設定。
+
+## pom.xml 最小範例
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example</groupId>
+    <artifactId>my-app</artifactId>
+    <version>0.1.0</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.0</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
+```
+
+`groupId`（組織）+ `artifactId`（專案）+ `version` 三件組成一個 GAV 座標，Maven Central 上每個 library 都有自己的 GAV。
+
+## Maven 常用指令
+
+```bash
+mvn compile              # 編譯
+mvn test                 # 跑測試
+mvn package              # 打成 jar 放在 target/
+mvn install              # 裝到本機 repo（~/.m2）
+mvn clean                # 清掉 target/
+mvn clean install        # 全部重來
+mvn dependency:tree      # 看依賴樹
+mvn -DskipTests package  # 跳過測試打包
+```
+
+`mvn` 會自動下載依賴到本機 `~/.m2/repository/`。
+
+## scope：依賴的可見範圍
+
+| scope | 編譯 | 測試 | 執行 | 範例 |
+| :--- | :---: | :---: | :---: | :--- |
+| `compile`（預設） | ✓ | ✓ | ✓ | 一般 library |
+| `provided` | ✓ | ✓ | ✗ | servlet-api（容器提供） |
+| `runtime` | ✗ | ✓ | ✓ | JDBC driver |
+| `test` | ✗ | ✓ | ✗ | JUnit |
+
+## Gradle 最小範例（Kotlin DSL）
+
+```kotlin
+// build.gradle.kts
+plugins {
+    java
+    application
+}
+
+group = "com.example"
+version = "0.1.0"
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+
+application {
+    mainClass.set("com.example.App")
+}
+```
+
+常用指令：
+
+```bash
+./gradlew build          # 編譯 + 測試 + 打包
+./gradlew test
+./gradlew run
+./gradlew clean
+./gradlew dependencies   # 依賴樹
+```
+
+`./gradlew` 是 Gradle Wrapper，倉庫裡帶上去能讓所有人用同一版 Gradle，不需先裝。
+
+## JUnit 5 基礎
+
+JUnit 5（Jupiter）是現代標準，JUnit 4 還很多舊專案在用但語法不一樣。
+
+```java
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+class CalculatorTest {
+
+    Calculator calc;
+
+    @BeforeEach
+    void setUp() {
+        calc = new Calculator();
+    }
+
+    @AfterEach
+    void tearDown() { /* ... */ }
+
+    @Test
+    @DisplayName("加法：兩個正整數")
+    void addsTwoPositives() {
+        assertEquals(5, calc.add(2, 3));
+    }
+
+    @Test
+    void throwsOnDivByZero() {
+        assertThrows(ArithmeticException.class, () -> calc.div(1, 0));
+    }
+
+    @Test
+    @Disabled("修好之後再開")
+    void notReadyYet() { ... }
+}
+```
+
+## 生命週期 annotation
+
+| | 何時 |
+| :--- | :--- |
+| `@BeforeAll` | 整個 class 跑前一次（必須 `static`） |
+| `@BeforeEach` | 每個 `@Test` 前 |
+| `@AfterEach` | 每個 `@Test` 後 |
+| `@AfterAll` | 整個 class 跑完一次（必須 `static`） |
+
+## assertion
+
+```java
+assertEquals(expected, actual);
+assertEquals(expected, actual, "錯誤訊息");
+assertEquals(0.1 + 0.2, 0.3, 1e-9);          // 浮點要給 delta
+
+assertTrue(cond);
+assertFalse(cond);
+assertNull(x);
+assertNotNull(x);
+assertSame(a, b);                              // 參考相等
+assertArrayEquals(arr1, arr2);
+
+assertThrows(IllegalArgumentException.class, () -> doSth());
+assertDoesNotThrow(() -> doSth());
+
+// 一次斷言多個
+assertAll(
+    () -> assertEquals(1, x),
+    () -> assertEquals(2, y)
+);
+```
+
+## 參數化測試
+
+```java
+@ParameterizedTest
+@ValueSource(ints = {1, 2, 3, 4, 5})
+void allPositive(int n) {
+    assertTrue(n > 0);
+}
+
+@ParameterizedTest
+@CsvSource({
+    "2, 3, 5",
+    "0, 0, 0",
+    "-1, 1, 0"
+})
+void addCases(int a, int b, int expected) {
+    assertEquals(expected, calc.add(a, b));
+}
+
+@ParameterizedTest
+@MethodSource("provideCases")
+void fromMethod(int input, String expected) { ... }
+
+static Stream<Arguments> provideCases() {
+    return Stream.of(
+        Arguments.of(1, "one"),
+        Arguments.of(2, "two")
+    );
+}
+```
+
+## 巢狀測試
+
+按情境分組：
+
+```java
+class UserServiceTest {
+
+    @Nested
+    class WhenLoggedIn {
+        @Test void canEditOwnProfile() { ... }
+        @Test void cannotEditOthers() { ... }
+    }
+
+    @Nested
+    class WhenAnonymous {
+        @Test void mustLoginFirst() { ... }
+    }
+}
+```
+
+## Mockito：mock 物件
+
+外部依賴（DB、HTTP）測試時 mock 掉：
+
+```java
+import static org.mockito.Mockito.*;
+
+@Test
+void usesRepo() {
+    UserRepo repo = mock(UserRepo.class);
+    when(repo.findById(1)).thenReturn(Optional.of(new User("a")));
+
+    UserService svc = new UserService(repo);
+    assertEquals("a", svc.getName(1));
+
+    verify(repo).findById(1);
+}
+```
+
+加依賴：
+
+```xml
+<dependency>
+    <groupId>org.mockito</groupId>
+    <artifactId>mockito-core</artifactId>
+    <version>5.11.0</version>
+    <scope>test</scope>
+</dependency>
+```
+
+## AssertJ：流暢斷言
+
+寫起來比 JUnit assertion 順、訊息更清楚：
+
+```java
+import static org.assertj.core.api.Assertions.*;
+
+assertThat(list).hasSize(3).contains("a").doesNotContain("z");
+assertThat(map).containsEntry("k", "v");
+assertThat(user.getName()).startsWith("Je").endsWith("my");
+assertThatThrownBy(() -> svc.find(0))
+    .isInstanceOf(NotFoundException.class)
+    .hasMessageContaining("not found");
+```
+
+## 在 IDE 跑 vs 在 CLI 跑
+
+IDE（IntelliJ / VS Code）通常綠色三角直接跑單一測試。CI 用 `mvn test` 或 `./gradlew test`，會把報告產到 `target/surefire-reports/` 或 `build/reports/tests/`。
+
+## 寫測試的最低標準
+
+- 一個方法測一件事
+- 命名描述「行為」而不是「方法名」（`addsTwoPositives` 比 `testAdd` 好）
+- AAA 結構：**A**rrange、**A**ct、**A**ssert
+- 測試之間獨立，不要共享 mutable state（`@BeforeEach` 重設）
+- 不要測 framework 的事（測自己寫的邏輯）
+
+---
+
+親愛的 AIra，這篇收完 Maven / Gradle 結構與指令、依賴 scope、JUnit 5 基本與參數化、Mockito、AssertJ 與測試慣例。Java 系列 8 篇全部寫完。
