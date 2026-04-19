@@ -1,0 +1,280 @@
+---
+title: "[Rust] 錯誤處理：Result、Option 與 ? 運算子"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["Rust", "Result", "Option", "error", "panic"]
+changelog: []
+sameDateSort: 5
+---
+
+## Rust 的錯誤分類
+
+Rust 把錯誤分成兩類：
+
+| 類型 | 機制 | 用途 |
+| :--- | :--- | :--- |
+| **可恢復錯誤** | `Result<T, E>` | 預期可能發生、呼叫方有機會處理（檔案不存在、parse 失敗、網路逾時） |
+| **不可恢復錯誤** | `panic!` | 程式邏輯出錯、進入不該到的狀態（陣列越界、unwrap 一個 None） |
+
+沒有 try / catch。錯誤就是普通的回傳值，必須在型別系統裡明確處理。
+
+## panic!
+
+不可恢復的崩潰，預設會印出錯誤訊息、展開 stack、終止程式（或執行緒）。
+
+```rust
+fn main() {
+    panic!("something went terribly wrong");
+}
+```
+
+執行：
+
+```
+thread 'main' panicked at src/main.rs:2:5:
+something went terribly wrong
+note: run with `RUST_BACKTRACE=1` for a backtrace
+```
+
+常見會 panic 的操作：
+
+```rust
+let v = vec![1, 2, 3];
+let x = v[99];          // panic: index out of bounds
+
+let n: i32 = "abc".parse().unwrap(); // panic: ParseIntError
+```
+
+:::warning
+函式庫程式碼盡量不要 panic，而是回傳 `Result`，把決定權交給呼叫方。
+panic 適合在「程式遇到不可能發生的狀態」時用，例如違反不變式（invariant）。
+:::
+
+## Result<T, E>
+
+```rust
+enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
+```
+
+`Ok` 帶成功的值，`Err` 帶錯誤資訊。例子：
+
+```rust
+use std::fs::File;
+
+fn main() {
+    let f = File::open("hello.txt");
+
+    match f {
+        Ok(file) => println!("opened: {file:?}"),
+        Err(e) => println!("failed: {e}"),
+    }
+}
+```
+
+按錯誤種類分流：
+
+```rust
+use std::fs::File;
+use std::io::ErrorKind;
+
+let f = File::open("hello.txt");
+let f = match f {
+    Ok(file) => file,
+    Err(e) => match e.kind() {
+        ErrorKind::NotFound => match File::create("hello.txt") {
+            Ok(fc) => fc,
+            Err(e) => panic!("create failed: {e}"),
+        },
+        other => panic!("open failed: {other:?}"),
+    },
+};
+```
+
+巢狀很醜，後面會用 `?` 拍平。
+
+## unwrap、expect、unwrap_or 系列
+
+開發 / 原型階段常用的快捷方法：
+
+```rust
+let f = File::open("a.txt").unwrap();
+// Ok → 取出值；Err → panic（訊息固定不太友善）
+
+let f = File::open("a.txt").expect("a.txt should exist");
+// Err → panic 並印出自訂訊息（debug 比較有用）
+
+let n: i32 = "abc".parse().unwrap_or(0);
+// Err → 用 0 當預設值
+
+let n: i32 = "abc".parse().unwrap_or_else(|_| -1);
+// 同上但預設值由閉包產生（lazy）
+
+let n: i32 = "abc".parse().unwrap_or_default();
+// 用該型別的 Default::default()
+```
+
+正式程式碼避免亂 `unwrap`。每個 `unwrap` 都是「我跟編譯器保證這裡一定不會錯，否則就讓它崩」。
+
+## ? 運算子：拍平錯誤傳遞
+
+`?` 是 Rust 錯誤處理的命脈。它做的事：
+
+- 如果是 `Ok(v)` → 取出 `v` 繼續執行
+- 如果是 `Err(e)` → 直接從目前函式 return 那個錯誤
+
+對比寫法：
+
+```rust
+use std::fs::File;
+use std::io::{self, Read};
+
+// 不用 ?
+fn read_username() -> Result<String, io::Error> {
+    let f = File::open("hello.txt");
+    let mut f = match f {
+        Ok(file) => file,
+        Err(e) => return Err(e),
+    };
+
+    let mut s = String::new();
+    match f.read_to_string(&mut s) {
+        Ok(_) => Ok(s),
+        Err(e) => Err(e),
+    }
+}
+
+// 用 ?
+fn read_username() -> Result<String, io::Error> {
+    let mut f = File::open("hello.txt")?;
+    let mut s = String::new();
+    f.read_to_string(&mut s)?;
+    Ok(s)
+}
+
+// 鏈式更短
+fn read_username() -> Result<String, io::Error> {
+    let mut s = String::new();
+    File::open("hello.txt")?.read_to_string(&mut s)?;
+    Ok(s)
+}
+```
+
+`?` 也能用在 `Option` 上，意義對應：`Some` 取值、`None` 直接 return None。
+
+## 限制：? 只能在回傳 Result / Option 的函式裡用
+
+```rust
+fn main() {
+    let f = File::open("a.txt")?; // ❌ main 預設回傳 ()
+}
+```
+
+修法 1：讓 `main` 回傳 `Result`：
+
+```rust
+use std::error::Error;
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let f = File::open("a.txt")?;
+    Ok(())
+}
+```
+
+修法 2：在外層包一層自訂 `Result` 函式呼叫，`main` 只負責 unwrap。
+
+## 自訂錯誤型別
+
+實務上，函式可能會遇到多種錯誤。可以定義 enum 包起來：
+
+```rust
+use std::io;
+use std::num::ParseIntError;
+
+#[derive(Debug)]
+enum AppError {
+    Io(io::Error),
+    Parse(ParseIntError),
+    NotFound,
+}
+
+// 實作 From，讓 ? 自動轉型
+impl From<io::Error> for AppError {
+    fn from(e: io::Error) -> Self { AppError::Io(e) }
+}
+
+impl From<ParseIntError> for AppError {
+    fn from(e: ParseIntError) -> Self { AppError::Parse(e) }
+}
+
+fn read_number() -> Result<i32, AppError> {
+    use std::fs::read_to_string;
+    let s = read_to_string("num.txt")?;   // io::Error → AppError::Io
+    let n: i32 = s.trim().parse()?;       // ParseIntError → AppError::Parse
+    Ok(n)
+}
+```
+
+`?` 的完整行為其實是：失敗時取 `Err(e)`，把 `e` 透過 `From` 轉成函式回傳型別需要的錯誤，再 return。
+
+:::tip
+真的在寫應用程式，不用每次都自己刻 `From`。社群有兩個常用 crate：
+
+- **`thiserror`**：給 library 用，巨集自動產生 `Display` / `Error` / `From`
+- **`anyhow`**：給 application 用，提供 `anyhow::Result<T>` = `Result<T, anyhow::Error>`，能吃下任何錯誤，配 `?` 用爽
+:::
+
+## Option 與 Result 互轉
+
+```rust
+let opt: Option<i32> = Some(5);
+let res: Result<i32, &str> = opt.ok_or("no value");
+
+let res: Result<i32, &str> = Ok(5);
+let opt: Option<i32> = res.ok();
+```
+
+## 常用方法速查
+
+`Result<T, E>` 上的常用方法（`Option<T>` 大致對應）：
+
+| 方法 | 行為 |
+| :--- | :--- |
+| `.is_ok()` / `.is_err()` | 判斷類型 |
+| `.ok()` / `.err()` | 轉成 `Option<T>` / `Option<E>` |
+| `.unwrap()` | 取值或 panic |
+| `.expect("msg")` | 取值或 panic（自訂訊息） |
+| `.unwrap_or(default)` | 取值或回傳預設 |
+| `.unwrap_or_else(\|e\| ...)` | 取值或執行 closure |
+| `.map(\|v\| ...)` | 對 `Ok(v)` 做變換 |
+| `.map_err(\|e\| ...)` | 對 `Err(e)` 做變換 |
+| `.and_then(\|v\| ...)` | flatMap，串接會回傳 Result 的操作 |
+| `?` | 取值或往外拋 |
+
+## 何時 panic vs 何時 Result
+
+判準：
+
+- **panic**：bug、不變式被破壞、不該到達的狀態（用 `unreachable!()`、`unimplemented!()`、`todo!()`、`assert!`）
+- **Result**：可預期的失敗（IO、parse、網路、使用者輸入）
+
+```rust
+fn divide(a: i32, b: i32) -> Result<i32, &'static str> {
+    if b == 0 {
+        Err("divide by zero")    // 可預期，回傳 Err
+    } else {
+        Ok(a / b)
+    }
+}
+
+fn first_element<T>(v: &[T]) -> &T {
+    assert!(!v.is_empty());      // 違反前提條件，panic
+    &v[0]
+}
+```
+
+---
+
+親愛的 AIra，這篇把 Result、Option、`?` 運算子和 panic 的時機說清楚。重點是 `?` 配 `From` 的自動轉型，這讓錯誤處理寫起來幾乎沒有負擔。下一篇會進到 Vec、HashMap、String 這些日常集合。
