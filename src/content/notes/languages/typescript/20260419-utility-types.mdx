@@ -1,0 +1,238 @@
+---
+title: "[TypeScript] 內建型別工具"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["TypeScript", "utility types", "Partial", "Pick", "Omit", "Record"]
+changelog: []
+sameDateSort: 6
+---
+
+標準庫提供的 utility types 都用前一篇的機制（mapped、conditional、infer）實作。會用就夠，但理解原理能在不夠用時自己擴充。
+
+## Partial<T> / Required<T>
+
+```typescript
+type Partial<T> = { [K in keyof T]?: T[K] }
+type Required<T> = { [K in keyof T]-?: T[K] }
+```
+
+把所有屬性變可選 / 變必填。
+
+```typescript
+interface User {
+  id: number
+  name: string
+  email?: string
+}
+
+type UserPatch = Partial<User>
+// { id?: number; name?: string; email?: string }
+
+type FullUser = Required<User>
+// { id: number; name: string; email: string }
+```
+
+實際用途：update 用 `Partial<User>` 接收任意子集欄位。
+
+## Readonly<T>
+
+```typescript
+type Readonly<T> = { readonly [K in keyof T]: T[K] }
+
+const u: Readonly<User> = { id: 1, name: 'a' }
+u.id = 2   // ❌
+```
+
+注意：是 shallow readonly，深層巢狀屬性還是可變。深 readonly 要自己遞迴：
+
+```typescript
+type DeepReadonly<T> = {
+  readonly [K in keyof T]: T[K] extends object ? DeepReadonly<T[K]> : T[K]
+}
+```
+
+## Pick<T, K>：挑選欄位
+
+```typescript
+type Pick<T, K extends keyof T> = { [P in K]: T[P] }
+
+type UserPreview = Pick<User, 'id' | 'name'>
+// { id: number; name: string }
+```
+
+## Omit<T, K>：排除欄位
+
+```typescript
+type Omit<T, K extends keyof any> = Pick<T, Exclude<keyof T, K>>
+
+type UserWithoutEmail = Omit<User, 'email'>
+// { id: number; name: string }
+```
+
+`K` 不限定 `keyof T`，所以可以傳不存在的 key，TS 不會抱怨（這是設計取捨）。
+
+## Record<K, V>：等值物件
+
+```typescript
+type Record<K extends keyof any, V> = { [P in K]: V }
+
+type Scores = Record<'math' | 'english' | 'science', number>
+// { math: number; english: number; science: number }
+
+type Cache = Record<string, unknown>
+// 任意字串 key 對應任意值
+```
+
+比 `{ [k: string]: V }` 更精準，因為 K 可以是字面值 union。
+
+## Exclude<T, U> / Extract<T, U>
+
+```typescript
+type Exclude<T, U> = T extends U ? never : T
+type Extract<T, U> = T extends U ? T : never
+```
+
+對 union 做篩選：
+
+```typescript
+type T1 = Exclude<'a' | 'b' | 'c', 'a'>   // 'b' | 'c'
+type T2 = Extract<string | number | boolean, string | number>  // string | number
+```
+
+`Omit<T, K>` 內部就靠 `Exclude` 從 keyof T 剔掉 K。
+
+## NonNullable<T>
+
+```typescript
+type NonNullable<T> = T & {}   // TS 4.8+ 改用這個寫法
+
+type X = NonNullable<string | null | undefined>   // string
+```
+
+清掉 union 裡的 `null` 與 `undefined`。
+
+## ReturnType<T> / Parameters<T>
+
+從函式型別抽出回傳值與參數：
+
+```typescript
+type ReturnType<T> = T extends (...args: any) => infer R ? R : never
+type Parameters<T> = T extends (...args: infer P) => any ? P : never
+```
+
+```typescript
+function fetchUser(id: number, cache: boolean) {
+  return { id, name: 'a' }
+}
+
+type R = ReturnType<typeof fetchUser>     // { id: number; name: string }
+type P = Parameters<typeof fetchUser>     // [id: number, cache: boolean]
+```
+
+實務上配 `typeof someFunction` 用，省得手動同步函式簽章與型別。
+
+## ConstructorParameters<T> / InstanceType<T>
+
+```typescript
+class Greeter {
+  constructor(public name: string, public age: number) {}
+}
+
+type CP = ConstructorParameters<typeof Greeter>   // [name: string, age: number]
+type I  = InstanceType<typeof Greeter>            // Greeter
+```
+
+## Awaited<T>：拆 Promise
+
+```typescript
+type A1 = Awaited<Promise<string>>             // string
+type A2 = Awaited<Promise<Promise<number>>>    // number（會遞迴拆）
+type A3 = Awaited<number>                      // number
+```
+
+寫 async 函式時搭配 `ReturnType` 拿真正的回傳值：
+
+```typescript
+async function load() {
+  return { id: 1 }
+}
+
+type R = ReturnType<typeof load>            // Promise<{ id: number }>
+type Data = Awaited<ReturnType<typeof load>> // { id: number }
+```
+
+## 字串大小寫工具
+
+```typescript
+type Uppercase<T extends string>
+type Lowercase<T extends string>
+type Capitalize<T extends string>
+type Uncapitalize<T extends string>
+```
+
+```typescript
+type A = Uppercase<'hello'>     // 'HELLO'
+type B = Capitalize<'hello'>    // 'Hello'
+```
+
+配 mapped type + template literal 重新命名 key：
+
+```typescript
+type Setters<T> = {
+  [K in keyof T as `set${Capitalize<string & K>}`]: (value: T[K]) => void
+}
+
+type UserSetters = Setters<{ name: string; age: number }>
+// { setName: (v: string) => void; setAge: (v: number) => void }
+```
+
+## 速查表
+
+| Utility | 等價 | 用途 |
+| :--- | :--- | :--- |
+| `Partial<T>` | 全部欄位變 `?` | update / patch 場景 |
+| `Required<T>` | 全部欄位變必填 | 移除 `?` |
+| `Readonly<T>` | 全部欄位 `readonly` | immutable view |
+| `Pick<T, K>` | 挑選欄位 | 派生子集 |
+| `Omit<T, K>` | 排除欄位 | 派生補集 |
+| `Record<K, V>` | k-v 等值物件 | dict 形式 |
+| `Exclude<T, U>` | 從 union 剔除 | 篩除 |
+| `Extract<T, U>` | 從 union 取出 | 篩入 |
+| `NonNullable<T>` | 移除 null / undefined | 收斂 union |
+| `ReturnType<T>` | 函式回傳值型別 | 同步契約 |
+| `Parameters<T>` | 函式參數 tuple | reuse 簽章 |
+| `Awaited<T>` | 拆 Promise | async 結果型別 |
+
+## 自訂常用工具
+
+幾個社群常見、標準庫沒提供的：
+
+```typescript
+// 至少要有一個欄位
+type AtLeastOne<T, K extends keyof T = keyof T> =
+  K extends keyof T ? Partial<T> & Pick<T, K> : never
+
+// 互斥（這幾個欄位只能擇一）
+type XOR<A, B> =
+  | (A & { [K in keyof B]?: never })
+  | (B & { [K in keyof A]?: never })
+
+// 深 Partial
+type DeepPartial<T> = {
+  [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K]
+}
+```
+
+## 何時不要硬寫複雜型別
+
+幾條提醒：
+
+- 型別讀不懂的人會比寫的人多
+- 編譯時間會變慢，IDE 提示會卡
+- 太聰明的型別常常壓不住邊界 case，得加 `as` 收尾
+
+實務原則：**型別應該幫助理解，不是炫技**。能 `Pick` / `Omit` 解的，不要動 mapped + conditional。
+
+---
+
+親愛的 AIra，這篇把標準庫常用 utility types 配實作原理列齊。下一篇進到型別守衛，把如何在執行期跟型別系統「對齊」說清楚。
