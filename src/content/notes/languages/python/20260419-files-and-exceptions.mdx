@@ -1,0 +1,283 @@
+---
+title: "[Python] 檔案處理與例外"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["Python", "file", "exception", "with", "context manager"]
+changelog: []
+sameDateSort: 6
+---
+
+## open：讀寫檔案
+
+```python
+f = open('a.txt', 'r', encoding='utf-8')
+content = f.read()
+f.close()
+```
+
+`mode` 參數：
+
+| mode | 意義 |
+| :--- | :--- |
+| `r` | 讀（預設） |
+| `w` | 寫，會清空原內容 |
+| `a` | 追加 |
+| `x` | 寫（檔案存在會錯） |
+| `b` | 二進位（搭配其他 mode，例如 `rb`） |
+| `+` | 讀寫（搭配，例如 `r+`） |
+
+`encoding` 強烈建議顯式指定，否則跨平台會踩雷（Windows 預設不是 UTF-8）。
+
+## with：上下文管理器（必用）
+
+不要手動 `close()`，用 `with` 自動關檔，例外發生時也會關：
+
+```python
+with open('a.txt', 'r', encoding='utf-8') as f:
+    content = f.read()
+# with 區塊結束自動 close
+```
+
+多檔同時開：
+
+```python
+with open('a.txt') as fa, open('b.txt', 'w') as fb:
+    fb.write(fa.read())
+```
+
+## 讀檔的幾種方式
+
+```python
+with open('a.txt', encoding='utf-8') as f:
+    # 1. 一次讀全部
+    content = f.read()
+
+    # 2. 一行一行讀（記憶體友善，大檔首選）
+    for line in f:
+        print(line.rstrip())   # rstrip 去尾端換行
+
+    # 3. 讀成 list（小檔）
+    lines = f.readlines()
+
+    # 4. 讀指定 byte 數
+    head = f.read(100)
+```
+
+## 寫檔
+
+```python
+with open('out.txt', 'w', encoding='utf-8') as f:
+    f.write('hello\n')
+    f.write('world\n')
+
+# 或一次寫多行
+with open('out.txt', 'w', encoding='utf-8') as f:
+    f.writelines(['a\n', 'b\n', 'c\n'])
+```
+
+## 二進位
+
+```python
+with open('img.png', 'rb') as f:
+    data = f.read()
+
+with open('out.bin', 'wb') as f:
+    f.write(b'\x00\x01\x02')
+```
+
+## pathlib：取代字串拼路徑
+
+`os.path` 老舊。新程式碼一律用 `pathlib.Path`：
+
+```python
+from pathlib import Path
+
+p = Path('data') / 'users' / 'jeremy.json'
+print(p)                # data/users/jeremy.json（會自動處理 OS 分隔符）
+
+p.exists()
+p.is_file()
+p.is_dir()
+p.parent                # Path('data/users')
+p.name                  # 'jeremy.json'
+p.stem                  # 'jeremy'
+p.suffix                # '.json'
+
+# 讀寫一行搞定
+text = p.read_text(encoding='utf-8')
+p.write_text('hello', encoding='utf-8')
+
+data = p.read_bytes()
+p.write_bytes(b'\x00')
+
+# 列舉
+for f in Path('data').iterdir():
+    print(f)
+
+for f in Path('data').rglob('*.json'):     # 遞迴
+    print(f)
+
+# 建立資料夾
+Path('logs/2026').mkdir(parents=True, exist_ok=True)
+```
+
+## 例外：try / except / else / finally
+
+```python
+try:
+    n = int('abc')
+except ValueError as e:
+    print(f'parse failed: {e}')
+except (KeyError, IndexError) as e:        # 同時抓多種
+    print(f'lookup failed: {e}')
+else:
+    print('no exception')                  # try 區塊沒丟例外才執行
+finally:
+    print('cleanup')                       # 一定會執行
+```
+
+各分支用途：
+
+| 分支 | 何時跑 |
+| :--- | :--- |
+| `try` | 主邏輯 |
+| `except` | 捕到對應例外才跑 |
+| `else` | try 沒丟例外才跑（可選） |
+| `finally` | 一定會跑，包含釋放資源（可選） |
+
+## raise：丟例外
+
+```python
+def divide(a, b):
+    if b == 0:
+        raise ValueError('cannot divide by zero')
+    return a / b
+```
+
+抓到後重新丟：
+
+```python
+try:
+    do_work()
+except SomeError as e:
+    log(e)
+    raise           # 不帶任何東西，重丟原例外
+```
+
+包裝成更高階的例外（保留原因）：
+
+```python
+try:
+    do_work()
+except IOError as e:
+    raise RuntimeError('cannot load config') from e
+```
+
+## 自訂例外
+
+繼承 `Exception` 即可：
+
+```python
+class APIError(Exception):
+    pass
+
+class NotFoundError(APIError):
+    pass
+
+class RateLimitError(APIError):
+    def __init__(self, retry_after: int):
+        super().__init__(f'rate limited, retry after {retry_after}s')
+        self.retry_after = retry_after
+
+try:
+    raise RateLimitError(30)
+except RateLimitError as e:
+    print(e.retry_after)
+except APIError as e:        # 父類能接子類的例外
+    print('other API error')
+```
+
+慣例：library 都定義一個自家 base error，使用者可以 `except YourLib.Error` 一網打盡。
+
+## 不要這樣寫
+
+```python
+# ❌ 抓 Exception 會吞掉所有錯（包含 KeyboardInterrupt 沒到那麼上面，但仍掩蓋很多 bug）
+try:
+    do_work()
+except:
+    pass
+
+# ❌ 太寬，至少要記錄
+try:
+    do_work()
+except Exception:
+    pass
+```
+
+正確：
+
+- 只抓你預期會發生且有處理對策的例外
+- 沒對策就讓它往上拋
+- 真要記錄一律 `logging.exception(...)` 帶上 stack
+
+## 自訂上下文管理器
+
+實作 `__enter__` / `__exit__`：
+
+```python
+class Timer:
+    def __enter__(self):
+        import time
+        self.t = time.perf_counter()
+        return self
+    def __exit__(self, exc_type, exc_value, tb):
+        elapsed = time.perf_counter() - self.t
+        print(f'elapsed {elapsed:.3f}s')
+        # 回傳 True 表示「壓下例外」（少用，預設別動）
+
+with Timer():
+    do_heavy_work()
+```
+
+或用 `contextlib`：
+
+```python
+from contextlib import contextmanager
+
+@contextmanager
+def timer():
+    import time
+    t = time.perf_counter()
+    try:
+        yield
+    finally:
+        print(f'elapsed {time.perf_counter() - t:.3f}s')
+
+with timer():
+    do_heavy_work()
+```
+
+`yield` 之前對應 `__enter__`，之後對應 `__exit__`。`try / finally` 確保例外時也會跑釋放邏輯。
+
+## 常用內建例外
+
+| 例外 | 觸發 |
+| :--- | :--- |
+| `ValueError` | 型別對但值不合（`int('abc')`） |
+| `TypeError` | 型別錯（`'a' + 1`） |
+| `KeyError` | dict 找不到 key |
+| `IndexError` | list 越界 |
+| `AttributeError` | 物件沒這屬性 |
+| `FileNotFoundError` | 檔案不存在 |
+| `PermissionError` | 權限不足 |
+| `ZeroDivisionError` | 除以 0 |
+| `StopIteration` | iterator 結束 |
+| `KeyboardInterrupt` | Ctrl+C |
+| `SystemExit` | `sys.exit()` 觸發 |
+
+`KeyboardInterrupt` 與 `SystemExit` 是繼承 `BaseException`、不是 `Exception`，所以 `except Exception` 不會抓到（這是好事）。
+
+---
+
+親愛的 AIra，這篇把檔案 IO、pathlib、try / except / finally、自訂例外、context manager 整理齊。下一篇會逛常用標準庫。
