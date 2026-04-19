@@ -1,0 +1,282 @@
+---
+title: '[Algorithm] NP-完備理論'
+author: 'Jeremy & Claude'
+date: '2026-04-15'
+tags: [algorithm, NP, NP-complete, SAT, TSP, reduction]
+changelog: ['2026-04-15']
+---
+
+動態規劃把很多看似會爆炸的問題壓回多項式時間，可是有些問題即便丟給 DP 也救不回來——0/1 knapsack 看似 $O(nW)$ 很漂亮，但 $W$ 是**數值**，真正的輸入長度是 $\log W$，嚴格來說它只是 **pseudo-polynomial**。這類「DP 也沒辦法給出真正多項式演算法」的問題，就是 NP-完備理論要處理的對象。這篇從「簡單 vs 困難」的分類開始，介紹 15 個常見困難問題，最後說清楚 NP、轉換、NP-完備到底在說什麼。
+
+## 簡單問題與困難問題
+
+### 多項式時間
+
+一個演算法的執行時間若能被某個 $n$ 的多項式 $p(n) = O(n^k)$ 蓋住（$k$ 是常數），就稱作**多項式時間（polynomial time）**。
+
+| 類型 | 範例複雜度 | 直覺 |
+| :--- | :--- | :--- |
+| 多項式 | $O(1)$、$O(\log n)$、$O(n)$、$O(n \log n)$、$O(n^2)$、$O(n^3)$ | 輸入加倍、時間乘常數倍 |
+| 指數 | $O(2^n)$、$O(n!)$ | 輸入多 1 個，時間可能翻倍 |
+
+為什麼要以多項式劃界？答案是工程上可接受的界線：輸入放大 10 倍，$O(n^3)$ 只慢 1000 倍、$O(2^n)$ 直接爆到天上去。
+
+- **簡單問題（tractable）**：已知有多項式時間演算法能解
+- **困難問題（intractable）**：目前沒有已知的多項式演算法
+
+注意「困難」不是「證明沒有」，而是「人類還沒找到」。這個措辭差別正是 P vs NP 至今未解的原因。
+
+### 最佳化問題與判斷問題
+
+同一個問題通常有兩種問法：
+
+- **最佳化（optimization）**：找出最好的解。例：「最短路徑的長度是多少？」
+- **判斷（decision）**：yes / no。例：「是否存在長度 $\le k$ 的路徑？」
+
+NP 理論是圍繞**判斷問題**設計的。理由：
+
+1. 判斷問題只有兩個輸出（yes / no），好用圖靈機與邏輯精確定義
+2. 最佳化一律可包裝成判斷：最佳化版有多項式解 ↔ 對應判斷也有多項式解
+3. 因此「判斷版是困難的 → 最佳化版至少一樣難」
+
+後面所有 NP-completeness 的討論都以 decision 版為主。
+
+## 一般常見困難問題
+
+下表先彙整 15 個經典困難問題，後面各節再逐一介紹。它們**全部都是 NP-complete**。
+
+| # | 問題 | 一句話輸入 | 一句話輸出（decision 版） |
+| :--- | :--- | :--- | :--- |
+| 1 | SAT | 一條布林公式 | 有沒有賦值讓公式為真？ |
+| 2 | 3-SAT | CNF，每個 clause 3 個 literal | 同上 |
+| 3 | 0/1 Knapsack | 物品 + 容量 + 價值門檻 | 選得出價值 $\ge V$ 且重量 $\le W$ 的組合嗎？ |
+| 4 | TSP | 有權完全圖 | 有長度 $\le k$ 的 Hamiltonian cycle 嗎？ |
+| 5 | Vertex Cover | 無向圖 | 有 $\le k$ 個頂點 cover 所有邊嗎？ |
+| 6 | Graph Coloring | 無向圖 + $k$ | 能用 $k$ 色染相鄰不同色嗎？ |
+| 7 | Set Cover | 集合族 | 有 $\le k$ 個子集 cover 全 universe 嗎？ |
+| 8 | Exact Cover | 集合族 | 存在「互不重疊且聯集 = U」的子集選法嗎？ |
+| 9 | Subset Sum | 整數組 + 目標 $t$ | 有子集和剛好 $t$ 嗎？ |
+| 10 | Partition | 整數組 | 能切成兩半讓兩半和相等嗎？ |
+| 11 | Bin Packing | 物品大小 + 箱容量 | 用 $\le k$ 個箱裝得下嗎？ |
+| 12 | Max Clique | 無向圖 | 有 $\ge k$ 個頂點的完全子圖嗎？ |
+| 13 | Hamiltonian Cycle | 無向圖 | 有經過每頂點恰一次的 cycle 嗎？ |
+| 14 | Art Gallery | 多邊形 | 用 $\le k$ 個守衛能看到所有內部點嗎？ |
+| 15 | VLSI Layout | 矩形集合 | 能塞進面積 $\le A$ 的 bounding box 嗎？ |
+
+### SAT（Satisfiability）
+
+給一條布林公式 $F$（由變數 $x_1, x_2, \ldots$ 和運算子 $\land, \lor, \neg$ 組成），問：**是否存在一組 true/false 賦值讓 $F$ 為 true？**
+
+```
+F = (x₁ ∨ x₂) ∧ (¬x₁ ∨ x₃) ∧ (x₂ ∨ ¬x₃)
+```
+
+以 $n$ 個變數來看，暴力窮舉要 $2^n$ 組賦值。SAT 是所有 NP-complete 問題的「祖師爺」——Cook-Levin 定理（1971）就是先證了它是 NP-complete，其他問題再透過轉換間接得證。
+
+### 3-SAT
+
+SAT 的受限版本。公式必須是 **CNF（conjunctive normal form）**：若干 clause 用 $\land$ 串起來，每個 clause 剛好是 3 個 literal 用 $\lor$ 串起來。
+
+$$
+F = (x_1 \lor \neg x_2 \lor x_3) \land (\neg x_1 \lor x_2 \lor x_4) \land (x_2 \lor \neg x_3 \lor \neg x_4)
+$$
+
+3-SAT 看起來比 SAT 簡單，但仍然是 NP-complete，而且**語法固定**，所以實務上常用它當「證明起點」去 reduce 到別的問題。
+
+### 0/1 Knapsack
+
+前一篇講過最佳化版。decision 版：給 $n$ 個物品（重 $w_i$、值 $v_i$）、容量 $W$、價值門檻 $V$，問是否存在子集總重 $\le W$ 且總值 $\ge V$。
+
+DP 看似 $O(nW)$ 多項式，但 $W$ 的編碼長度只有 $\log W$，演算法其實是 $O(n \cdot 2^{\log W})$ = 指數於輸入長度。這種「對數值多項式、對長度指數」叫 **pseudo-polynomial**。
+
+### 旅行推銷員（TSP, Travelling Salesman Problem）
+
+$n$ 個城市兩兩有距離，找一條**每城市恰訪一次**再回到起點的 cycle，總距離最小。decision 版：是否存在長度 $\le k$ 的這種 cycle？
+
+- 暴力：$(n-1)!/2$ 種 cycle
+- DP（Held-Karp）：$O(n^2 \cdot 2^n)$——比暴力好，但仍指數
+
+幾乎是 NP-complete 的代表吉祥物。
+
+### 頂點涵蓋（Vertex Cover）
+
+給無向圖 $G=(V, E)$，找最小的頂點子集 $S \subseteq V$ 使得**每條邊至少一端在 $S$ 裡**。decision 版：存在 $|S| \le k$ 的 cover 嗎？
+
+有趣的互補關係：**$S$ 是 vertex cover 的充要條件是 $V \setminus S$ 是 independent set**。所以 vertex cover 和 max independent set 其實是同一個問題兩種包裝。
+
+### 著色問題（Graph Coloring）
+
+給圖 $G$ 和色數 $k$，能否把頂點染成 $k$ 色使相鄰頂點不同色？
+
+| $k$ | 判定難度 |
+| :--- | :--- |
+| $k=2$ | 多項式時間（就是「判定是否為二部圖」，DFS 即可） |
+| $k \ge 3$ | NP-complete |
+
+$k=3$ 就已經是 NPC，4 色定理雖然說平面圖一定能 4 色，但**最小色數**一般還是難算。
+
+### 集合涵蓋（Set Cover）
+
+給 universe $U = \{1, 2, \ldots, n\}$ 和子集族 $\mathcal{S} = \{S_1, S_2, \ldots, S_m\}$，找最少個子集使聯集等於 $U$。decision 版：用 $\le k$ 個子集能不能蓋全？
+
+貪婪演算法在前面那篇提過——每次選「蓋到最多新元素」的子集，能達到 $O(\ln n)$ 近似比，但精確解 NP-hard。
+
+### 精準涵蓋（Exact Cover）
+
+和 set cover 類似，但要求選出的子集**彼此不重疊**，聯集仍等於 $U$。換言之，每個元素**恰被一個**選中子集覆蓋。
+
+數獨（Sudoku）、鋪磚問題都可以轉成 exact cover，所以 Knuth 的 **Dancing Links (DLX)** 演算法很紅。
+
+### 子集合之和（Subset Sum）
+
+給整數組 $A = \{a_1, \ldots, a_n\}$ 和目標 $t$，問是否存在子集和剛好等於 $t$。
+
+跟 knapsack 很像，其實是 knapsack 去掉「價值」欄位的簡化版，但仍 NP-complete（同樣 pseudo-polynomial）。
+
+### 切割（Partition）
+
+給整數組，能否切成兩組 $A_1, A_2$ 使得 $\sum A_1 = \sum A_2$？
+
+這是 subset sum 的特例（$t = \frac{1}{2}\sum A$），一樣 NP-complete。
+
+### 裝箱（Bin Packing）
+
+$n$ 個物品每個大小 $\le C$，每個 bin 容量 $C$，最少要用幾個 bin 裝完？decision 版：$\le k$ 個 bin 夠嗎？
+
+貪婪那篇介紹的 FFD（First-Fit Decreasing）是個 $\frac{11}{9}$-approximation，實務上夠用。
+
+### 最大完全子圖（Max Clique）
+
+圖中找最大的「兩兩互相有邊」頂點子集（clique）。
+
+和 independent set 完全對偶：**$G$ 中的 clique 就是補圖 $\bar G$ 的 independent set**，所以這三兄弟（Clique、Independent Set、Vertex Cover）其實互為轉換。
+
+### 漢米爾頓迴圈（Hamiltonian Cycle）
+
+圖中是否存在一條經過**每個頂點恰一次**再回到起點的 cycle？
+
+跟「Euler cycle（每條邊恰走一次）」的差別要分清楚：Euler 可以 $O(E)$ 判定（充要條件是連通且所有頂點度數為偶），Hamiltonian 就卡死了，是 NP-complete。
+
+### 藝廊問題（Art Gallery）
+
+給定一個多邊形的平面展場，最少需要幾個「守衛」放在裡面，才能讓展場每個點都被至少一個守衛看到？（守衛只能直線視線，不能穿牆。）
+
+著名結論：任何 $n$ 邊的簡單多邊形最多需要 $\lfloor n/3 \rfloor$ 個守衛就夠（Chvátal's art gallery theorem），但**最小守衛數**仍是 NP-hard。
+
+### VLSI 布局（VLSI Layout）
+
+把一堆矩形模組塞進一個 bounding box，面積最小（同時要滿足線路、引腳等約束）。現代晶片設計核心問題，實務上靠 heuristics 與 SA、遺傳演算法。
+
+這 15 個問題看起來各說各話，其實彼此**都能在多項式時間互相轉換**——這正是 NP-completeness 的核心意涵：解開任何一個，全部都解開。
+
+## NP-完備
+
+### NP 與多項式時間驗證
+
+先定義兩個類別：
+
+| 類別 | 定義 | 直覺 |
+| :--- | :--- | :--- |
+| **P** | 有多項式時間演算法能**解出**的判斷問題 | 我能自己找到答案 |
+| **NP** | 有多項式時間演算法能**驗證**答案的判斷問題 | 別人遞給我答案，我能快速檢查 |
+
+NP 不是「non-polynomial」的縮寫，是「Nondeterministic Polynomial」——在一個能「同時試所有分支」的非決定性圖靈機上，能多項式時間解。更好懂的等價定義是**驗證版**：
+
+> $L \in \text{NP}$ 當且僅當存在多項式時間驗證器 $V$，使得對任何 $x \in L$，都有一個長度多項式的「證書」$c$ 讓 $V(x, c) = $ yes。
+
+以 SAT 為例：證書就是一組變數賦值，驗證就是代進公式算一遍，$O(|F|)$ 線性時間。TSP decision 的證書是一條 cycle，驗證是加總長度 $O(n)$。
+
+顯然 $\text{P} \subseteq \text{NP}$（能解就能驗證）。**$\text{P} = \text{NP}$？** 這是電腦科學千禧年問題之一，目前主流相信 $\text{P} \neq \text{NP}$，但沒人證出來。
+
+### 轉換（Reduction）
+
+「難度排序」的正式工具。
+
+**定義**：問題 $A$ **多項式時間可轉換**到 $B$（記作 $A \le_p B$）：若存在多項式時間函式 $f$，把 $A$ 的每個輸入 $x$ 變成 $B$ 的輸入 $f(x)$，使得
+
+$$
+x \in A \iff f(x) \in B.
+$$
+
+直覺：如果我能解 $B$，就能解 $A$——只要先把輸入 $x$ 透過 $f$ 轉成 $B$ 的輸入，再用 $B$ 的解法，整體還是多項式時間。換句話說：
+
+$$
+A \le_p B \implies B \text{ 至少跟 } A \text{ 一樣難.}
+$$
+
+一個簡單例子：**Independent Set $\le_p$ Vertex Cover**。
+
+- 觀察：$S$ 是圖 $G$ 的 independent set $\iff V \setminus S$ 是 vertex cover
+- 轉換：「$G$ 有大小 $\ge k$ 的 independent set 嗎？」 $\leftrightarrow$ 「$G$ 有大小 $\le n-k$ 的 vertex cover 嗎？」
+- 函式 $f(G, k) = (G, n-k)$，$O(1)$ 時間完成
+
+所以只要 VC 有多項式解，IS 也就有。
+
+### NP-完備性
+
+**定義**：問題 $L$ 是 **NP-complete（NPC）** 若：
+
+1. $L \in \text{NP}$
+2. 所有 $L' \in \text{NP}$ 都有 $L' \le_p L$（$L$ 至少跟 NP 裡所有問題一樣難）
+
+第二條叫 **NP-hard**。NPC = NP ∩ NP-hard。直觀：**NPC 是 NP 裡最難的那一層**。
+
+關鍵推論：
+
+- 若任一個 NPC 問題有多項式演算法，則 $\text{P} = \text{NP}$
+- 等價地：若你相信 $\text{P} \neq \text{NP}$，那就**永遠沒有**多項式演算法能解任何 NPC 問題
+
+這就是「證明某問題是 NP-complete」後，大家會轉向近似、heuristics、特例研究的原因——證明「不可能快」之後，追求「夠好」是合理的。
+
+### 幾個 NP-完備的證明範例
+
+證一個問題 $L$ 是 NP-complete，標準步驟是：
+
+1. **證 $L \in \text{NP}$**：給一個多項式驗證器
+2. **挑一個已知 NPC 問題 $A$，證 $A \le_p L$**：找個多項式 reduction
+
+第一步通常簡單（證書 + 驗證通常很直接），第二步才是核心。NPC 就這樣從 SAT 一個接一個建出來：
+
+$$
+\text{SAT} \le_p \text{3-SAT} \le_p \text{Vertex Cover} \le_p \text{Clique} \le_p \text{Hamiltonian Cycle} \le_p \text{TSP} \le_p \ldots
+$$
+
+#### Cook-Levin：SAT 是 NPC
+
+1971 年 Cook（後由 Levin 獨立提出類似結果）從頭證了 SAT 是 NP-complete——直接從「任何 NP 問題都可以模擬成一條 CNF」這個最底層起手，不靠別人 reduce。這是 NP-completeness 這整棵樹的根，細節涉及把非確定性圖靈機的計算歷程編碼成布林變數與 clause，證明不好讀，初學看個大方向就好。
+
+#### SAT $\le_p$ 3-SAT
+
+關鍵想法：任何 SAT clause 都可以拆成只含 3 個 literal 的 clause。
+
+- clause 只有 1 個 literal $x_1$ → 擴成 $(x_1 \lor y \lor z) \land (x_1 \lor y \lor \neg z) \land (x_1 \lor \neg y \lor z) \land (x_1 \lor \neg y \lor \neg z)$，這要求 $x_1$ 為 true
+- clause 有 $k > 3$ 個 literal → 引入輔助變數把它「串起來」成多個 3-literal clause
+
+每條原 clause 變成常數條 3-clause，整體線性時間完成——reduction 成立。
+
+#### 3-SAT $\le_p$ Clique
+
+要證：有個辦法把 3-SAT instance 變成一個圖，使得**公式可滿足 $\iff$ 圖有大小 $\ge m$ 的 clique**（$m$ 是公式的 clause 數）。
+
+建圖：對公式裡**每個 clause 的每個 literal** 各造一個頂點（共 $3m$ 個）。連邊規則：兩頂點 $u, v$ 之間**有邊** iff
+
+- $u, v$ 屬於**不同** clause，且
+- $u, v$ 對應的 literal **不互補**（不是 $x$ 和 $\neg x$）
+
+論證：
+
+- 若公式可滿足，取每個 clause 中**已被賦值為 true** 的那個 literal（每 clause 至少有一個），這 $m$ 個頂點兩兩屬於不同 clause、也絕不互補，因此兩兩有邊——就是大小 $m$ 的 clique。
+- 反之若有 $m$-clique，因為同 clause 內部沒邊，clique 每個 clause 最多取一個頂點、加起來 $m$ 個就剛好每個 clause 一個；又因非互補，可以同時賦值為 true，公式可滿足。
+
+整個轉換多項式時間、且等價性成立——reduction 完成。
+
+#### Clique $\le_p$ Independent Set $\le_p$ Vertex Cover
+
+- Clique $\le_p$ IS：輸入 $(G, k)$ 轉成 $(\bar G, k)$（補圖）。clique 和 IS 對偶。
+- IS $\le_p$ VC：$(G, k) \to (G, n-k)$，前面示範過。
+
+一路 chain 下去就把前面列的 15 個問題全都證成 NPC。**新問題要證 NPC 不用回頭爬到 SAT**，找個「顯然可 reduce 過來」的已知 NPC 是起點就行。
+
+---
+
+知道一個問題是 NP-complete 並不代表該放棄，只是承認「不可能快又精確」。實務上有三條退路：**縮小輸入範圍、容忍近似解、容忍機率**。下一篇會進入這些技巧——回溯法與分支設限精確搜（小規模下可行）、近似演算法（犧牲精度換多項式）、以及它們各自的適用情境。
