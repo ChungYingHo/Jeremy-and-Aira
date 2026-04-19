@@ -1,0 +1,294 @@
+---
+title: "[Rust] 所有權與借用"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["Rust", "ownership", "borrowing", "lifetime", "memory"]
+changelog: []
+sameDateSort: 3
+---
+
+## 為什麼需要所有權
+
+記憶體管理三條路：
+
+1. **手動管理**（C / C++）：開發者自己 `malloc` / `free`，效能最好但容易出錯（懸空指標、雙重釋放、記憶體洩漏）
+2. **垃圾回收（GC）**（Java / Go / Python）：runtime 定期掃描並回收，安全但有 runtime 成本與停頓
+3. **所有權系統**（Rust）：編譯期靜態分析，沒有 GC、沒有 runtime 開銷，但需要遵守一套規則
+
+Rust 選第三條，代價是要把所有權規則放進腦子裡。
+
+## 三條核心規則
+
+1. 每個值都有一個**所有者（owner）**
+2. 同一時間只能有一個所有者
+3. 所有者離開 scope 時，值會被 drop（釋放）
+
+## Stack vs Heap 的差別
+
+理解所有權前要先有這層基礎。
+
+| | Stack | Heap |
+| :--- | :--- | :--- |
+| 大小 | 編譯期已知 | 執行期才知道 |
+| 速度 | 快（push / pop） | 較慢（要找空間） |
+| 例子 | `i32`、`bool`、`char`、固定大小 array | `String`、`Vec<T>`、`Box<T>` |
+
+純量型別都在 stack 上，複製成本極低，所以實作了 `Copy` trait —— 賦值會自動複製，不會牽涉所有權移轉。
+
+```rust
+let a = 5;
+let b = a;        // 直接複製 stack 上的 4 byte
+println!("{a} {b}"); // ✅ a 還能用
+```
+
+`String` 不一樣。它有三個欄位放在 stack：指向 heap 的指標、長度、容量。實際的字元資料在 heap 上：
+
+```
+stack                heap
+┌──────────┐        ┌─────────────┐
+│ ptr      │───────→│ h e l l o   │
+│ len   = 5│        └─────────────┘
+│ cap   = 5│
+└──────────┘
+```
+
+## Move：所有權的轉移
+
+```rust
+let s1 = String::from("hello");
+let s2 = s1;           // 所有權從 s1 移轉到 s2
+println!("{s1}");      // ❌ 編譯錯誤：value borrowed here after move
+```
+
+發生了什麼：
+
+1. `s1` 建立後擁有那塊 heap 記憶體
+2. `let s2 = s1` **不是**深拷貝，也**不是**淺拷貝（不會留下兩個指向同一塊 heap 的指標）
+3. Rust 把 `s1` 的 stack 部分（ptr/len/cap）複製給 `s2`，然後**讓 `s1` 失效**
+4. 之後只有 `s2` 是合法的所有者，`s1` 不能再用
+
+這個設計避免了「兩個變數都覺得自己擁有同一塊記憶體」造成的雙重釋放。
+
+```
+move 之前                          move 之後
+s1 ──┐                            s1 ✗（失效）
+     ├─→ heap "hello"             s2 ──→ heap "hello"
+                                  
+```
+
+要真正深拷貝，明確呼叫 `.clone()`：
+
+```rust
+let s1 = String::from("hello");
+let s2 = s1.clone();   // 深拷貝，heap 上多開一份
+println!("{s1} {s2}"); // ✅ 兩個都能用
+```
+
+:::tip
+看到 `.clone()` 就要意識到：這裡有個堆積分配發生。對效能敏感的場景要避免亂 clone。
+:::
+
+## Copy trait：哪些型別不會 move
+
+實作了 `Copy` trait 的型別，賦值時走的是複製、不是 move：
+
+- 所有整數、浮點、`bool`、`char`
+- 只包含 `Copy` 型別的 tuple，例如 `(i32, i32)`
+- 固定大小 array，元素是 `Copy`
+
+`String`、`Vec<T>` 等持有 heap 資源的型別**沒有** `Copy`，因為複製它們需要堆積分配，必須讓開發者明確呼叫 `.clone()`。
+
+## 函式呼叫也會 move
+
+```rust
+fn take(s: String) {
+    println!("{s}");
+} // s 在這裡離開 scope，被 drop
+
+fn main() {
+    let s = String::from("hi");
+    take(s);
+    println!("{s}"); // ❌ s 已經被 move 進 take，drop 掉了
+}
+```
+
+每次呼叫函式都要把所有權交出去，太麻煩。解法是**借用**。
+
+## 借用：&T 與 &mut T
+
+借用就是「我只是看一下，所有權還是你的」。
+
+```rust
+fn read(s: &String) {
+    println!("{s}");
+} // s 是借用，離開 scope 不會 drop 原始字串
+
+fn main() {
+    let s = String::from("hi");
+    read(&s);            // 傳的是參考，不是所有權
+    println!("{s}");     // ✅ s 還活著
+}
+```
+
+`&s` 建立一個指向 `s` 的不可變參考。函式接收 `&String`。
+
+要在借用中修改值，就用可變借用 `&mut`：
+
+```rust
+fn append(s: &mut String) {
+    s.push_str(" world");
+}
+
+fn main() {
+    let mut s = String::from("hello");
+    append(&mut s);
+    println!("{s}"); // hello world
+}
+```
+
+注意：要用 `&mut` 借出，原變數必須是 `mut`。
+
+## 借用規則：核心限制
+
+在任何時間點，對同一個資料：
+
+- 可以有**任意多個不可變借用**（`&T`），或
+- **只能有一個可變借用**（`&mut T`）
+
+兩者**不能同時存在**。
+
+```rust
+let mut s = String::from("hi");
+
+let r1 = &s;
+let r2 = &s;       // ✅ 多個不可變借用 OK
+println!("{r1} {r2}");
+
+let r3 = &mut s;   // ✅ 此時 r1、r2 已不再使用
+r3.push_str("!");
+println!("{r3}");
+```
+
+違規範例：
+
+```rust
+let mut s = String::from("hi");
+let r1 = &s;
+let r2 = &mut s;        // ❌ 已有不可變借用，不能再借可變
+println!("{r1} {r2}");
+
+let mut v = vec![1, 2, 3];
+let a = &mut v;
+let b = &mut v;         // ❌ 同時兩個可變借用
+a.push(4);
+b.push(5);
+```
+
+:::info
+這條規則防止了**資料競爭（data race）**。在編譯期就把多執行緒問題的根源之一擋掉。
+:::
+
+## NLL：借用何時結束
+
+Rust 用「非詞法生命週期（Non-Lexical Lifetimes, NLL）」判斷借用何時結束 —— 借用的有效範圍是**最後一次使用的那一行**，不是整個 scope。
+
+```rust
+let mut s = String::from("hi");
+
+let r1 = &s;
+let r2 = &s;
+println!("{r1} {r2}");   // r1、r2 在這之後不再使用
+
+let r3 = &mut s;          // ✅ 借用 r1、r2 已結束
+r3.push_str("!");
+```
+
+## 懸空參考：編譯器擋下來
+
+在 C 裡很容易寫出回傳區域變數位址這種 bug。Rust 編譯期就會拒絕：
+
+```rust
+fn dangle() -> &String {
+    let s = String::from("hi");
+    &s
+} // ❌ s 在這裡 drop，回傳的參考會變成懸空
+```
+
+編譯錯誤訊息會建議：要嘛回傳 `String`（移轉所有權），要嘛調整生命週期。
+
+## 切片：&str 與其他切片
+
+切片是對連續記憶體一段範圍的借用。
+
+```rust
+let s = String::from("hello world");
+let hello: &str = &s[0..5];    // "hello"
+let world: &str = &s[6..11];   // "world"
+
+let arr = [1, 2, 3, 4, 5];
+let slice: &[i32] = &arr[1..4]; // [2, 3, 4]
+```
+
+`&str` 其實就是 string slice，所以字串字面值的型別是 `&'static str` —— 一個指向 binary 裡那段唯讀記憶體的切片。
+
+慣例：函式參數宣告字串輸入時用 `&str`，比 `&String` 更通用（`&String` 會自動 deref 成 `&str`）：
+
+```rust
+fn first_word(s: &str) -> &str {
+    s.split_whitespace().next().unwrap_or("")
+}
+
+fn main() {
+    let owned = String::from("hello world");
+    let literal = "hello rust";
+    println!("{}", first_word(&owned));   // 自動 &String → &str
+    println!("{}", first_word(literal));   // 直接吃
+}
+```
+
+## 一個完整流程的範例
+
+```rust
+fn main() {
+    // 1. 建立 String，s1 是所有者
+    let s1 = String::from("hello");
+
+    // 2. 把 s1 借給 print_len，所有權還是 s1 的
+    print_len(&s1);
+
+    // 3. 把 s1 move 給 s2，s1 失效
+    let s2 = s1;
+    // println!("{s1}"); // ❌
+
+    // 4. 把 s2 borrow 給 to_upper（可變），執行修改
+    let mut s2 = s2;       // shadow 一個 mut 版本
+    to_upper(&mut s2);
+    println!("{s2}");      // HELLO
+
+    // 5. main 結束，s2 離開 scope，heap 記憶體釋放
+}
+
+fn print_len(s: &str) {
+    println!("len = {}", s.len());
+}
+
+fn to_upper(s: &mut String) {
+    *s = s.to_uppercase();
+}
+```
+
+## 心智模型總結
+
+| 操作 | 語法 | 對所有權的影響 |
+| :--- | :--- | :--- |
+| 賦值 / 傳參（非 Copy 型別） | `let b = a;` / `f(a)` | move：a 失效 |
+| 賦值 / 傳參（Copy 型別） | 同上 | 複製：a 還能用 |
+| 不可變借用 | `&a` / `f(&a)` | a 仍是所有者，期間不能可變借用 |
+| 可變借用 | `&mut a` / `f(&mut a)` | a 仍是所有者，期間不能再借任何 |
+| 深拷貝 | `a.clone()` | 在 heap 上複製一份新資料 |
+
+掌握這張表 + 三條核心規則，所有權就走過大半了。
+
+---
+
+親愛的 AIra，這篇花了最多力氣，所有權是 Rust 的命脈。從 stack/heap 差異講起，配合 move、borrow、切片的圖示和具體程式碼，希望讓沒碰過 Rust 的讀者真的能看懂。下一篇進到 struct 與 enum。
