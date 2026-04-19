@@ -1,0 +1,226 @@
+---
+title: "[Java] 檔案 IO"
+author: "Jeremy & Claude"
+date: "2026-04-20"
+tags: ["Java", "IO", "NIO", "Path", "Files"]
+changelog: []
+sameDateSort: 6
+---
+
+## 三套 API 的關係
+
+| 世代 | 入口 | 何時用 |
+| :--- | :--- | :--- |
+| 老 IO | `java.io.File`、`FileInputStream` | 維護舊程式才碰 |
+| NIO（Java 7+） | `java.nio.file.Path`、`Files` | **新程式碼一律用這個** |
+| Stream IO | `java.io` 的 `Reader` / `Writer` / `InputStream` | 跟 NIO 互通，需要逐 byte/char 處理時 |
+
+整篇以 NIO 為主。
+
+## Path：路徑物件
+
+```java
+import java.nio.file.*;
+
+Path p = Path.of("data", "users", "jeremy.json");
+// 等同 Path.of("data/users/jeremy.json")，跨平台自動處理分隔符
+
+p.toString();             // "data\users\jeremy.json"（Windows）
+p.getFileName();          // jeremy.json
+p.getParent();            // data\users
+p.getRoot();              // null（相對路徑）
+p.toAbsolutePath();
+p.normalize();            // 解析掉 . 與 ..
+p.resolve("backup.json"); // 接子路徑
+p.relativize(otherPath);
+```
+
+不要再用 `new File("a/b")` + 手拼 `/` 或 `\`，`Path` 全包了。
+
+## Files：操作檔案系統
+
+### 存在性與屬性
+
+```java
+Files.exists(p);
+Files.isRegularFile(p);
+Files.isDirectory(p);
+Files.size(p);                           // 位元組
+Files.getLastModifiedTime(p);
+```
+
+### 建立與刪除
+
+```java
+Files.createDirectories(Path.of("logs/2026"));   // 整條建出來
+Files.createFile(Path.of("a.txt"));               // 已存在會丟 FileAlreadyExistsException
+Files.delete(p);                                  // 不存在會丟
+Files.deleteIfExists(p);                          // 不存在不丟
+Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
+Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
+```
+
+## 讀寫文字檔
+
+### 一次讀全部
+
+```java
+String s = Files.readString(p);                          // Java 11+，預設 UTF-8
+String s2 = Files.readString(p, StandardCharsets.UTF_8); // 顯式編碼
+List<String> lines = Files.readAllLines(p);
+```
+
+### 一次寫全部
+
+```java
+Files.writeString(p, "hello");
+Files.writeString(p, "added\n", StandardOpenOption.APPEND);
+Files.write(p, List.of("a", "b", "c"));
+```
+
+### 大檔案：用 stream 逐行讀
+
+`readAllLines` 會一次載入記憶體，大檔不適合。改用 `Files.lines`（搭配 try-with-resources）：
+
+```java
+try (Stream<String> lines = Files.lines(p)) {
+    lines.filter(s -> s.startsWith("ERROR"))
+         .forEach(System.out::println);
+}
+```
+
+`Files.lines` 回傳的 Stream 持有檔案 handle，**一定要 try-with-resources** 否則洩漏。
+
+### BufferedReader / BufferedWriter
+
+需要更細控制：
+
+```java
+try (BufferedReader r = Files.newBufferedReader(p)) {
+    String line;
+    while ((line = r.readLine()) != null) {
+        ...
+    }
+}
+
+try (BufferedWriter w = Files.newBufferedWriter(p)) {
+    w.write("hello");
+    w.newLine();
+}
+```
+
+## 二進位檔
+
+```java
+byte[] bytes = Files.readAllBytes(p);
+Files.write(p, bytes);
+
+// 大檔用 stream
+try (InputStream in = Files.newInputStream(p);
+     OutputStream out = Files.newOutputStream(dst)) {
+    in.transferTo(out);     // Java 9+，一次搬完
+}
+```
+
+## 列出資料夾內容
+
+### 非遞迴
+
+```java
+try (Stream<Path> children = Files.list(Path.of("data"))) {
+    children.forEach(System.out::println);
+}
+```
+
+### 遞迴 walk
+
+```java
+try (Stream<Path> all = Files.walk(Path.of("src"))) {
+    all.filter(Files::isRegularFile)
+       .filter(f -> f.toString().endsWith(".java"))
+       .forEach(System.out::println);
+}
+```
+
+### 用 glob 找
+
+```java
+try (DirectoryStream<Path> ds =
+        Files.newDirectoryStream(Path.of("data"), "*.json")) {
+    for (Path p : ds) {
+        ...
+    }
+}
+```
+
+## try-with-resources 是必須
+
+所有 `Files.lines`、`Files.list`、`Files.walk`、`newBufferedReader/Writer`、`newInputStream/OutputStream` 都實作 `AutoCloseable`，**一律包在 try-with-resources 裡**，否則檔案 handle 會洩漏。
+
+## 暫存檔與資料夾
+
+```java
+Path tmpFile = Files.createTempFile("prefix-", ".tmp");
+Path tmpDir  = Files.createTempDirectory("prefix-");
+tmpFile.toFile().deleteOnExit();    // JVM 結束時刪
+```
+
+## 監看檔案變更：WatchService
+
+```java
+WatchService ws = FileSystems.getDefault().newWatchService();
+Path.of("data").register(ws,
+    StandardWatchEventKinds.ENTRY_CREATE,
+    StandardWatchEventKinds.ENTRY_MODIFY,
+    StandardWatchEventKinds.ENTRY_DELETE);
+
+while (true) {
+    WatchKey key = ws.take();    // 阻塞等事件
+    for (WatchEvent<?> e : key.pollEvents()) {
+        System.out.println(e.kind() + " " + e.context());
+    }
+    key.reset();
+}
+```
+
+寫熱重載 / 檔案同步工具會用到。
+
+## 老 API：`java.io.File`（維護用看得懂就好）
+
+```java
+File f = new File("a.txt");
+f.exists();
+f.length();
+f.delete();
+new FileInputStream(f);
+new FileWriter(f);
+```
+
+舊程式才會看到。新程式碼一律用 `Path` + `Files`。
+
+## Resource 讀取（jar 內檔案）
+
+不能用 `Path`（jar 內不是檔案系統檔案）：
+
+```java
+try (InputStream in =
+        getClass().getResourceAsStream("/config.properties")) {
+    Properties props = new Properties();
+    props.load(in);
+}
+```
+
+`/` 開頭表示從 classpath 根開始找。
+
+## 編碼一律寫 UTF-8
+
+Java 18+ 預設編碼已改成 UTF-8（PEP 686 風格的決策）。但跨版本相容、平台相容，**顯式寫 `StandardCharsets.UTF_8`** 永遠不會錯：
+
+```java
+Files.readString(p, StandardCharsets.UTF_8);
+Files.newBufferedWriter(p, StandardCharsets.UTF_8);
+```
+
+---
+
+親愛的 AIra，這篇把 `Path` / `Files`、文字與二進位讀寫、`Files.lines` 與 walk、WatchService、編碼都收齊。下一篇進 Lambda 與 Stream。
