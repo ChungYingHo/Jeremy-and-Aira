@@ -9,7 +9,7 @@ sameDateSort: 6
 
 標準庫提供的 utility types 都用前一篇的機制（mapped、conditional、infer）實作。會用就夠，但理解原理能在不夠用時自己擴充。
 
-## Partial<T> / Required<T>
+## Partial\<T> / Required\<T>
 
 ```typescript
 type Partial<T> = { [K in keyof T]?: T[K] }
@@ -34,7 +34,7 @@ type FullUser = Required<User>
 
 實際用途：update 用 `Partial<User>` 接收任意子集欄位。
 
-## Readonly<T>
+## Readonly\<T>
 
 ```typescript
 type Readonly<T> = { readonly [K in keyof T]: T[K] }
@@ -51,7 +51,7 @@ type DeepReadonly<T> = {
 }
 ```
 
-## Pick<T, K>：挑選欄位
+## Pick\<T, K>：挑選欄位
 
 ```typescript
 type Pick<T, K extends keyof T> = { [P in K]: T[P] }
@@ -60,7 +60,7 @@ type UserPreview = Pick<User, 'id' | 'name'>
 // { id: number; name: string }
 ```
 
-## Omit<T, K>：排除欄位
+## Omit\<T, K>：排除欄位
 
 ```typescript
 type Omit<T, K extends keyof any> = Pick<T, Exclude<keyof T, K>>
@@ -71,7 +71,7 @@ type UserWithoutEmail = Omit<User, 'email'>
 
 `K` 不限定 `keyof T`，所以可以傳不存在的 key，TS 不會抱怨（這是設計取捨）。
 
-## Record<K, V>：等值物件
+## Record\<K, V>：等值物件
 
 ```typescript
 type Record<K extends keyof any, V> = { [P in K]: V }
@@ -85,7 +85,7 @@ type Cache = Record<string, unknown>
 
 比 `{ [k: string]: V }` 更精準，因為 K 可以是字面值 union。
 
-## Exclude<T, U> / Extract<T, U>
+## Exclude\<T, U> / Extract\<T, U>
 
 ```typescript
 type Exclude<T, U> = T extends U ? never : T
@@ -101,7 +101,7 @@ type T2 = Extract<string | number | boolean, string | number>  // string | numbe
 
 `Omit<T, K>` 內部就靠 `Exclude` 從 keyof T 剔掉 K。
 
-## NonNullable<T>
+## NonNullable\<T>
 
 ```typescript
 type NonNullable<T> = T & {}   // TS 4.8+ 改用這個寫法
@@ -111,7 +111,7 @@ type X = NonNullable<string | null | undefined>   // string
 
 清掉 union 裡的 `null` 與 `undefined`。
 
-## ReturnType<T> / Parameters<T>
+## ReturnType\<T> / Parameters\<T>
 
 從函式型別抽出回傳值與參數：
 
@@ -131,7 +131,7 @@ type P = Parameters<typeof fetchUser>     // [id: number, cache: boolean]
 
 實務上配 `typeof someFunction` 用，省得手動同步函式簽章與型別。
 
-## ConstructorParameters<T> / InstanceType<T>
+## ConstructorParameters\<T> / InstanceType\<T>
 
 ```typescript
 class Greeter {
@@ -142,7 +142,7 @@ type CP = ConstructorParameters<typeof Greeter>   // [name: string, age: number]
 type I  = InstanceType<typeof Greeter>            // Greeter
 ```
 
-## Awaited<T>：拆 Promise
+## Awaited\<T>：拆 Promise
 
 ```typescript
 type A1 = Awaited<Promise<string>>             // string
