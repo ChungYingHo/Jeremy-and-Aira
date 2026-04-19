@@ -1,0 +1,246 @@
+---
+title: "[Java] 列舉與字串"
+author: "Jeremy & Claude"
+date: "2026-04-20"
+tags: ["Java", "enum", "String", "StringBuilder", "text block"]
+changelog: []
+sameDateSort: 5
+---
+
+## enum 基本
+
+`enum` 定義一組固定常數，本質是 class。
+
+```java
+enum Status {
+    PENDING, RUNNING, DONE, FAILED
+}
+
+Status s = Status.RUNNING;
+
+if (s == Status.DONE) { ... }     // 用 == 比較沒問題（單例）
+```
+
+## enum 在 switch
+
+```java
+switch (status) {
+    case PENDING -> "等候中";
+    case RUNNING -> "執行中";
+    case DONE    -> "完成";
+    case FAILED  -> "失敗";
+}
+```
+
+不需 `Status.PENDING`，case 內可直接用 enum 常數名。
+
+Java 21+ 可在 switch 用 pattern matching，更窮舉清楚。
+
+## enum 帶屬性與方法
+
+enum 可以有欄位、建構子、方法，每個常數可帶不同參數：
+
+```java
+enum HttpStatus {
+    OK(200, "OK"),
+    NOT_FOUND(404, "Not Found"),
+    SERVER_ERROR(500, "Internal Server Error");
+
+    private final int code;
+    private final String message;
+
+    HttpStatus(int code, String message) {     // 建構子隱含 private
+        this.code = code;
+        this.message = message;
+    }
+
+    public int code() { return code; }
+    public String message() { return message; }
+}
+
+HttpStatus.NOT_FOUND.code();      // 404
+```
+
+每個常數還能各自覆寫方法：
+
+```java
+enum Op {
+    ADD { public int apply(int a, int b) { return a + b; } },
+    MUL { public int apply(int a, int b) { return a * b; } };
+
+    public abstract int apply(int a, int b);
+}
+
+Op.ADD.apply(2, 3);      // 5
+```
+
+## enum 內建方法
+
+```java
+Status.values()          // 所有常數陣列
+Status.valueOf("DONE")   // 字串轉 enum，找不到丟 IllegalArgumentException
+s.name()                 // 常數名 "DONE"
+s.ordinal()              // 在宣告中的索引（少用，重排會壞）
+```
+
+## EnumSet / EnumMap
+
+針對 enum 特化的集合，比 HashSet/HashMap 快很多：
+
+```java
+EnumSet<Status> active = EnumSet.of(Status.PENDING, Status.RUNNING);
+EnumSet<Status> all = EnumSet.allOf(Status.class);
+
+EnumMap<Status, String> labels = new EnumMap<>(Status.class);
+labels.put(Status.DONE, "完成");
+```
+
+key 是 enum 一律用這兩個。
+
+## String 是不可變的
+
+```java
+String s = "hello";
+s.toUpperCase();         // 回傳新字串，s 本身沒變
+s = s.toUpperCase();     // 想改要重新賦值
+```
+
+每個 String 操作都產生新物件。重複拼接要用 `StringBuilder`（後面）。
+
+## String pool
+
+字串字面量會被放進 string pool 重用：
+
+```java
+String a = "hello";
+String b = "hello";
+a == b;                  // true（同一個池中物件）
+
+String c = new String("hello");
+a == c;                  // false（new 強制建新物件）
+a.equals(c);             // true（內容比較）
+```
+
+**字串比較永遠用 `.equals()`，不要用 `==`。**
+
+`s.intern()` 會把字串放回池中並回傳池中那個。少用，現在 JVM 自動處理。
+
+## 常用 String 方法
+
+```java
+"hello".length();             // 5
+"hello".charAt(0);            // 'h'
+"hello".substring(1, 4);      // "ell"（含頭不含尾）
+"hello".indexOf("l");         // 2
+"hello".replace('l', 'L');    // "heLLo"
+"hello".contains("ell");      // true
+"hello".startsWith("he");     // true
+"hello".endsWith("lo");       // true
+"  x  ".trim();               // "x"（去頭尾空白）
+"  x  ".strip();              // "x"（Java 11+，支援 Unicode 空白）
+"a,b,c".split(",");           // ["a","b","c"]
+String.join("-", "a","b","c");// "a-b-c"
+"abc".isEmpty();              // false
+"  ".isBlank();               // true（Java 11+）
+"abc".repeat(3);              // "abcabcabc"（Java 11+）
+"ABC".toLowerCase();
+"abc".toUpperCase();
+String.valueOf(123);          // "123"
+Integer.parseInt("123");      // 123
+```
+
+## StringBuilder：可變字串
+
+頻繁拼接、迴圈內組字串一律用 `StringBuilder`，避免每次都產生新 String：
+
+```java
+StringBuilder sb = new StringBuilder();
+for (int i = 0; i < 1000; i++) {
+    sb.append(i).append(",");
+}
+String result = sb.toString();
+```
+
+API：
+
+```java
+sb.append("x");
+sb.insert(0, "head");
+sb.delete(0, 4);
+sb.reverse();
+sb.setLength(0);              // 清空
+sb.length();
+```
+
+`StringBuffer` 是 `StringBuilder` 的執行緒安全版本，幾乎用不到（單執行緒場景 StringBuilder 就好；多執行緒下你大概也不會這樣拼字串）。
+
+## 字串格式化
+
+```java
+String s = String.format("name=%s, age=%d", "Jeremy", 30);
+
+System.out.printf("name=%s, age=%d%n", "Jeremy", 30);
+```
+
+常用佔位符：
+
+| | 意義 |
+| :--- | :--- |
+| `%s` | 字串 |
+| `%d` | 整數 |
+| `%f` / `%.2f` | 浮點 / 兩位小數 |
+| `%n` | 換行（跨平台） |
+| `%5d` | 寬度 5 右對齊 |
+| `%-5d` | 寬度 5 左對齊 |
+| `%05d` | 寬度 5 補 0 |
+| `%x` / `%o` | 16 / 8 進位 |
+
+Java 15+ 推薦用 `String.formatted`：
+
+```java
+"name=%s, age=%d".formatted("Jeremy", 30);
+```
+
+## text block（Java 15+）
+
+三引號多行字串，自動處理共同縮排：
+
+```java
+String json = """
+    {
+      "name": "Jeremy",
+      "age": 30
+    }
+    """;
+```
+
+寫 SQL、JSON、HTML 都好用。內嵌變數要配 `formatted`：
+
+```java
+String sql = """
+    SELECT *
+    FROM users
+    WHERE id = %d
+    """.formatted(userId);
+```
+
+## char 與 Unicode 注意
+
+`char` 是 16-bit，存不下所有 Unicode 字元（emoji、部分漢字是 surrogate pair，2 個 char）。
+
+```java
+"😀".length();             // 2，不是 1
+"😀".codePointCount(0, "😀".length());   // 1
+```
+
+要正確處理就用 `codePoints()` stream：
+
+```java
+"abc😀".codePoints().forEach(System.out::println);
+```
+
+一般場景不會遇到，做文字處理（截斷、計數）才要小心。
+
+---
+
+親愛的 AIra，這篇把 enum（含帶值與覆寫）、EnumSet/EnumMap、String 不可變與 pool、StringBuilder、`String.format`、text block 整理齊。下一篇進檔案 IO。
