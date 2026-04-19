@@ -1,0 +1,230 @@
+---
+title: "[TypeScript] 函式型別"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["TypeScript", "function", "overload", "this"]
+changelog: []
+sameDateSort: 4
+---
+
+## 參數與回傳型別
+
+```typescript
+function add(a: number, b: number): number {
+  return a + b
+}
+
+// 回傳值通常可省略，讓 TS 推導
+function double(x: number) {
+  return x * 2     // 推導為 number
+}
+```
+
+例外：對外暴露的 API 慣例顯式標 return type，避免實作改動意外破壞外部契約。
+
+## 可選參數與預設值
+
+```typescript
+function greet(name: string, greeting?: string) {
+  return `${greeting ?? 'Hello'}, ${name}`
+}
+
+function greet2(name: string, greeting = 'Hello') {
+  return `${greeting}, ${name}`     // 預設值參數自動可選，型別由預設值推導
+}
+```
+
+可選參數要放在必填參數**後面**。
+
+## rest 參數
+
+```typescript
+function sum(...nums: number[]): number {
+  return nums.reduce((a, b) => a + b, 0)
+}
+
+sum(1, 2, 3)
+```
+
+可以是 tuple 型別：
+
+```typescript
+function f(...args: [string, number, boolean]) {}
+f('a', 1, true)   // 必須剛好三個且型別對
+```
+
+## 函式型別的兩種寫法
+
+```typescript
+// 1. type alias 式
+type BinaryOp = (a: number, b: number) => number
+const add: BinaryOp = (a, b) => a + b
+
+// 2. interface call signature
+interface BinaryOp2 {
+  (a: number, b: number): number
+}
+```
+
+兩者等價。型別寫好後，實作時參數可以省略型別（從上下文推導）：
+
+```typescript
+const greet: (name: string) => string = (name) => `hi, ${name}`
+//                                       ^ 不用再寫 :string
+```
+
+這個叫做 **contextual typing**。
+
+## void 回傳的彈性
+
+```typescript
+type Callback = (item: number) => void
+
+const cb: Callback = (n) => n * 2   // ✅ 回傳值會被忽略，不會報錯
+```
+
+`Array.prototype.forEach` 的 callback 就是 `void`，所以可以直接傳會回傳東西的函式。
+
+## 函式重載（overload）
+
+當一個函式對不同輸入型別有不同回傳型別時：
+
+```typescript
+// 1. 寫多個簽章（重載宣告）
+function pick(arr: string[], n: number): string
+function pick(arr: number[], n: number): number
+// 2. 寫實作簽章（對外不可見，型別必須相容所有重載）
+function pick(arr: any[], n: number): any {
+  return arr[n]
+}
+
+const a = pick(['a', 'b'], 0)   // string
+const b = pick([1, 2], 0)       // number
+```
+
+注意：
+
+- 實作簽章的型別**不會**被外部看到，呼叫端只看得到上面的重載
+- 多數情況用 union / 泛型就能搞定，重載多用在 union 解決不了的場景
+
+對比可用 union 的版本：
+
+```typescript
+function pickU<T>(arr: T[], n: number): T {
+  return arr[n]
+}
+```
+
+## this 型別
+
+callback 裡的 `this` 通常透過第一個參數明示：
+
+```typescript
+interface Card {
+  suit: string
+  value: number
+}
+
+interface Deck {
+  cards: Card[]
+  createCardPicker(this: Deck): () => Card
+}
+```
+
+`this: Deck` 不是真實參數，是給 TS 看的型別標註，編譯後消失。呼叫時不用傳。
+
+## 函式型別的子類型規則
+
+兩條重要規則，不熟會踩雷。
+
+### 1. 參數逆變（contravariance）
+
+「需要的參數比較寬，回傳比較窄」的函式才是 subtype。
+
+```typescript
+type Animal = { name: string }
+type Dog = Animal & { bark: () => void }
+
+let f1: (a: Animal) => Dog = (a) => ({ name: a.name, bark: () => {} })
+let f2: (d: Dog) => Animal = f1   // ❌ 嚴格模式下不行
+```
+
+關掉 `strictFunctionTypes` TS 才會放寬，方法簽章（method shorthand）天生較寬鬆，這是歷史包袱。
+
+### 2. 參數可少不可多
+
+呼叫端少傳參數 OK，多傳會被忽略：
+
+```typescript
+type F = (a: number, b: number) => void
+
+const f: F = (a) => console.log(a)   // ✅ 少實作一個參數可以
+f(1, 2)                                // 呼叫端必須照簽章來
+```
+
+## 泛型函式（簡介）
+
+```typescript
+function identity<T>(x: T): T {
+  return x
+}
+
+identity<string>('hi')   // 顯式
+identity('hi')           // 推導出 T = string
+```
+
+更深入的泛型放下一篇。
+
+## arrow function vs function declaration
+
+兩者在 TS 裡型別行為相同，差別跟 JS 一樣（`this` 綁定、hoisting）。
+
+```typescript
+const f = (x: number): number => x * 2
+
+function g(x: number): number {
+  return x * 2
+}
+```
+
+## 常見陷阱
+
+### 1. 推導不出 this
+
+```typescript
+const obj = {
+  count: 0,
+  inc: () => this.count++,    // ❌ arrow 沒有 this
+}
+```
+
+對物件方法用 shorthand：
+
+```typescript
+const obj = {
+  count: 0,
+  inc() { this.count++ },     // ✅
+}
+```
+
+### 2. 物件字面值傳函式參數的多餘屬性檢查
+
+```typescript
+function f(opts: { name: string }) {}
+f({ name: 'a', extra: 1 })    // ❌ extra 多餘
+```
+
+抽成變數可繞過（前一篇提過）。
+
+### 3. 解構參數標型別的位置
+
+```typescript
+function f({ a, b }: { a: number; b: string }) {}
+//                ^ 型別標在解構後面
+```
+
+不能寫成 `function f({ a: number, b: string })`，那會變成「把 a 重新命名為 number」。
+
+---
+
+親愛的 AIra，這篇把參數選項、重載、`this` 標註、子類型規則、常見陷阱都整理出來。下一篇進泛型。
