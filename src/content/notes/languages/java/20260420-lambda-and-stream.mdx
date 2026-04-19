@@ -1,0 +1,274 @@
+---
+title: "[Java] Lambda 與 Stream"
+author: "Jeremy & Claude"
+date: "2026-04-20"
+tags: ["Java", "lambda", "stream", "functional", "Optional"]
+changelog: []
+sameDateSort: 7
+---
+
+## Lambda 語法
+
+Java 8+，把「行為」當參數傳。
+
+```java
+// 完整型
+(int a, int b) -> { return a + b; }
+
+// 型別可推斷
+(a, b) -> { return a + b; }
+
+// 單一表達式可省 { } 與 return
+(a, b) -> a + b
+
+// 單一參數可省括號
+x -> x * 2
+
+// 無參數
+() -> System.out.println("hi")
+```
+
+Lambda 只能賦值給 **functional interface**（只有一個抽象方法的介面）。
+
+## 內建 functional interface
+
+`java.util.function` 提供常用組合：
+
+| 介面 | 方法 | 範例 |
+| :--- | :--- | :--- |
+| `Function<T,R>` | `R apply(T)` | `String::length` |
+| `Predicate<T>` | `boolean test(T)` | `s -> s.isEmpty()` |
+| `Consumer<T>` | `void accept(T)` | `System.out::println` |
+| `Supplier<T>` | `T get()` | `ArrayList::new` |
+| `BiFunction<T,U,R>` | `R apply(T,U)` | `(a,b) -> a + b` |
+| `UnaryOperator<T>` | `T apply(T)` | `s -> s.toUpperCase()` |
+| `BinaryOperator<T>` | `T apply(T,T)` | `Integer::sum` |
+
+```java
+Function<String, Integer> len = String::length;
+Predicate<String> isEmpty = String::isEmpty;
+Consumer<String> print = System.out::println;
+Supplier<List<Integer>> newList = ArrayList::new;
+
+len.apply("hello");      // 5
+isEmpty.test("");        // true
+```
+
+## method reference
+
+四種：
+
+```java
+String::length            // instance method on type      → x -> x.length()
+System.out::println       // instance method on object    → x -> System.out.println(x)
+Integer::parseInt         // static method                → s -> Integer.parseInt(s)
+ArrayList::new            // constructor                  → () -> new ArrayList<>()
+```
+
+只要 lambda 只是「呼叫一個既有方法」就用 method reference，更短更乾淨。
+
+## Stream 是什麼
+
+「集合的處理管線」，**不是**新的資料結構。從來源（集合 / 陣列 / IO）出發，串接中間操作（lazy），最後一個終端操作觸發實際計算。
+
+```java
+List<String> names = List.of("Jeremy", "Aira", "Tom");
+
+long count = names.stream()
+    .filter(n -> n.length() > 3)
+    .map(String::toUpperCase)
+    .count();
+```
+
+特性：
+
+- **lazy**：中間操作不會實際跑，等終端操作才走一遍
+- **single-use**：跑完一個終端操作就用完了，不能重複
+- **不修改來源**：原 collection 不變
+
+## 建立 Stream
+
+```java
+list.stream();
+Stream.of(1, 2, 3);
+Arrays.stream(arr);
+IntStream.range(0, 10);          // 0..9
+IntStream.rangeClosed(1, 10);    // 1..10
+Stream.iterate(1, x -> x + 1).limit(10);
+Stream.generate(Math::random).limit(5);
+Files.lines(path);               // 來源是檔案
+```
+
+## 中間操作
+
+```java
+.filter(p)              // 條件保留
+.map(f)                 // 轉換
+.flatMap(f)             // 一對多後攤平
+.distinct()             // 去重
+.sorted()               // 自然排序
+.sorted(comparator)
+.peek(c)                // 偷看（debug 用）
+.limit(n)               // 取前 n
+.skip(n)                // 跳前 n
+```
+
+`flatMap` 範例：
+
+```java
+List<List<Integer>> nested = List.of(List.of(1,2), List.of(3,4));
+List<Integer> flat = nested.stream()
+    .flatMap(List::stream)
+    .toList();
+// [1, 2, 3, 4]
+```
+
+## 終端操作
+
+```java
+.count()
+.sum() / .average() / .min() / .max()    // 在 IntStream 等
+.anyMatch(p) / .allMatch(p) / .noneMatch(p)
+.findFirst() / .findAny()                 // 回 Optional
+.forEach(c)
+.toList()                                  // Java 16+，不可變
+.toArray()
+.reduce(...)
+.collect(...)
+```
+
+`toList()` 是 Java 16+ 的捷徑，等同 `.collect(Collectors.toUnmodifiableList())`。舊版用 `.collect(Collectors.toList())`。
+
+## reduce
+
+從一堆值算出一個值：
+
+```java
+int sum = Stream.of(1, 2, 3, 4).reduce(0, Integer::sum);     // 10
+String joined = Stream.of("a","b","c").reduce("", String::concat);   // "abc"
+
+// 不帶 identity，回 Optional
+OptionalInt max = IntStream.of(3, 1, 4).max();
+```
+
+## Collectors：強大的收尾
+
+```java
+import static java.util.stream.Collectors.*;
+
+List<String> list = stream.collect(toList());
+Set<String>  set  = stream.collect(toSet());
+String joined     = stream.collect(joining(", ", "[", "]"));
+
+Map<String, Integer> byName = people.stream()
+    .collect(toMap(Person::name, Person::age));
+
+// 分組
+Map<String, List<Person>> byDept = people.stream()
+    .collect(groupingBy(Person::department));
+
+// 分組後再計數
+Map<String, Long> countByDept = people.stream()
+    .collect(groupingBy(Person::department, counting()));
+
+// 分組後再加總
+Map<String, Integer> ageSumByDept = people.stream()
+    .collect(groupingBy(Person::department, summingInt(Person::age)));
+
+// 兩分（true / false）
+Map<Boolean, List<Person>> adultOrNot = people.stream()
+    .collect(partitioningBy(p -> p.age() >= 18));
+```
+
+## 數值 stream：IntStream / LongStream / DoubleStream
+
+避免裝箱拆箱開銷：
+
+```java
+int sum = IntStream.rangeClosed(1, 100).sum();        // 5050
+double avg = IntStream.of(1, 2, 3).average().orElse(0);
+
+// 物件 stream → 數值 stream
+int total = people.stream().mapToInt(Person::age).sum();
+
+// 數值 stream → 物件 stream
+List<Integer> boxed = IntStream.of(1, 2, 3).boxed().toList();
+```
+
+## 平行 stream
+
+```java
+long count = list.parallelStream()
+    .filter(...)
+    .count();
+```
+
+走 ForkJoinPool。**只有大資料量、純運算、無共享狀態**才會比較快，否則反而慢。日常 99% 用 sequential。
+
+## Optional：替代 null
+
+包裝「可能有值、可能沒有」：
+
+```java
+Optional<User> u = repo.findById(1);
+
+u.isPresent();
+u.isEmpty();                      // Java 11+
+u.get();                          // ❌ 沒值會丟，少用
+u.orElse(defaultUser);
+u.orElseGet(() -> defaultUser);   // 預設值生成有成本時用
+u.orElseThrow();                  // 沒值丟 NoSuchElementException
+u.orElseThrow(() -> new NotFoundException("user"));
+u.ifPresent(user -> log(user));
+u.ifPresentOrElse(this::log, this::warn);
+u.map(User::name).orElse("anon");
+u.filter(user -> user.isActive());
+```
+
+慣例：
+
+- 回傳值「可能不存在」用 `Optional<T>`
+- **欄位、參數、集合元素不要用 Optional**（過度包裝）
+- 不要回傳 `null Optional`（永遠 `Optional.empty()`）
+
+## 常見組合範例
+
+### 計詞頻
+
+```java
+Map<String, Long> freq = Arrays.stream(text.split("\\s+"))
+    .collect(groupingBy(Function.identity(), counting()));
+```
+
+### top N
+
+```java
+List<Person> top3 = people.stream()
+    .sorted(Comparator.comparingInt(Person::score).reversed())
+    .limit(3)
+    .toList();
+```
+
+### 找最大值的物件
+
+```java
+Optional<Person> oldest = people.stream()
+    .max(Comparator.comparingInt(Person::age));
+```
+
+### 把 Map 反轉
+
+```java
+Map<V, K> inverted = m.entrySet().stream()
+    .collect(toMap(Map.Entry::getValue, Map.Entry::getKey));
+```
+
+## 寫 stream 的取捨
+
+- 鏈式可讀就用 stream，多重巢狀邏輯就回 for
+- side effect（修改外部變數）放 `forEach` 而不是 `peek`
+- 別追求「全 stream」，可讀性優先
+
+---
+
+親愛的 AIra，這篇收完 lambda 語法、functional interface、method reference、Stream 中間 / 終端操作、Collectors、數值 stream、`Optional`。下一篇是建置工具與測試，最後一篇了。
