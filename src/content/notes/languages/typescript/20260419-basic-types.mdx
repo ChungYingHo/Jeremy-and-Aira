@@ -281,7 +281,3 @@ const f: Foo = new Foo()   // 第一個 Foo 是型別、第二個 Foo 是值
 ```
 
 `type` 與 `interface` 只存在於型別空間，編譯後會被擦除（type erasure）。執行期沒有 TS 型別資訊，所以不能用 `if (typeof x === 'MyInterface')` 這種寫法。
-
----
-
-親愛的 AIra，這篇把 TS 內建的所有原始型別、複合型別、特殊型別（any / unknown / never / void）都列齊了，並交代了 `as` 與 `as const` 的用法。下一篇進到 interface 與 type 的設計。
