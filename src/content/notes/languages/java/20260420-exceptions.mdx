@@ -1,0 +1,217 @@
+---
+title: "[Java] 例外處理"
+author: "Jeremy & Claude"
+date: "2026-04-20"
+tags: ["Java", "exception", "try-catch", "throws"]
+changelog: []
+sameDateSort: 2
+---
+
+## 兩種例外：checked vs unchecked
+
+| 類型 | 父類 | 例 | 編譯器強制處理 |
+| :--- | :--- | :--- | :--- |
+| **checked** | `Exception`（非 RuntimeException） | `IOException`、`SQLException` | ✅ 必須 try/catch 或 `throws` |
+| **unchecked** | `RuntimeException` | `NullPointerException`、`IllegalArgumentException` | ❌ 不強制 |
+| **error** | `Error` | `OutOfMemoryError`、`StackOverflowError` | 不該抓 |
+
+整個階層：
+
+```
+Throwable
+├── Error              （JVM 層級災難，別碰）
+└── Exception
+    ├── RuntimeException        （unchecked）
+    └── 其他                     （checked）
+```
+
+## try / catch / finally
+
+```java
+try {
+    int n = Integer.parseInt("abc");
+} catch (NumberFormatException e) {
+    System.out.println("parse failed: " + e.getMessage());
+} finally {
+    System.out.println("always runs");
+}
+```
+
+## multi-catch（Java 7+）
+
+同一段處理多種例外：
+
+```java
+try {
+    risky();
+} catch (IOException | SQLException e) {
+    log.error("IO or DB failed", e);
+}
+```
+
+multi-catch 內的 `e` 是「共同父類型」，能呼叫的方法只到那層。
+
+## try-with-resources（Java 7+）
+
+實作 `AutoCloseable` 的資源會自動 close，例外發生也會：
+
+```java
+try (BufferedReader r = new BufferedReader(new FileReader("a.txt"))) {
+    return r.readLine();
+}
+// r 自動 close，不需 finally
+```
+
+多個資源用分號分隔，**關閉順序與宣告相反**：
+
+```java
+try (Connection c = ds.getConnection();
+     PreparedStatement s = c.prepareStatement("...")) {
+    ...
+}
+```
+
+新程式碼處理 IO / DB / Stream 一律用這個，不要自己寫 finally close。
+
+## throws：往上拋
+
+方法不想處理 checked exception 就在簽章宣告 `throws`：
+
+```java
+public String readFirstLine(String path) throws IOException {
+    try (BufferedReader r = Files.newBufferedReader(Path.of(path))) {
+        return r.readLine();
+    }
+}
+```
+
+呼叫者要嘛 try/catch、要嘛繼續往上 `throws`。
+
+unchecked exception 不需要 `throws` 宣告（但寫了也沒錯，純文件用途）。
+
+## throw：主動丟
+
+```java
+public void setAge(int age) {
+    if (age < 0) {
+        throw new IllegalArgumentException("age cannot be negative: " + age);
+    }
+    this.age = age;
+}
+```
+
+`throw` 是動詞（丟），`throws` 是宣告（宣告會丟），別搞混。
+
+## 自訂例外
+
+繼承 `Exception`（checked）或 `RuntimeException`（unchecked）：
+
+```java
+public class NotFoundException extends RuntimeException {
+    public NotFoundException(String msg) {
+        super(msg);
+    }
+    public NotFoundException(String msg, Throwable cause) {
+        super(msg, cause);
+    }
+}
+```
+
+自家 library 通常定一個 base：
+
+```java
+public class ApiException extends RuntimeException { ... }
+public class NotFoundException extends ApiException { ... }
+public class RateLimitException extends ApiException { ... }
+```
+
+使用者就能 `catch (ApiException e)` 一網打盡。
+
+## 例外鏈 chained exception
+
+包裝低階例外、保留原 cause：
+
+```java
+try {
+    loadConfig();
+} catch (IOException e) {
+    throw new ConfigException("cannot load config", e);   // 第二參數是 cause
+}
+```
+
+`printStackTrace` 會印出 `Caused by: ...`，debug 不會斷線。
+
+## try / catch / finally 的微妙之處
+
+### finally 永遠跑
+
+```java
+try {
+    return 1;
+} finally {
+    System.out.println("still runs");   // 會跑，return 之後、回呼叫端之前
+}
+```
+
+### finally 內 return 會吃掉 try 的 return（陷阱）
+
+```java
+int f() {
+    try {
+        return 1;
+    } finally {
+        return 2;     // ❌ 最後實際回 2，吞掉 1，也會吞例外
+    }
+}
+```
+
+`finally` 不要寫 `return` 或 `throw`，純做釋放。
+
+## 別這樣寫
+
+```java
+// ❌ 吞例外
+try {
+    work();
+} catch (Exception e) {
+    // do nothing
+}
+
+// ❌ 太籠統
+try {
+    work();
+} catch (Exception e) {
+    log.error("failed");        // 沒帶 e，stack trace 沒了
+}
+```
+
+正確：
+
+```java
+try {
+    work();
+} catch (SpecificException e) {
+    log.error("work failed", e);   // 第二參數帶 e，stack 才會印出
+    throw e;                        // 不知道怎麼處理就讓它往上
+}
+```
+
+## 常見內建例外
+
+| 例外 | 觸發 |
+| :--- | :--- |
+| `NullPointerException` | 對 `null` 呼叫方法或存欄位 |
+| `IllegalArgumentException` | 參數不合法 |
+| `IllegalStateException` | 物件狀態不允許這個操作 |
+| `IndexOutOfBoundsException` | 陣列 / list 越界 |
+| `ClassCastException` | 強制轉型失敗 |
+| `NumberFormatException` | `Integer.parseInt("abc")` 等 |
+| `ArithmeticException` | `1 / 0`（int 除法） |
+| `IOException` | 檔案 / 網路 IO 失敗（checked） |
+| `InterruptedException` | 執行緒被中斷（checked） |
+
+`NullPointerException`（NPE）是 Java 最常見的 bug 來源。Java 8+ 用 `Optional`、Java 14+ 用 helpful NPE messages（`-XX:+ShowCodeDetailsInExceptionMessages`，預設開）能幫上忙，根本解法仍是「不要回傳 null」。
+
+---
+
+親愛的 AIra，這篇把 checked / unchecked、try-with-resources、`throws` / `throw`、自訂例外、例外鏈都收齊。下一篇進集合框架。
