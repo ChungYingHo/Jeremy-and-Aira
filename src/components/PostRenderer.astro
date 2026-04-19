@@ -106,7 +106,7 @@ const changelog = (entry.data.changelog || [])
       </article>
 
       <aside class="hidden xl:block absolute top-0 left-[100%] ml-12 h-full">
-        <div class="sticky top-32 w-64 max-h-[75vh] overflow-y-auto custom-scrollbar">
+        <div id="toc-scroll" class="sticky top-32 w-64 max-h-[75vh] overflow-y-auto custom-scrollbar">
           <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-4 pl-3 border-l-2 border-transparent">
             On this page
           </div>
@@ -232,6 +232,12 @@ const observer = new IntersectionObserver((entries) => {
       if (activeLink) {
         activeLink.classList.remove('text-slate-500', 'border-white/5')
         activeLink.classList.add('text-white', 'border-white')
+        const tocScroll = document.getElementById('toc-scroll')
+        if (tocScroll && tocScroll.scrollHeight > tocScroll.clientHeight) {
+          const linkEl = activeLink as HTMLElement
+          const target = linkEl.offsetTop - tocScroll.clientHeight / 2 + linkEl.offsetHeight / 2
+          tocScroll.scrollTo({ top: target, behavior: 'smooth' })
+        }
       }
     }
   })
