@@ -1,0 +1,287 @@
+---
+title: "[TypeScript] 基本型別"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["TypeScript", "type", "any", "unknown", "never"]
+changelog: []
+sameDateSort: 2
+---
+
+## 型別標註的兩種寫法
+
+```typescript
+// 1. 顯式標註
+let name: string = 'Jeremy'
+
+// 2. 型別推導（推薦，能省則省）
+let age = 30        // 自動推導為 number
+```
+
+只有在編譯器無法推導，或想刻意鎖死型別時才標註。
+
+## 原始型別
+
+```typescript
+let s: string = 'hello'
+let n: number = 42       // 整數、浮點、NaN、Infinity 都是 number
+let b: boolean = true
+let big: bigint = 100n
+let sym: symbol = Symbol('id')
+let nu: null = null
+let un: undefined = undefined
+```
+
+字串字面值樣板：
+
+```typescript
+const name = 'world'
+const greeting: string = `hello, ${name}`
+```
+
+## array 與 tuple
+
+### Array
+
+兩種等價寫法：
+
+```typescript
+const a: number[] = [1, 2, 3]
+const b: Array<number> = [1, 2, 3]   // 泛型寫法
+```
+
+混合型別用 union：
+
+```typescript
+const mixed: (number | string)[] = [1, 'a', 2, 'b']
+```
+
+### Tuple：固定長度、各位置型別不同
+
+```typescript
+const pair: [string, number] = ['age', 30]
+pair[0]    // string
+pair[1]    // number
+
+// 帶名稱（純標籤，提高可讀性）
+const point: [x: number, y: number] = [10, 20]
+
+// 可選元素
+const t: [string, number?] = ['a']
+
+// rest
+const r: [string, ...number[]] = ['head', 1, 2, 3]
+
+// readonly tuple（常用於 const assertion）
+const rgb = [255, 0, 0] as const   // readonly [255, 0, 0]
+```
+
+## object 與物件型別
+
+```typescript
+const user: { name: string; age: number } = {
+  name: 'Jeremy',
+  age: 30,
+}
+
+// 可選屬性
+const config: { debug?: boolean; retries: number } = {
+  retries: 3,
+}
+
+// readonly 屬性
+const point: { readonly x: number; readonly y: number } = { x: 0, y: 0 }
+// point.x = 1  // ❌
+```
+
+行內型別寫多了會很亂，下一篇會用 `interface` / `type` 抽出來。
+
+## enum
+
+兩種：數字 enum 與字串 enum。
+
+```typescript
+// 數字 enum（值預設從 0 開始遞增）
+enum Direction {
+  Up,        // 0
+  Down,      // 1
+  Left,      // 2
+  Right,     // 3
+}
+
+// 字串 enum（必須顯式賦值）
+enum Status {
+  Idle = 'idle',
+  Loading = 'loading',
+  Done = 'done',
+}
+
+const s: Status = Status.Loading
+```
+
+:::warning
+TS 5+ 之後社群越來越偏好 **`as const` 物件**取代 enum，原因：
+
+- enum 編譯後會額外產生程式碼（雙向 mapping）
+- enum 在 type-only import 與 erasable syntax 模式下行為怪異
+- `as const` 純型別、零執行期成本
+
+```typescript
+const Status = {
+  Idle: 'idle',
+  Loading: 'loading',
+  Done: 'done',
+} as const
+
+type Status = typeof Status[keyof typeof Status]
+// 'idle' | 'loading' | 'done'
+```
+:::
+
+## any：型別系統的逃生口
+
+`any` 等於關掉型別檢查。能不用就不用。
+
+```typescript
+let x: any = 5
+x.foo.bar.baz()    // 編譯通過，執行期炸
+x = 'string'       // OK
+x = []             // OK
+```
+
+常見會「不小心是 any」的情況：
+
+- 沒寫型別標註且編譯器推不出來（例如 `function f(x) {}`，`x` 預設 `any`，除非開 `noImplicitAny`）
+- 從 `JSON.parse()` 拿到的東西
+- 第三方套件沒有型別宣告
+
+## unknown：安全版的 any
+
+```typescript
+let v: unknown = 5
+
+v.toFixed()          // ❌ 直接用會報錯
+if (typeof v === 'number') {
+  v.toFixed()        // ✅ 窄化後才能用
+}
+```
+
+差別：
+
+| | `any` | `unknown` |
+| :--- | :--- | :--- |
+| 可以做任何操作 | ✅ | ❌（要先窄化） |
+| 可賦給其他型別 | ✅ 任何型別 | ❌ 只能賦給 unknown / any |
+| 何時用 | 真的不在乎、過渡用 | API 邊界、`JSON.parse`、catch 子句 |
+
+```typescript
+try {
+  doSomething()
+} catch (err) {       // err 預設是 unknown（TS 4.4+）
+  if (err instanceof Error) {
+    console.error(err.message)
+  }
+}
+```
+
+## never：永不發生
+
+代表「不可能有值」。常見情境：
+
+```typescript
+// 永不回傳的函式
+function fail(msg: string): never {
+  throw new Error(msg)
+}
+
+function loop(): never {
+  while (true) {}
+}
+
+// 窮舉檢查（exhaustive check）
+type Shape = { kind: 'circle' } | { kind: 'square' }
+
+function area(s: Shape) {
+  switch (s.kind) {
+    case 'circle': return 1
+    case 'square': return 2
+    default:
+      const _exhaustive: never = s   // 漏掉一個 case 這裡會報錯
+      return _exhaustive
+  }
+}
+```
+
+## void
+
+函式沒有「有意義的回傳值」時用 `void`：
+
+```typescript
+function log(msg: string): void {
+  console.log(msg)
+}
+```
+
+`void` 與 `undefined` 的差異：
+
+```typescript
+type F1 = () => void
+type F2 = () => undefined
+
+const f1: F1 = () => 42       // ✅ void 不在意實際回傳值
+const f2: F2 = () => 42       // ❌ F2 規定必須回傳 undefined
+```
+
+`void` 主要用在「呼叫方不該使用回傳值」的語意，例如 callback 簽章 `(item: T) => void`，避免使用者被回傳值誤導。
+
+## 型別斷言（as）
+
+告訴編譯器：「我比你清楚這是什麼型別」。
+
+```typescript
+const el = document.getElementById('app') as HTMLDivElement
+const n = '42' as unknown as number   // 雙重 as，繞開不相容檢查（少用）
+```
+
+慎用。斷言錯了不會在編譯期報錯，會在執行期炸。
+
+## non-null 斷言（!）
+
+```typescript
+const el = document.getElementById('app')!   // 告訴 TS：保證不會是 null
+el.innerHTML = 'hi'
+```
+
+跟 `as` 一樣是逃生口。能用 `if (el)` 守衛就用守衛。
+
+## const assertion：as const
+
+把字面值固定下來：
+
+```typescript
+let x = 'hello'              // type: string
+let y = 'hello' as const     // type: 'hello'
+
+const arr = [1, 2, 3]            // number[]
+const tup = [1, 2, 3] as const   // readonly [1, 2, 3]
+
+const obj = { name: 'a', age: 1 }              // { name: string; age: number }
+const obj2 = { name: 'a', age: 1 } as const    // { readonly name: 'a'; readonly age: 1 }
+```
+
+非常適合搭配 `keyof typeof` 產生精準 union type（取代 enum）。
+
+## 型別與值的雙重身份
+
+TS 中有些名字同時存在於「型別空間」與「值空間」：
+
+```typescript
+class Foo {}
+
+const f: Foo = new Foo()   // 第一個 Foo 是型別、第二個 Foo 是值
+```
+
+`type` 與 `interface` 只存在於型別空間，編譯後會被擦除（type erasure）。執行期沒有 TS 型別資訊，所以不能用 `if (typeof x === 'MyInterface')` 這種寫法。
+
+---
+
+親愛的 AIra，這篇把 TS 內建的所有原始型別、複合型別、特殊型別（any / unknown / never / void）都列齊了，並交代了 `as` 與 `as const` 的用法。下一篇進到 interface 與 type 的設計。
