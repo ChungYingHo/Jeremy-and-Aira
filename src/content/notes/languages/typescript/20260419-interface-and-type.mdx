@@ -1,0 +1,248 @@
+---
+title: "[TypeScript] 介面與型別別名"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["TypeScript", "interface", "type", "union", "intersection"]
+changelog: []
+sameDateSort: 3
+---
+
+## 兩種定義方式
+
+```typescript
+// interface
+interface User {
+  id: number
+  name: string
+}
+
+// type alias
+type User = {
+  id: number
+  name: string
+}
+```
+
+兩者大多時候可互換，差異整理在文末。
+
+## 屬性修飾
+
+```typescript
+interface User {
+  readonly id: number     // 唯讀
+  name: string
+  email?: string          // 可選
+  [key: string]: unknown  // index signature：任意字串 key 都允許
+}
+```
+
+`?` 等同 `name: string | undefined`，但允許「整個欄位省略」。
+
+## extends：繼承
+
+```typescript
+interface Animal {
+  name: string
+}
+
+interface Dog extends Animal {
+  breed: string
+}
+// Dog = { name: string; breed: string }
+
+// 多重繼承
+interface A { a: number }
+interface B { b: string }
+interface AB extends A, B {}
+```
+
+`type` 用 `&`（intersection）達到同樣效果：
+
+```typescript
+type Animal = { name: string }
+type Dog = Animal & { breed: string }
+```
+
+## intersection（&）：合併
+
+```typescript
+type Loggable = { log: () => void }
+type Serializable = { serialize: () => string }
+
+type Both = Loggable & Serializable
+// 必須同時實作 log 與 serialize
+```
+
+跟 `extends` 的差異：`&` 適合組合多個獨立特徵，`extends` 適合表達「is-a」階層關係。
+
+衝突屬性的處理：
+
+```typescript
+type A = { x: string }
+type B = { x: number }
+type C = A & B   // x: never（string 與 number 無交集）
+```
+
+## union（|）：擇一
+
+```typescript
+type Id = string | number
+
+function format(id: Id) {
+  // 直接用 toUpperCase 會錯，因為 number 沒這方法
+  if (typeof id === 'string') {
+    return id.toUpperCase()
+  }
+  return id.toString(16)
+}
+```
+
+union 的成員可以是任何型別：原始值、字面值、物件、其他 union。
+
+字面值 union：
+
+```typescript
+type Status = 'idle' | 'loading' | 'done'
+
+let s: Status = 'idle'
+s = 'pending'   // ❌ 不在允許範圍
+```
+
+## discriminated union：帶辨識欄位的 union
+
+最強大的 union 模式之一，常拿來模型化「可能是這幾種狀態之一」的資料：
+
+```typescript
+type Result<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: string }
+
+function handle(r: Result<number>) {
+  if (r.ok) {
+    console.log(r.value)    // ✅ TS 知道 value 存在
+  } else {
+    console.log(r.error)    // ✅ TS 知道 error 存在
+  }
+}
+```
+
+辨識欄位（這裡是 `ok`）讓 TS 在 if / switch 後自動窄化分支。型別守衛章節會更深入。
+
+## 函式型別
+
+```typescript
+// 在 interface 裡
+interface Greeter {
+  (name: string): string                    // call signature
+  version: string                           // 也可以同時是物件
+  greet(name: string): string               // 方法簽章
+}
+
+// type 寫法
+type Add = (a: number, b: number) => number
+const add: Add = (a, b) => a + b
+```
+
+## 類別實作 interface
+
+```typescript
+interface Logger {
+  log(msg: string): void
+}
+
+class ConsoleLogger implements Logger {
+  log(msg: string) {
+    console.log(msg)
+  }
+}
+```
+
+`implements` 只是型別檢查約束，**不會繼承實作**。要繼承用 `extends`。
+
+## 介面合併（declaration merging）
+
+interface 同名宣告會自動合併，type 不行：
+
+```typescript
+interface Window {
+  myCustomProp: string
+}
+interface Window {
+  anotherProp: number
+}
+// 合併為 { myCustomProp: string; anotherProp: number; ... }
+
+type Foo = { a: number }
+type Foo = { b: string }   // ❌ Duplicate identifier 'Foo'
+```
+
+主要應用：擴充全域型別（例如 `Window`、`Express.Request`）。
+
+## interface vs type 對照
+
+| 能力 | interface | type |
+| :--- | :---: | :---: |
+| 描述物件結構 | ✅ | ✅ |
+| extends / & | extends | & |
+| 描述函式 / call signature | ✅ | ✅ |
+| union / intersection | ❌ | ✅ |
+| 字面值 / 原始型別別名 | ❌ | ✅ |
+| 同名合併 | ✅ | ❌ |
+| 對應 mapped type / conditional type | ❌ | ✅ |
+| 對 IDE 提示效能 | 略快 | 略慢 |
+
+實務取捨：
+
+- 物件結構、可能被外部擴充（例如 library 公開的 props）→ `interface`
+- 需要 union、intersection、字面值、mapped、conditional → `type`
+- 風格上沒共識，團隊統一就好
+
+## 結構型別（structural typing）
+
+TS 的型別檢查是**結構性**的，不是名義性的（不像 Java 要顯式 `implements`）：
+
+```typescript
+interface Point {
+  x: number
+  y: number
+}
+
+const p = { x: 1, y: 2, z: 3 }
+const point: Point = p   // ✅ p 結構符合 Point 即可
+```
+
+只看「形狀對不對」，不看「叫什麼名字」。這是 TS 哲學的核心之一。
+
+### 多餘屬性檢查的例外
+
+直接傳物件字面值時會多一層「多餘屬性檢查」（excess property check）：
+
+```typescript
+function f(p: Point) {}
+
+f({ x: 1, y: 2, z: 3 })   // ❌ z 不在 Point 上
+const obj = { x: 1, y: 2, z: 3 }
+f(obj)                     // ✅ 透過變數中轉就 OK
+```
+
+這是 TS 為了抓拼錯屬性名而做的特例檢查。
+
+## readonly 對陣列與 tuple
+
+```typescript
+const a: readonly number[] = [1, 2, 3]
+a.push(4)         // ❌
+a[0] = 9          // ❌
+
+// 等價寫法
+const b: ReadonlyArray<number> = [1, 2, 3]
+
+// readonly tuple
+const t: readonly [string, number] = ['a', 1]
+```
+
+把陣列宣告成 `readonly` 是傳函式參數時的好習慣，明示「我不會改」。
+
+---
+
+親愛的 AIra，這篇把 interface 與 type 的能力光譜整理清楚，加上 union、intersection、discriminated union 等 TS 型別系統的核心組合手法。下一篇進到函式相關的型別。
