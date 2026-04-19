@@ -1,0 +1,256 @@
+---
+title: "[Rust] 變數、型別與基本語法"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["Rust", "let", "mut", "shadowing", "type", "const"]
+changelog: []
+sameDateSort: 2
+---
+
+## let 與 mut：預設不可變
+
+Rust 的變數預設是**不可變的**（immutable）。這跟絕大多數命令式語言相反。
+
+```rust
+fn main() {
+    let x = 5;
+    x = 6; // ❌ 編譯錯誤：cannot assign twice to immutable variable `x`
+}
+```
+
+要可變必須加 `mut`：
+
+```rust
+fn main() {
+    let mut x = 5;
+    x = 6; // ✅
+    println!("{x}");
+}
+```
+
+:::info
+這個設計強迫開發者在宣告時就思考「這個值會不會變」。多數變數其實不需要可變，加上 `mut` 是一個明確的訊號。
+:::
+
+## Shadowing：同名重新綁定
+
+`let` 可以重複宣告同名變數，新變數會「遮蔽」舊變數。這跟 `mut` 不同：
+
+```rust
+fn main() {
+    let x = 5;
+    let x = x + 1;        // 重新綁定，x = 6
+    let x = x * 2;        // 再次綁定，x = 12
+    println!("{x}");      // 12
+
+    // shadowing 可以改變型別
+    let value = "42";          // &str
+    let value: i32 = value.parse().unwrap(); // i32
+    println!("{value}");
+}
+```
+
+`mut` 只能在原型別上改值；shadowing 等於開一個新變數，所以連型別都能換。
+
+## 常數 const
+
+```rust
+const MAX_USERS: u32 = 10_000;
+```
+
+差異：
+
+| | `let` | `const` |
+| :--- | :--- | :--- |
+| 預設可變性 | 不可變（要 mut） | 永遠不可變 |
+| 必須標註型別 | 否（可推導） | 是 |
+| 可用範圍 | 區塊內 | 任何 scope，包含全域 |
+| 求值時機 | 執行期 | 編譯期 |
+
+慣例：常數用 `SCREAMING_SNAKE_CASE`。
+
+## 純量型別
+
+### 整數
+
+| 長度 | 有號 | 無號 |
+| :--- | :--- | :--- |
+| 8-bit | `i8` | `u8` |
+| 16-bit | `i16` | `u16` |
+| 32-bit | `i32` | `u32` |
+| 64-bit | `i64` | `u64` |
+| 128-bit | `i128` | `u128` |
+| 平台相依 | `isize` | `usize` |
+
+整數字面值預設是 `i32`：
+
+```rust
+let a = 42;          // i32
+let b = 42u64;       // 後綴指定型別
+let c: i64 = 42;     // 標註指定
+let d = 1_000_000;   // 底線分隔，可讀性
+let hex = 0xff;
+let oct = 0o77;
+let bin = 0b1010;
+```
+
+:::warning
+整數溢位行為：debug 模式下會 panic，release 模式下會 wrapping（繞回）。
+要明確處理溢位，用 `checked_add`、`wrapping_add`、`saturating_add`、`overflowing_add` 等方法。
+
+```rust
+let x: u8 = 250;
+let y = x.checked_add(10);  // None（溢位）
+let z = x.wrapping_add(10); // 4
+let w = x.saturating_add(10); // 255（停在最大值）
+```
+:::
+
+### 浮點數
+
+只有 `f32` 與 `f64`。預設 `f64`。
+
+```rust
+let x = 2.0;        // f64
+let y: f32 = 3.0;
+```
+
+### 布林與字元
+
+```rust
+let flag: bool = true;
+let c: char = 'z';        // char 是 4 byte，存 Unicode scalar value
+let emoji: char = '😀';
+```
+
+### 字串
+
+字串有兩種，初學常搞混：
+
+```rust
+let s1: &str = "hello";        // 字串切片，通常指向程式裡的字面值，唯讀
+let s2: String = String::from("hello"); // 堆積上的可變字串
+let s3: String = "hello".to_string();   // 同上，另一種寫法
+```
+
+`&str` 是借用，`String` 是擁有的（後面所有權那篇會講清楚）。
+
+## 複合型別
+
+### Tuple
+
+固定長度、可混型別：
+
+```rust
+let t: (i32, f64, &str) = (500, 6.4, "hi");
+
+// 解構
+let (x, y, z) = t;
+
+// 索引
+let first = t.0;
+let second = t.1;
+
+// 空 tuple，型別寫成 ()，叫做 unit type
+// 沒有回傳值的函式預設回傳 ()
+```
+
+### Array
+
+固定長度、同型別、stack 上：
+
+```rust
+let arr: [i32; 5] = [1, 2, 3, 4, 5];
+let zeros = [0; 10];           // [0, 0, 0, ..., 0]，長度 10
+let first = arr[0];
+let len = arr.len();
+```
+
+要可變長度的「陣列」用 `Vec<T>`（後面集合那篇會講）。
+
+## 函式
+
+```rust
+fn add(a: i32, b: i32) -> i32 {
+    a + b   // 沒分號 = 表達式 = 回傳值
+}
+
+fn greet(name: &str) {
+    println!("Hello, {name}");
+    // 沒寫 -> 型別，預設回傳 ()
+}
+```
+
+:::info
+Rust 區分**表達式（expression）**與**語句（statement）**：
+
+- 表達式有值（`5 + 3`、`if x > 0 { 1 } else { -1 }`）
+- 語句沒值，以分號結尾（`let x = 5;`）
+
+函式內最後一行**不加分號**就是把該表達式當回傳值。加分號就變成語句，回傳 `()`，會編譯錯誤。
+:::
+
+## 控制流程
+
+### if 是表達式
+
+```rust
+let x = 5;
+let label = if x > 0 { "positive" } else { "non-positive" };
+//                    ^                    ^
+//          兩個分支型別必須相同
+```
+
+### loop / while / for
+
+```rust
+// 無窮迴圈
+loop {
+    println!("again");
+    break;
+}
+
+// loop 可以回傳值
+let result = loop {
+    break 42;
+};
+
+// while
+let mut n = 3;
+while n > 0 {
+    println!("{n}");
+    n -= 1;
+}
+
+// for + range
+for i in 0..5 {        // 0, 1, 2, 3, 4
+    println!("{i}");
+}
+for i in 0..=5 {       // 0..5 包含 5
+    println!("{i}");
+}
+
+// for + 集合
+let arr = [10, 20, 30];
+for v in arr {
+    println!("{v}");
+}
+```
+
+## 型別推導與標註
+
+Rust 編譯器會盡量推導型別，但無法推導時就要明確標註：
+
+```rust
+let x = 5;                    // ✅ 推導為 i32
+let v: Vec<i32> = Vec::new(); // 必須標註，否則 Vec<?> 不確定
+let v = Vec::<i32>::new();    // 或用 turbofish 語法
+
+let s = "42".parse().unwrap();         // ❌ 不知道要 parse 成什麼
+let s: i32 = "42".parse().unwrap();    // ✅
+let s = "42".parse::<i32>().unwrap();  // ✅ turbofish
+```
+
+---
+
+親愛的 AIra，這篇把 Rust 的變數、shadowing、純量與複合型別、函式以及表達式 / 語句的差異整理清楚。下一篇會進到最關鍵的所有權與借用。
