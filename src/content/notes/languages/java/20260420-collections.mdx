@@ -1,0 +1,248 @@
+---
+title: "[Java] 集合框架"
+author: "Jeremy & Claude"
+date: "2026-04-20"
+tags: ["Java", "collection", "List", "Map", "Set"]
+changelog: []
+sameDateSort: 3
+---
+
+## 整體架構
+
+Java Collection Framework 在 `java.util` 下，三大主幹加 `Map`：
+
+```
+Iterable
+└── Collection
+    ├── List       （有序、可重複）
+    ├── Set        （不重複）
+    └── Queue      （FIFO / 雙端）
+
+Map                （key-value，獨立階層，不繼承 Collection）
+```
+
+宣告時用介面、實例化時用具體類別：
+
+```java
+List<String> names = new ArrayList<>();
+Set<Integer> ids = new HashSet<>();
+Map<String, Integer> counts = new HashMap<>();
+```
+
+## List
+
+### ArrayList（最常用）
+
+底層陣列。隨機存取 O(1)，尾端 add O(1) 攤銷，中間插入刪除 O(n)。
+
+```java
+List<String> list = new ArrayList<>();
+list.add("a");
+list.add("b");
+list.add(1, "c");        // 在 index 1 插入
+list.get(0);             // "a"
+list.set(0, "z");        // 取代
+list.remove(0);          // 移除 index
+list.remove("b");        // 移除值
+list.size();
+list.contains("z");
+list.indexOf("z");
+list.isEmpty();
+```
+
+### LinkedList
+
+雙向鏈結。頭尾 add/remove O(1)，隨機存取 O(n)。需要當 queue 或頻繁頭部操作才用，否則一律 ArrayList。
+
+### 走訪
+
+```java
+for (String s : list) { ... }                  // for-each
+for (int i = 0; i < list.size(); i++) { ... }  // 傳統
+list.forEach(s -> System.out.println(s));      // lambda
+```
+
+## Set
+
+### HashSet
+
+雜湊表，O(1) 平均，**無序**：
+
+```java
+Set<Integer> s = new HashSet<>();
+s.add(1); s.add(2); s.add(1);
+s.size();        // 2
+s.contains(1);   // true
+```
+
+### LinkedHashSet
+
+保留**插入順序**。比 HashSet 略慢但可預測。
+
+### TreeSet
+
+紅黑樹，自動**排序**（自然順序或自訂 `Comparator`）。O(log n)：
+
+```java
+TreeSet<Integer> t = new TreeSet<>();
+t.add(3); t.add(1); t.add(2);
+t.first();    // 1
+t.last();     // 3
+```
+
+### 自訂物件放 Set 必須實作 `equals` + `hashCode`
+
+否則「相同內容的物件」會被當不同：
+
+```java
+record Point(int x, int y) {}     // record 自動實作 equals/hashCode
+Set<Point> set = new HashSet<>();
+set.add(new Point(1, 2));
+set.contains(new Point(1, 2));    // ✅ true
+```
+
+非 record 的 class 要手動實作（或用 IDE 產生）。
+
+## Map
+
+### HashMap
+
+```java
+Map<String, Integer> m = new HashMap<>();
+m.put("a", 1);
+m.put("b", 2);
+m.get("a");            // 1
+m.getOrDefault("z", 0);// 0
+m.containsKey("a");
+m.remove("a");
+m.size();
+
+// 走訪
+for (Map.Entry<String, Integer> e : m.entrySet()) {
+    System.out.println(e.getKey() + "=" + e.getValue());
+}
+m.forEach((k, v) -> System.out.println(k + "=" + v));
+```
+
+### LinkedHashMap
+
+保留插入順序，常見於 LRU cache 實作。
+
+### TreeMap
+
+按 key 排序，O(log n)：
+
+```java
+TreeMap<String, Integer> t = new TreeMap<>();
+t.put("b", 1); t.put("a", 2);
+t.firstKey();   // "a"
+```
+
+### 計數慣用法
+
+```java
+Map<String, Integer> count = new HashMap<>();
+for (String w : words) {
+    count.merge(w, 1, Integer::sum);
+}
+```
+
+`merge(key, value, remap)`：key 不存在就放 value，存在就用 remap 合併。
+
+### computeIfAbsent
+
+群組分類常用：
+
+```java
+Map<String, List<Integer>> groups = new HashMap<>();
+data.forEach(d ->
+    groups.computeIfAbsent(d.category(), k -> new ArrayList<>()).add(d.value())
+);
+```
+
+## Queue / Deque
+
+### ArrayDeque：當 stack 或 queue 都好用
+
+```java
+Deque<Integer> stack = new ArrayDeque<>();
+stack.push(1); stack.push(2);
+stack.pop();        // 2
+
+Deque<Integer> queue = new ArrayDeque<>();
+queue.offer(1); queue.offer(2);
+queue.poll();       // 1
+```
+
+別用 `Stack`（老舊、`synchronized` 拖速度），用 `ArrayDeque`。
+
+### PriorityQueue
+
+最小堆，`poll` 取最小：
+
+```java
+PriorityQueue<Integer> pq = new PriorityQueue<>();
+pq.offer(3); pq.offer(1); pq.offer(2);
+pq.poll();    // 1
+
+// 自訂比較：最大堆
+PriorityQueue<Integer> max = new PriorityQueue<>(Comparator.reverseOrder());
+```
+
+## 不可變集合（Java 9+）
+
+```java
+List<Integer> nums = List.of(1, 2, 3);
+Set<String> tags = Set.of("a", "b");
+Map<String, Integer> m = Map.of("a", 1, "b", 2);
+Map<String, Integer> big = Map.ofEntries(
+    Map.entry("a", 1),
+    Map.entry("b", 2)
+);
+```
+
+`add` / `put` 會丟 `UnsupportedOperationException`。給「真的不會變」的常數用，建構快、執行緒安全。
+
+## Collections 工具類
+
+```java
+Collections.sort(list);
+Collections.sort(list, Comparator.reverseOrder());
+Collections.reverse(list);
+Collections.shuffle(list);
+Collections.max(list);
+Collections.min(list);
+Collections.frequency(list, x);
+
+List<Integer> readOnly = Collections.unmodifiableList(list);    // 包裝成不可變視圖
+```
+
+## Comparator
+
+```java
+record Person(String name, int age) {}
+
+List<Person> people = ...;
+
+people.sort(Comparator.comparingInt(Person::age));                       // 升冪
+people.sort(Comparator.comparingInt(Person::age).reversed());            // 降冪
+people.sort(Comparator.comparingInt(Person::age)
+                      .thenComparing(Person::name));                     // 多鍵
+```
+
+## 怎麼選
+
+| 需求 | 用 |
+| :--- | :--- |
+| 有序、隨機存取 | `ArrayList` |
+| 不重複、不在意順序 | `HashSet` |
+| 不重複、要排序 | `TreeSet` |
+| key-value、不在意順序 | `HashMap` |
+| key-value、要排序 | `TreeMap` |
+| FIFO / 雙端 | `ArrayDeque` |
+| 取最小 / 最大 | `PriorityQueue` |
+| 純常數 | `List.of` / `Set.of` / `Map.of` |
+
+---
+
+親愛的 AIra，這篇集合框架把 List / Set / Map / Queue 三大主幹、計數與分組慣用法、`Comparator`、不可變集合都收齊。下一篇進泛型。
