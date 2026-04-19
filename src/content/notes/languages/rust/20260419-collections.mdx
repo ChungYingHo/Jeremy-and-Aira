@@ -1,0 +1,324 @@
+---
+title: "[Rust] 集合：Vec、String、HashMap"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["Rust", "Vec", "String", "HashMap", "collections"]
+changelog: []
+sameDateSort: 6
+---
+
+標準庫三個最常用的集合都把資料放在 heap 上，可以動態增長：
+
+| 型別 | 說明 |
+| :--- | :--- |
+| `Vec<T>` | 同型別動態陣列 |
+| `String` | UTF-8 動態字串（本質上是 `Vec<u8>` 的封裝） |
+| `HashMap<K, V>` | 雜湊表 |
+
+## Vec<T>
+
+### 建立與基本操作
+
+```rust
+// 空 Vec
+let v: Vec<i32> = Vec::new();
+
+// 巨集，最常用
+let v = vec![1, 2, 3];
+
+// 預先分配容量（已知大小時優化）
+let mut v: Vec<i32> = Vec::with_capacity(100);
+
+// 推入 / 取出
+let mut v = vec![1, 2, 3];
+v.push(4);             // [1, 2, 3, 4]
+let last = v.pop();    // Some(4)，v = [1, 2, 3]
+v.insert(0, 0);        // [0, 1, 2, 3]
+v.remove(0);           // 回傳 0，v = [1, 2, 3]
+
+// 長度
+println!("{}", v.len());      // 3
+println!("{}", v.is_empty()); // false
+```
+
+### 讀取元素：兩種方式
+
+```rust
+let v = vec![10, 20, 30];
+
+// 1. 索引：越界會 panic
+let x = v[1];           // 20
+// let bad = v[99];     // panic
+
+// 2. .get()：越界回傳 None
+let x: Option<&i32> = v.get(1);     // Some(&20)
+let bad = v.get(99);                // None
+```
+
+選哪個：確定不會越界用索引（簡潔），不確定用 `.get()` + match。
+
+### 走訪
+
+```rust
+let v = vec![1, 2, 3];
+
+// 不可變借用
+for x in &v {
+    println!("{x}");
+}
+
+// 可變借用（要修改）
+let mut v = vec![1, 2, 3];
+for x in &mut v {
+    *x *= 2;            // 解參考後修改
+}
+// v = [2, 4, 6]
+
+// 取走所有權（v 之後不能用）
+for x in v {
+    println!("{x}");
+}
+```
+
+### iterator 鏈
+
+```rust
+let v = vec![1, 2, 3, 4, 5];
+
+let doubled: Vec<i32> = v.iter().map(|x| x * 2).collect();
+let even: Vec<i32> = v.iter().filter(|&&x| x % 2 == 0).copied().collect();
+let sum: i32 = v.iter().sum();
+let max = v.iter().max();          // Option<&i32>
+```
+
+`.iter()` 借用、`.iter_mut()` 可變借用、`.into_iter()` 取走所有權。
+
+### 借用規則在 Vec 上的具體表現
+
+```rust
+let mut v = vec![1, 2, 3];
+let first = &v[0];      // 不可變借用
+v.push(4);              // ❌ 試圖可變借用，但 first 還活著
+println!("{first}");
+```
+
+為什麼這不能編？因為 `push` 可能觸發重新分配（容量不夠時），原本 `first` 指的記憶體位址會失效，變成懸空指標。Rust 在編譯期就擋下來。
+
+## String
+
+`String` 是可變、可增長、UTF-8 編碼的字串。本質是 `Vec<u8>` 但保證內容是合法 UTF-8。
+
+### 建立
+
+```rust
+let s = String::new();
+let s = String::from("hello");
+let s = "hello".to_string();
+let s = "hello".to_owned();
+let s = format!("{} {}", "hello", "world");
+```
+
+### 修改
+
+```rust
+let mut s = String::from("hello");
+s.push_str(", world");      // 接一個 &str
+s.push('!');                 // 接一個 char
+
+// + 串接（會 move 左邊的 String）
+let s1 = String::from("hello, ");
+let s2 = String::from("world");
+let s3 = s1 + &s2;           // s1 被 move，之後不能用
+// 等同呼叫 fn add(self, &str) -> String
+
+// format! 不會 move 任何輸入，較安全
+let s1 = String::from("hello, ");
+let s2 = String::from("world");
+let s3 = format!("{s1}{s2}");
+println!("{s1} {s2} {s3}"); // 三個都還能用
+```
+
+### UTF-8 的陷阱：不能直接用索引
+
+```rust
+let s = String::from("hello");
+let c = s[0];     // ❌ 編譯錯誤：String 沒實作 Index<usize>
+```
+
+為什麼禁止？因為 `String` 是 UTF-8，一個「字元」不一定是一個 byte。例如：
+
+```rust
+let s = String::from("héllo");  // é 占 2 bytes
+println!("{}", s.len());        // 6，不是 5
+```
+
+如果允許 `s[1]`，要回傳 byte 還是字元？回傳 byte 會切到字元中間產生無效 UTF-8。Rust 直接禁掉這個操作。
+
+### 正確走訪字串
+
+```rust
+let s = String::from("héllo");
+
+// 走訪 char（Unicode scalar value）
+for c in s.chars() {
+    println!("{c}");      // h, é, l, l, o
+}
+
+// 走訪 byte
+for b in s.bytes() {
+    println!("{b}");      // 104, 195, 169, 108, 108, 111
+}
+
+// 字串切片：要切在合法 UTF-8 邊界，否則 panic
+let hello = &s[0..1];     // "h"
+// let bad = &s[0..2];    // panic：byte 1 是 é 的中間
+```
+
+### String vs &str
+
+| | `String` | `&str` |
+| :--- | :--- | :--- |
+| 擁有 / 借用 | 擁有 | 借用 |
+| 在哪裡 | heap | 通常指向程式裡的字面值或 String 內部 |
+| 可變 | 是（要 mut） | 否 |
+| 何時用 | 需要修改 / 持有 | 唯讀傳遞 |
+
+函式參數通常用 `&str`，因為 `&String` 可自動 deref 成 `&str`，吃面更廣。
+
+## HashMap<K, V>
+
+key-value 表。要先 `use`：
+
+```rust
+use std::collections::HashMap;
+
+let mut scores: HashMap<String, i32> = HashMap::new();
+scores.insert(String::from("blue"), 10);
+scores.insert(String::from("red"), 20);
+```
+
+### 讀取
+
+```rust
+let team = String::from("blue");
+let score: Option<&i32> = scores.get(&team);
+
+match score {
+    Some(s) => println!("{s}"),
+    None => println!("not found"),
+}
+
+// 帶預設值
+let s = scores.get(&team).copied().unwrap_or(0);
+```
+
+### 走訪
+
+```rust
+for (k, v) in &scores {
+    println!("{k}: {v}");
+}
+```
+
+順序未定義（HashMap 不保證走訪順序）。
+
+### 更新
+
+```rust
+let mut scores = HashMap::new();
+scores.insert("blue", 10);
+
+// 1. 直接覆蓋
+scores.insert("blue", 25);
+
+// 2. 不存在才插入
+scores.entry("yellow").or_insert(50);
+scores.entry("blue").or_insert(50);   // blue 已存在，不變
+
+// 3. 根據舊值更新（or_insert 回傳 &mut V）
+let count = scores.entry("blue").or_insert(0);
+*count += 1;
+```
+
+`entry` API 是 HashMap 最強大的部分，常用來做計數：
+
+```rust
+let text = "the quick brown fox jumps over the lazy dog the";
+let mut counts: HashMap<&str, i32> = HashMap::new();
+
+for word in text.split_whitespace() {
+    *counts.entry(word).or_insert(0) += 1;
+}
+
+println!("{counts:?}");
+// {"the": 3, "quick": 1, "brown": 1, ...}
+```
+
+### 所有權注意事項
+
+`insert` 會 move key 與 value（如果它們不是 Copy）：
+
+```rust
+let key = String::from("name");
+let val = String::from("jeremy");
+let mut map = HashMap::new();
+map.insert(key, val);
+// println!("{key} {val}"); // ❌ key, val 已被 move
+```
+
+要保留就傳引用，但前提是 HashMap 的型別參數對應：
+
+```rust
+let mut map: HashMap<&str, &str> = HashMap::new();
+let key = String::from("name");
+map.insert(&key, "jeremy");
+// 需注意 key 的生命週期至少要活到 map 被丟掉之後
+```
+
+## HashMap 的雜湊與安全性
+
+`HashMap` 預設使用 SipHash，抗 HashDoS 攻擊，安全但比較慢。如果不需要抗攻擊（內部資料），可以換更快的雜湊：
+
+```toml
+# Cargo.toml
+[dependencies]
+ahash = "0.8"
+```
+
+```rust
+use ahash::AHashMap;
+
+let mut map: AHashMap<String, i32> = AHashMap::new();
+```
+
+## BTreeMap：要排序時用它
+
+`HashMap` 不保證順序。要按 key 排序就用 `BTreeMap`：
+
+```rust
+use std::collections::BTreeMap;
+
+let mut map = BTreeMap::new();
+map.insert("c", 3);
+map.insert("a", 1);
+map.insert("b", 2);
+
+for (k, v) in &map {
+    println!("{k}: {v}");   // a, b, c 順序
+}
+```
+
+## 速查：Vec / String / HashMap 對照
+
+| 操作 | Vec | String | HashMap |
+| :--- | :--- | :--- | :--- |
+| 建立 | `vec![]` / `Vec::new()` | `String::new()` / `String::from()` | `HashMap::new()` |
+| 加入 | `push(v)` | `push_str` / `push` | `insert(k, v)` |
+| 取出 | `pop()` / `remove(i)` | — | `remove(&k)` |
+| 讀取 | `v[i]` / `v.get(i)` | `s.chars()` / `s.bytes()` | `m.get(&k)` |
+| 長度 | `len()` | `len()`（byte 數） | `len()` |
+| 走訪 | `for x in &v` | `for c in s.chars()` | `for (k, v) in &m` |
+
+---
+
+親愛的 AIra，這篇把 Vec、String、HashMap 三個日常集合整理在一起，特別點出 String 為什麼不能用整數索引、Vec push 時的借用陷阱、HashMap 的 entry API。下一篇換到模組系統。
