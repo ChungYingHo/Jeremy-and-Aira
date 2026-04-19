@@ -1,0 +1,283 @@
+---
+title: "[TypeScript] 模組與宣告檔"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["TypeScript", "module", "import", "declare", "d.ts"]
+changelog: []
+sameDateSort: 8
+---
+
+## ESM 為主
+
+現代 TS 一律以 ES Module 為主。一個檔案只要有 `import` / `export`，就是模組（有自己的 scope）；沒有則是 script（共享全域）。
+
+```typescript
+// math.ts
+export function add(a: number, b: number) { return a + b }
+export const PI = 3.14159
+
+export default class Calculator {}
+
+// 重新命名匯出
+export { add as plus }
+```
+
+```typescript
+// index.ts
+import Calc, { add, PI } from './math'
+import { add as plus } from './math'
+import * as math from './math'
+```
+
+`export default` 是個歷史包袱，多數團隊都偏好 named export（IDE 重構友善、避免「同個東西多種名字」）。
+
+## type-only import / export
+
+只用作型別、不需要執行期存在的東西，加 `type` 標明：
+
+```typescript
+import type { User } from './models'
+import { type User, getUser } from './models'   // 混合：getUser 是值，User 是型別
+
+export type { User }
+```
+
+好處：
+
+- 編譯時 `tsc` 會把 type-only import 完全擦除，不會留下 `import` 語句
+- 避免「只用作型別卻造成 runtime side effect」
+- 有些 build 工具（esbuild、`isolatedModules` 模式）依賴明確的 type import
+
+開 `verbatimModuleSyntax: true` 強制要求所有純型別匯入都加 `type`。
+
+## 路徑與 moduleResolution
+
+兩個常見值：
+
+| 值 | 適用 |
+| :--- | :--- |
+| `bundler` | 給 Vite / esbuild / webpack 等打包器（不要求副檔名） |
+| `nodenext` | 給 Node 直接跑（必須加 `.js` 副檔名，即使原始檔是 `.ts`） |
+
+Node 模式下：
+
+```typescript
+// 在 .ts 裡也要寫 .js
+import { add } from './math.js'
+```
+
+理由：TS 不改路徑，輸出後是 `.js`，import 路徑要對得起最終實際存在的檔。
+
+## 路徑別名（paths）
+
+`tsconfig.json`：
+
+```jsonc
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"]
+    }
+  }
+}
+```
+
+```typescript
+import Button from '@/components/Button'
+```
+
+注意：TS 只負責型別檢查層的解析，**執行期還要靠打包工具或額外 loader**（例如 `tsx`、`tsconfig-paths`、Vite 自帶支援）才會真的能跑。
+
+## 宣告檔（.d.ts）
+
+只含型別宣告、沒有實作。`tsc` 編譯 `.ts` 時會自動產生對應 `.d.ts`（要開 `declaration: true`）。
+
+```typescript
+// math.d.ts
+export declare function add(a: number, b: number): number
+export declare const PI: number
+```
+
+`declare` 表示：「這東西在執行期會存在，我只跟編譯器報告它的型別」。
+
+主要用途：
+
+1. 寫 library 時對外暴露 API 型別
+2. 給沒有型別的 JS 套件補型別
+3. 擴充全域型別
+
+## 給 JS 套件補型別
+
+假設 `legacy-lib` 是個沒型別的 JS 套件。
+
+`src/types/legacy-lib.d.ts`：
+
+```typescript
+declare module 'legacy-lib' {
+  export function init(opts: { debug?: boolean }): void
+  export const version: string
+}
+```
+
+`tsconfig.json` 確認 `include` 涵蓋 `src/types`。
+
+之後就能型別安全地 import：
+
+```typescript
+import { init, version } from 'legacy-lib'
+```
+
+簡易做法（不在意型別細節）：
+
+```typescript
+declare module 'some-untyped-lib'
+// 整個套件當 any
+```
+
+## ambient module（萬用宣告）
+
+宣告非 JS / TS 的資源型別，配合打包工具用：
+
+```typescript
+// images.d.ts
+declare module '*.png' {
+  const src: string
+  export default src
+}
+
+declare module '*.svg?component' {
+  import type { SvelteComponent } from 'svelte'
+  const C: SvelteComponent
+  export default C
+}
+```
+
+```typescript
+import logo from './logo.png'         // logo: string
+import Icon from './icon.svg?component'
+```
+
+## 擴充全域 / 第三方型別
+
+利用 interface 合併（前面 interface 那篇提過）擴充第三方既有的型別。
+
+```typescript
+// global.d.ts
+declare global {
+  interface Window {
+    myApp: {
+      version: string
+    }
+  }
+}
+
+export {}   // 必須有 export 才會被當成模組，declare global 才有效
+```
+
+```typescript
+window.myApp.version   // ✅ 有型別
+```
+
+擴充 Express 的 Request：
+
+```typescript
+// express.d.ts
+import 'express'
+
+declare module 'express' {
+  interface Request {
+    user?: { id: number; name: string }
+  }
+}
+```
+
+## 三斜線指令（很少用，知道有就好）
+
+```typescript
+/// <reference types="node" />
+/// <reference path="./other.d.ts" />
+```
+
+舊式做法。現代 TS 透過 `tsconfig` 的 `types` / `typeRoots` 設定取代。
+
+## tsconfig 與型別來源
+
+```jsonc
+{
+  "compilerOptions": {
+    "types": ["node", "jest"],   // 只載入這些 @types/*，其餘都不載
+    "typeRoots": ["./node_modules/@types", "./src/types"]
+  }
+}
+```
+
+不寫 `types` 時，TS 預設會載入 `node_modules/@types/*` 下所有型別，可能會混進不想要的。
+
+## 寫 library 的 export 設計
+
+`Cargo.toml` 對 Rust 是 `package.json` 對 TS。要對外提供型別，至少要有：
+
+`package.json`：
+
+```jsonc
+{
+  "name": "my-lib",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  }
+}
+```
+
+`tsconfig.json`：
+
+```jsonc
+{
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "./dist"
+  }
+}
+```
+
+`exports` 欄位讓 Node / 打包工具能正確找到型別與實作對應。
+
+## 一個專案常見的型別結構
+
+```
+src/
+├── index.ts
+├── lib/
+│   └── client.ts
+├── models/
+│   └── user.ts        // export interface User {}
+└── types/
+    ├── env.d.ts       // declare namespace NodeJS { interface ProcessEnv {} }
+    ├── images.d.ts
+    └── global.d.ts
+```
+
+把 ambient declarations（`*.d.ts` 沒有 export 的）集中在 `types/` 資料夾，便於管理。
+
+## 速查
+
+| 場景 | 工具 |
+| :--- | :--- |
+| 模組對外公開值 | `export ...` |
+| 模組對外公開型別 | `export type ...` |
+| 純型別匯入 | `import type ...` |
+| 沒型別的 JS 套件 | `declare module 'name' {}` |
+| 非 JS 資源（圖片、CSS） | `declare module '*.ext'` |
+| 擴充全域 | `declare global { interface Window {} }` |
+| 擴充第三方型別 | 在第三方模組 declaration merging |
+
+---
+
+親愛的 AIra，這篇收尾把模組系統、type-only import、`.d.ts`、ambient module、全域擴充與 library export 設定整理齊全。整個 TypeScript 系列從環境建置、型別系統、泛型、utility types、窄化到模組八篇全部寫完。
