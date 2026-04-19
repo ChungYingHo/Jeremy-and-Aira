@@ -1,0 +1,375 @@
+---
+title: "[Rust] 模組系統：crate、mod、use、pub"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["Rust", "module", "crate", "package", "use", "pub"]
+changelog: []
+sameDateSort: 7
+---
+
+## 名詞先釐清
+
+四個層次，從大到小：
+
+| 概念 | 說明 |
+| :--- | :--- |
+| **Workspace** | 一組 packages，共用同一個 `Cargo.lock` 與 `target/` |
+| **Package** | 一個 `Cargo.toml` 管理的單位，可包含一個 library crate + 多個 binary crate |
+| **Crate** | 編譯單位，產出一個 library 或一個 binary |
+| **Module** | 在 crate 內組織程式碼的單位，控制可見性與命名空間 |
+
+```
+Workspace
+└── Package（Cargo.toml）
+    ├── Crate（lib.rs，library）
+    │   ├── Module（mod foo）
+    │   └── Module（mod bar）
+    └── Crate（main.rs，binary）
+```
+
+## Crate root
+
+每個 crate 有一個 root file：
+
+- Library crate：`src/lib.rs`
+- Binary crate：`src/main.rs`
+- 額外 binaries：`src/bin/<name>.rs`
+
+`cargo new` 預設建立 binary crate（產生 `src/main.rs`）。
+`cargo new --lib name` 建立 library crate（產生 `src/lib.rs`）。
+
+## mod：宣告模組
+
+模組是 crate 內的命名空間。在 `src/main.rs` 或 `src/lib.rs` 用 `mod foo;` 宣告，編譯器會去找：
+
+1. `src/foo.rs`（單一檔）
+2. `src/foo/mod.rs`（資料夾風格，舊式）
+3. `src/foo/` 配 `src/foo.rs`（新式 inline，2018 edition 之後）
+
+範例專案結構：
+
+```
+src/
+├── main.rs
+├── garden.rs
+└── garden/
+    └── vegetables.rs
+```
+
+`src/main.rs`：
+
+```rust
+mod garden;          // 載入 src/garden.rs
+
+fn main() {
+    let p = garden::vegetables::Asparagus {};
+    println!("planted!");
+}
+```
+
+`src/garden.rs`：
+
+```rust
+pub mod vegetables;  // 載入 src/garden/vegetables.rs
+```
+
+`src/garden/vegetables.rs`：
+
+```rust
+pub struct Asparagus {}
+```
+
+也可以直接 inline 寫在同一檔：
+
+```rust
+mod garden {
+    pub mod vegetables {
+        pub struct Asparagus {}
+    }
+}
+```
+
+## pub：可見性
+
+預設**所有東西都是私有的**，包括模組、函式、struct、struct 欄位、enum 變體。
+
+```rust
+mod kitchen {
+    pub fn cook() {       // pub：外面可以叫
+        prepare();
+    }
+
+    fn prepare() { }      // 私有：只有 kitchen 內部能叫
+}
+
+fn main() {
+    kitchen::cook();      // ✅
+    // kitchen::prepare(); // ❌ private function
+}
+```
+
+`pub` 的細粒度控制：
+
+```rust
+pub fn foo() {}              // 對所有人公開
+pub(crate) fn bar() {}       // 整個 crate 內可見，但不對外
+pub(super) fn baz() {}       // 父模組可見
+pub(in crate::path) fn x() {} // 限定路徑可見
+```
+
+### struct 與 enum 的 pub 差異
+
+struct：把 struct 標 `pub` 不會自動把欄位變 pub。
+
+```rust
+mod food {
+    pub struct Pizza {
+        pub topping: String,    // 公開欄位
+        size: u32,              // 私有，外面拿不到
+    }
+
+    impl Pizza {
+        pub fn new(topping: String) -> Self {
+            Pizza { topping, size: 12 }
+        }
+    }
+}
+
+fn main() {
+    let p = food::Pizza::new(String::from("cheese"));
+    println!("{}", p.topping);
+    // println!("{}", p.size); // ❌
+}
+```
+
+enum：標 `pub` 後**所有變體自動 pub**（因為大家用 enum 通常是要 match 所有 case）。
+
+```rust
+mod color {
+    pub enum Light {
+        Red,
+        Yellow,
+        Green,
+    }
+}
+```
+
+## 路徑：絕對 vs 相對
+
+```rust
+// 假設這是 src/lib.rs
+
+mod front_of_house {
+    pub mod hosting {
+        pub fn add_to_waitlist() {}
+    }
+}
+
+pub fn eat_at_restaurant() {
+    // 絕對路徑：從 crate root 開始
+    crate::front_of_house::hosting::add_to_waitlist();
+
+    // 相對路徑：從目前模組開始
+    front_of_house::hosting::add_to_waitlist();
+}
+```
+
+`super` = 上一層模組，`self` = 目前模組：
+
+```rust
+mod parent {
+    fn helper() {}
+
+    mod child {
+        fn use_helper() {
+            super::helper();      // 找上一層的 helper
+        }
+    }
+}
+```
+
+## use：把長路徑帶到當前 scope
+
+```rust
+mod front_of_house {
+    pub mod hosting {
+        pub fn add_to_waitlist() {}
+    }
+}
+
+use crate::front_of_house::hosting;
+
+pub fn eat_at_restaurant() {
+    hosting::add_to_waitlist();   // 直接寫 hosting:: 即可
+}
+```
+
+慣例：`use` 到模組那層停（`use ...::hosting`），呼叫時帶模組名（`hosting::add_to_waitlist`），這樣讀程式時看得出來函式來源。
+
+例外：型別、struct、enum、trait 慣例 `use` 到本身：
+
+```rust
+use std::collections::HashMap;
+use std::io::Read;
+
+let m = HashMap::new();
+```
+
+### as：避免衝突
+
+```rust
+use std::fmt::Result;
+use std::io::Result as IoResult;
+
+fn f1() -> Result { Ok(()) }
+fn f2() -> IoResult<()> { Ok(()) }
+```
+
+### pub use：re-export
+
+把內部模組的東西轉手公開到外層：
+
+```rust
+mod inner {
+    pub fn helper() {}
+}
+
+pub use inner::helper;
+// 外面可以直接呼叫 crate::helper()，不用知道它住在 inner
+```
+
+很多 library 用這招把 API 都集中在 `lib.rs` 暴露出來。
+
+### 多重 import
+
+```rust
+use std::io::{self, Read, Write};
+// 等同：
+// use std::io;
+// use std::io::Read;
+// use std::io::Write;
+
+use std::collections::*;   // glob，會把 collections 下所有 pub 的東西帶進來
+```
+
+`*` 慎用，會污染命名空間，通常只在 prelude / 測試模組使用。
+
+## 外部依賴：使用第三方 crate
+
+`Cargo.toml`：
+
+```toml
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+rand = "0.8"
+```
+
+或用指令：
+
+```bash
+cargo add serde --features derive
+cargo add rand
+```
+
+程式裡：
+
+```rust
+use rand::Rng;
+
+fn main() {
+    let n: u8 = rand::thread_rng().gen_range(1..=100);
+    println!("{n}");
+}
+```
+
+## std 與 prelude
+
+`std` 是標準庫。常用的東西（`Option`、`Result`、`Vec`、`String`、`println!`、`Box`、`Some`、`None`、`Ok`、`Err`...）放在 **prelude**，自動 import 到每個檔案，不用 `use`。
+
+prelude 之外的就要手動 use：
+
+```rust
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::{Read, Write};
+```
+
+## 一個合理的 library crate 結構
+
+```
+my_lib/
+├── Cargo.toml
+└── src/
+    ├── lib.rs              // 對外 API（用 pub use 集中暴露）
+    ├── error.rs            // 錯誤型別
+    ├── client.rs           // HTTP client
+    ├── client/
+    │   ├── auth.rs
+    │   └── retry.rs
+    └── models/
+        ├── mod.rs          // 或 src/models.rs
+        ├── user.rs
+        └── post.rs
+```
+
+`src/lib.rs`：
+
+```rust
+mod error;
+mod client;
+mod models;
+
+// 對外暴露的 API 集中在這
+pub use error::{Error, Result};
+pub use client::Client;
+pub use models::{User, Post};
+```
+
+呼叫方：
+
+```rust
+use my_lib::{Client, User, Result};
+```
+
+## binary + library 混合 package
+
+`Cargo.toml` 裡 package 名是 `my_app`：
+
+```
+src/
+├── lib.rs        // library crate（package 同名 my_app）
+├── main.rs       // binary crate
+└── bin/
+    └── tool.rs   // 額外 binary：my_app-tool
+```
+
+`src/main.rs` 用 library 的東西：
+
+```rust
+use my_app::{Client, Config};   // 要用 package 名而不是 crate
+
+fn main() {
+    let c = Client::new();
+    // ...
+}
+```
+
+跑時：
+
+```bash
+cargo run                     # 跑 src/main.rs
+cargo run --bin tool          # 跑 src/bin/tool.rs
+```
+
+## 常見錯誤訊息對照
+
+| 訊息 | 意思 |
+| :--- | :--- |
+| `function ... is private` | 缺 `pub` |
+| `unresolved import ...` | use 路徑寫錯 / 模組沒宣告 |
+| `cannot find ... in this scope` | 沒 use 進來 / 不在這個模組可見 |
+| `module ... does not exist` | `mod foo;` 但找不到 `src/foo.rs` |
+
+---
+
+親愛的 AIra，這篇把 crate / package / module 的階層、`mod` 與 `use` 的差異、`pub` 的可見性層次說明清楚。下一篇是最後一篇 Trait，把 Rust 的「介面」與多型概念講完。
