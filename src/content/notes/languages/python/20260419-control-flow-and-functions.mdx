@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 3
 ---
 
+資料結構搞定後，這篇把流程控制（`if` / `match` / `for` / `while`）跟函式（預設值、`*args`、`/`、`*`、closure、`lambda`）一次串完。重點放在 Python 特有的設計：可變預設值的陷阱、限定參數種類的 `/` 與 `*`、`if __name__ == '__main__'` 這個慣用 pattern。
+
 ## if / elif / else
 
 ```python
@@ -300,3 +302,5 @@ reduce(lambda a, b: a + b, [1, 2, 3, 4])   # 10
 ```
 
 慣例：能寫 comprehension 就寫 comprehension，可讀性比 `map` / `filter` 好。
+
+下一篇進物件導向，這篇的函式概念會延伸到 method、`self`、classmethod 與 staticmethod，順便把 dataclass 一次帶過。

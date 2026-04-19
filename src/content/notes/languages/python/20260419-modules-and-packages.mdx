@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 5
 ---
 
+OOP 把 class 寫好後，下一步是把這些 class 散到多檔、再往上組成可發佈的 package。這篇釐清 module / package / distribution 的差別、`import` 各種寫法、相對 vs 絕對 import 的取捨，以及 `pyproject.toml` 與 `pip install -e .` 的現代專案結構。
+
 ## 名詞釐清
 
 | 名稱 | 是什麼 |
@@ -253,3 +255,5 @@ python -m http.server 8000     # 內建簡易 HTTP server
 ```
 
 `-m` 是 Python 跑「以模組方式」執行，能正確處理相對 import。
+
+下一篇進檔案 IO 與例外處理，前面 `with` context manager 跟 `try / except` 會在那裡正式展開。

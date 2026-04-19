@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 4
 ---
 
+函式建立完，這篇補上「能帶狀態的可呼叫物件」——class。Python 的 OOP 比 Java 自由很多：沒有真正的 private、屬性是動態加上去的、用 duck typing 取代 interface。同時 Python 提供 `@dataclass`、`@property`、dunder 方法等讓樣板碼大幅縮減的工具，這篇全部串完。
+
 ## 定義 class
 
 ```python
@@ -306,3 +308,5 @@ m = MemoryStorage() # ✅
 ```
 
 繼承後沒實作所有 `@abstractmethod` 就無法實例化。
+
+下一篇進模組與套件，把這篇散在單檔的 class 怎麼跨多檔組織、怎麼包成可發布的 package 講清楚。

@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 8
 ---
 
+前面幾篇 type hints 一直零散出現——函式簽章、`@dataclass`、stdlib 範例都看到一點點。這篇是 Python 系列收尾，把 `typing` 完整補完：基本標註、`Optional` / `Union`、泛型、`TypedDict`、`Protocol`，最後接到 `mypy` / `pyright` 怎麼把這些 hints 變成真正的編譯期防護。
+
 ## 型別提示是什麼
 
 Python 是動態語言，型別提示（type hints, PEP 484）只是「給人與工具看的註解」，**runtime 不會檢查**。
@@ -344,3 +346,5 @@ get_type_hints(f)
 - IDE 補全與跳轉更準
 - 在改舊程式時，hints 是你「重構安全網」
 - 配合 `pydantic` / `dataclass` 直接拿 hints 做 runtime 驗證
+
+Python 系列到此結束——從環境（uv / venv）、語法骨架（型別、流程、函式、OOP）、組織（module / package）、IO 與例外、標準庫，到型別提示，整套寫真實 Python 專案需要的基礎都串完了。下一階段可以挑一個方向深入：Web（FastAPI / Django）、資料（pandas / polars）、ML（pytorch / scikit-learn），各自還會用到本系列沒展開的特定生態。

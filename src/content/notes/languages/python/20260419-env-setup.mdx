@@ -7,48 +7,36 @@ changelog: []
 sameDateSort: 1
 ---
 
-## 安裝 Python
+Python 自帶極簡，但實務上每個專案要獨立的虛擬環境、要鎖定依賴版本、可能還要切換 Python 版本。這篇把 Windows 上從零裝 Python、開虛擬環境、用 `pip` 與更現代的 `uv` 管理依賴一次串完，後面所有 Python 篇都假設這環境已經就位。
 
-各平台主流方式：
+## 在 Windows 安裝 Python
 
-| 平台 | 推薦 |
-| :--- | :--- |
-| Windows | 官網 [python.org](https://www.python.org/downloads/) 下載 `.exe`，安裝時勾「Add to PATH」 |
-| macOS | `brew install python` 或用 `pyenv` |
-| Linux | 多數發行版自帶；用 `pyenv` 或 `uv python install` 管理多版本 |
+到 [python.org](https://www.python.org/downloads/) 下載 `.exe`，安裝時務必勾 **Add Python to PATH**。裝完開新的 PowerShell 驗證：
 
-驗證：
-
-```bash
+```powershell
 python --version
-# 或
-python3 --version
+# Python 3.13.x
 ```
 
 :::warning
-Windows 安裝時勾錯選項或多版本並存時，`python` 命令可能指向錯版本。建議用 `py -3.13` 這種版本選擇器，或乾脆用 `pyenv-win` / `uv` 統一管理。
+Windows 多版本並存時，`python` 命令可能指向錯版本。可以用 `py -3.13` 這種版本選擇器，或乾脆用 `uv` 統一管理（下面講）。
 :::
 
-## 多版本管理
+## 多版本管理：uv
 
-不同專案用不同 Python 版本是常態。三個常見工具：
+不同專案用不同 Python 版本是常態。`uv` 是 Rust 寫的工具鏈管理器，極快、跨平台、整合套件管理一條搞定，現在的新專案首選：
 
-| 工具 | 特色 |
-| :--- | :--- |
-| `pyenv` | 老牌，跨平台（Windows 用 `pyenv-win`） |
-| `uv` | Rust 寫的，極快，整合套件管理 |
-| `asdf` | 多語言通用 |
+```powershell
+# 用 PowerShell 的 winget 裝 uv（最簡單）
+winget install --id=astral-sh.uv -e
 
-`uv` 範例：
-
-```bash
-# 安裝 uv 自己（macOS / Linux）
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# 或從官網一鍵腳本（PowerShell）
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 
 # 裝 Python
 uv python install 3.13
 
-# 在專案裡指定
+# 在專案裡指定要用哪個版本
 uv python pin 3.13
 ```
 
@@ -56,16 +44,23 @@ uv python pin 3.13
 
 每個專案開獨立虛擬環境是基本紀律，避免不同專案的套件版本互相打架。
 
-```bash
+```powershell
 # 建立
 python -m venv .venv
 
-# 啟用
-.venv\Scripts\activate          # Windows
-source .venv/bin/activate       # macOS / Linux
+# 啟用（PowerShell）
+.venv\Scripts\Activate.ps1
+# 啟用（cmd）
+.venv\Scripts\activate.bat
 
 # 退出
 deactivate
+```
+
+PowerShell 第一次跑啟用腳本如果被擋，是執行原則的限制。一次性開放當前使用者：
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 ```
 
 啟用後 `python`、`pip` 都指向 `.venv` 內，與全域分離。
@@ -76,7 +71,7 @@ deactivate
 
 ## pip：套件管理
 
-```bash
+```powershell
 pip install requests              # 裝最新
 pip install requests==2.32.0      # 指定版本
 pip install "requests>=2.30,<3"   # 範圍
@@ -120,7 +115,7 @@ dev = ["pytest", "ruff", "mypy"]
 
 `uv` 一條命令搞定 Python、虛擬環境、依賴：
 
-```bash
+```powershell
 # 在資料夾起新專案（會建 .venv 與 pyproject.toml）
 uv init my-app
 cd my-app
@@ -153,11 +148,10 @@ if __name__ == '__main__':
 
 執行：
 
-```bash
+```powershell
 python hello.py
-# 或在虛擬環境裡：
-.venv/bin/python hello.py
-# 或用 uv：
+# 在虛擬環境裡（已 activate）也是同樣 python
+# 或用 uv（不必手動 activate）
 uv run python hello.py
 ```
 
@@ -167,7 +161,7 @@ uv run python hello.py
 
 Python 自帶 REPL：
 
-```bash
+```powershell
 python
 >>> 1 + 1
 2
@@ -176,7 +170,7 @@ python
 
 更強大的互動環境用 `IPython`：
 
-```bash
+```powershell
 pip install ipython
 ipython
 ```
@@ -195,8 +189,10 @@ VS Code 配 `Python` extension 即可（內建 Pylance LSP）。常用工具：
 
 `ruff` 一條搞定：
 
-```bash
+```powershell
 uv add --dev ruff
 uv run ruff check .          # lint
 uv run ruff format .         # 格式化
 ```
+
+裝完 Python、開得起 venv、跑得起第一支 `hello.py`，環境就算就緒。下一篇進基本型別與資料結構，前面 `def greet(name)` 的 type hint 會在「型別提示」那篇正式展開。

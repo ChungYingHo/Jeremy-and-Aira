@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 7
 ---
 
+Python 賣點之一是「battery included」——標準庫覆蓋極廣，多數場景連 `pip install` 都不用。這篇挑日常每個 Python 程式幾乎都會用到的：`os` / `sys` / `json` / `re` / `datetime` / `collections` / `itertools` / `functools` / `subprocess` / `logging` / `argparse`，整理成一份能當速查的筆記。
+
 Python 「battery included」哲學，標準庫覆蓋極廣。這篇挑日常最常用的整理。
 
 ## os / pathlib：作業系統與路徑
@@ -309,3 +311,5 @@ print(args.input, args.output, args.verbose, args.n)
 ```
 
 需要更現代化、語法更簡潔可看 `typer`（基於 type hints）或 `click`。
+
+下一篇是 Python 系列最後一篇——把前面四處出現的「型別提示」收尾：完整 `typing` 用法、`mypy` 檢查、`Protocol` 結構性子型別。
