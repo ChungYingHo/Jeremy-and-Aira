@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 2
 ---
 
+裝完 `cargo run` 跑得起來後，第一件要建立的直覺是：Rust 的變數預設不可變、型別系統很嚴謹但會幫你推導。這篇把 `let` / `mut` / `const` / shadowing、純量與複合型別、函式與最基本的控制流程一次串完，後面所有篇都會反覆用到這些東西。
+
 ## let 與 mut：預設不可變
 
 Rust 的變數預設是**不可變的**（immutable）。這跟絕大多數命令式語言相反。
@@ -43,14 +45,14 @@ fn main() {
     let x = x * 2;        // 再次綁定，x = 12
     println!("{x}");      // 12
 
-    // shadowing 可以改變型別
-    let value = "42";          // &str
-    let value: i32 = value.parse().unwrap(); // i32
-    println!("{value}");
+    // shadowing 還能改變型別（mut 做不到這件事）
+    let spaces = "   ";          // 字串
+    let spaces = spaces.len();   // 數字：原字串的長度
+    println!("{spaces}");        // 3
 }
 ```
 
-`mut` 只能在原型別上改值；shadowing 等於開一個新變數，所以連型別都能換。
+`mut` 只能在原型別上改值；shadowing 等於開一個新變數，所以連型別都能換。`.len()` 回傳的數字型別後面型別段會說，這裡先當「就是個整數」即可。
 
 ## 常數 const
 
@@ -250,3 +252,5 @@ let s = "42".parse().unwrap();         // ❌ 不知道要 parse 成什麼
 let s: i32 = "42".parse().unwrap();    // ✅
 let s = "42".parse::<i32>().unwrap();  // ✅ turbofish
 ```
+
+變數、型別、函式與控制流程都建立了，下一篇進 Rust 最招牌的觀念——所有權與借用。前面 `String` 與 `&str` 留下來的「擁有」與「借用」之差會在那裡正式說明。

@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 8
 ---
 
+Rust 系列最後一篇。前面把資料（型別、struct、enum、集合）跟組織（模組、可見性）都鋪好了，這一篇加最後一塊——「行為」抽象。Trait 是 Rust 的多型機制，兼任 interface、type class 與泛型約束三種角色，連同 `Display`/`Debug` 這類常用 trait 都會在這篇收尾。
+
 ## Trait 是什麼
 
 Trait 定義「一組型別共同擁有的行為」，類似其他語言的 interface / protocol。差別在於 Rust 的 trait 還能：
@@ -424,3 +426,5 @@ fn print_all(sources: &[Box<dyn DataSource>], id: u32) {
 2. **編譯期能確定型別** → 泛型 + trait bound（`fn f<T: Trait>` / `impl Trait`）
 3. **執行期才確定 / 異質集合** → trait object（`Box<dyn Trait>`）
 4. **trait 設計上會擋掉 dyn**（回傳 Self、泛型方法等）→ 要嘛拆 trait，要嘛只用泛型
+
+Rust 系列到此告一段落。八篇下來：環境、變數型別、所有權、結構與列舉、錯誤處理、集合、模組、trait——剛好構成寫真實 Rust 程式所需的最小完整地圖。剩下的（async、巨集、`unsafe`、各 ecosystem 框架）是分支，回頭再展開。

@@ -7,33 +7,31 @@ changelog: []
 sameDateSort: 1
 ---
 
+Rust 不像直譯語言能裝個 runtime 就開跑，它是「編譯器 + 套件管理 + 工具鏈」一整套。這篇把 Windows 上的安裝、第一支程式、`cargo` 必懂指令一次串完，後面所有 Rust 篇都會假設環境已經就緒。
+
 ## Rust 工具鏈組成
 
-Rust 不是只有編譯器，而是一整組工具：
+下面這幾個名詞在後面文章會反覆出現，先在這裡把分工釐清：
 
-| 工具 | 用途 |
+| 工具 | 角色 |
 | :--- | :--- |
 | `rustup` | 工具鏈管理器，負責安裝、更新、切換 Rust 版本 |
-| `rustc` | Rust 編譯器本體 |
-| `cargo` | 套件管理器 + 建置工具 + 測試執行器 |
-| `rustfmt` | 程式碼格式化工具 |
-| `clippy` | 靜態分析、lint 工具 |
+| `rustc` | 編譯器本體 |
+| `cargo` | 套件管理 + 建置 + 測試一站式工具 |
+| `rustfmt` | 程式碼格式化 |
+| `clippy` | 靜態分析 / lint |
 
-實務上幾乎不會直接呼叫 `rustc`，所有事情都透過 `cargo` 完成。
+實務上幾乎不會直接呼叫 `rustc`，**所有事情透過 `cargo` 完成**。`cargo` 在背後會自己叫 `rustc`。
 
-## 安裝 rustup
+## 在 Windows 安裝
 
-Windows 從 [rustup.rs](https://rustup.rs/) 下載 `rustup-init.exe`，執行後選 1（預設安裝）即可。
+到 [rustup.rs](https://rustup.rs/) 下載 `rustup-init.exe`，雙擊執行，看到選單時選 **1（預設安裝）**。
 
-macOS / Linux：
+安裝過程會提示你裝 **Visual Studio Build Tools**（C++ 工具鏈，連結器要用）。如果還沒裝，照提示走 Visual Studio Installer，勾「使用 C++ 的桌面開發」即可。
 
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
+裝完關掉舊的 PowerShell / cmd，開新視窗驗證：
 
-裝完後重開 terminal，驗證：
-
-```bash
+```powershell
 rustc --version
 # rustc 1.86.0 (xxxxxxxxx 2026-xx-xx)
 
@@ -41,50 +39,43 @@ cargo --version
 # cargo 1.86.0 (xxxxxxxxx 2026-xx-xx)
 ```
 
+兩個指令都吐版本號就 OK。
+
 :::tip
-Rust 採滾動發行，每六週一個 stable 版。要升級時：
-
-```bash
-rustup update
-```
-
-要切換 toolchain（stable / beta / nightly）：
-
-```bash
-rustup default stable
-rustup default nightly
-```
+日後升級用 `rustup update`；要在 stable / nightly 之間切就 `rustup default stable` 或 `rustup default nightly`。Rust 採滾動發行，每六週一個 stable，跟著升不會出事。
 :::
 
-## VS Code 開發環境
+## VS Code 設定
 
-裝這兩個 extension 即可：
+只要兩個 extension：
 
-1. **rust-analyzer** — 官方 LSP，提供補全、跳轉、即時錯誤提示
-2. **CodeLLDB** — 偵錯器（選用）
+1. **rust-analyzer** — 官方 LSP，補全、跳轉、即時錯誤都靠它
+2. **CodeLLDB** — 偵錯器（要設斷點再裝）
 
 :::warning
-不要裝舊的 `Rust` 那個 extension，已被 rust-analyzer 取代。兩個一起裝會打架。
+不要裝舊的那個叫 `Rust` 的 extension，已經被 rust-analyzer 取代。兩個一起裝會打架。
 :::
 
-## 用 cargo 建立第一個專案
+## 第一個專案：cargo new
 
-```bash
+裝好後第一件事不是寫 code，是讓 `cargo` 幫你開專案：
+
+```powershell
 cargo new hello_rust
 cd hello_rust
 ```
 
-產生的目錄：
+這會生出一個標準骨架：
 
 ```
 hello_rust/
-├── Cargo.toml      # 專案描述（類似 package.json）
+├── Cargo.toml      # 專案描述（角色類似 package.json）
 ├── .gitignore
 └── src/
     └── main.rs     # 程式進入點
 ```
 
-`Cargo.toml` 內容：
+`Cargo.toml`：
 
 ```toml
 [package]
@@ -95,7 +86,7 @@ edition = "2024"
 [dependencies]
 ```
 
-`src/main.rs` 內容：
+`src/main.rs`：
 
 ```rust
 fn main() {
@@ -103,40 +94,42 @@ fn main() {
 }
 ```
 
-## 執行程式
+`fn main()` 是程式進入點，這跟 C / Java / Go 都一樣。
 
-```bash
+## 跑起來：cargo run
+
+```powershell
 cargo run
 ```
 
-cargo 會：
+`cargo run` 做三件事：
 
-1. 編譯 `src/main.rs` → 產生 `target/debug/hello_rust(.exe)`
-2. 執行該 binary
-3. 印出 `Hello, world!`
+1. 編譯 `src/main.rs` → 產生 `target/debug/hello_rust.exe`
+2. 執行那支 exe
+3. stdout 看到 `Hello, world!`
 
-只想編譯、不想執行：
+如果只想編譯不執行：
 
-```bash
-cargo build           # debug 版（含偵錯資訊，較大）
-cargo build --release # release 版（最佳化過，較快、較小）
+```powershell
+cargo build              # debug 版（含偵錯資訊，較大）
+cargo build --release    # release 版（最佳化，較快、較小）
 ```
 
-只想做型別檢查、不產生 binary（最快）：
+只想做型別檢查、不產生 binary：
 
-```bash
+```powershell
 cargo check
 ```
 
 :::info
-日常開發用 `cargo check` 確認型別正確，比 `cargo build` 快很多，因為它跳過 LLVM 後端的程式碼產生階段。
+日常開發其實 `cargo check` 跑最多——它跳過 LLVM 的程式碼產生階段，比 `cargo build` 快很多。確認程式碼合法，編譯細節留給最後一次 `build`。
 :::
 
 ## println! 為什麼有驚嘆號
 
-`println!` 是**巨集（macro）**，不是函式。Rust 中所有以 `!` 結尾的呼叫都是巨集。
+第一支程式裡的 `println!` 不是函式，是**巨集（macro）**。Rust 規定「以 `!` 結尾的呼叫都是巨集」，看到 `!` 就知道這是編譯期展開的東西，不是普通呼叫。
 
-巨集存在的原因：Rust 的函式參數數量、型別都必須固定，但 `println!` 要支援任意參數的格式化字串，這只能在編譯期透過巨集展開實現。
+巨集存在的理由：函式的參數數量、型別在 Rust 裡都必須固定，而 `println!` 要支援任意參數的格式化字串，這只能在編譯期透過巨集展開來做。
 
 ```rust
 fn main() {
@@ -144,27 +137,33 @@ fn main() {
     let age = 30;
     println!("{} is {} years old", name, age);
 
-    // 具名參數
+    // 具名插值（Rust 2021+）
     println!("{name} is {age} years old");
 
-    // 印出除錯格式
+    // 印出除錯格式（後面會用來看 Vec、struct 等）
     let v = vec![1, 2, 3];
     println!("{:?}", v);   // [1, 2, 3]
-    println!("{:#?}", v);  // pretty-print，多行顯示
+    println!("{:#?}", v);  // 多行 pretty-print
 }
 ```
 
+`{:?}` 對應 `Debug` trait，`{}` 對應 `Display` trait——這兩個 trait 後面 trait 篇會細講，現在只要知道「`{}` 印給人看、`{:?}` 印給 debug 用」。
+
 ## 常用 cargo 指令速查
 
-```bash
-cargo new <name>           # 建立新 binary 專案
-cargo new <name> --lib     # 建立 library 專案
+整個 Rust 系列你會反覆用到的就這些：
+
+```powershell
+cargo new <name>           # 新建 binary 專案
+cargo new <name> --lib     # 新建 library 專案
 cargo run                  # 編譯並執行
 cargo build                # 編譯
-cargo check                # 只做型別檢查
+cargo check                # 只做型別檢查（最快）
 cargo test                 # 跑測試
-cargo fmt                  # 格式化（需先 rustup component add rustfmt）
+cargo fmt                  # 格式化
 cargo clippy               # lint 檢查
-cargo add <crate>          # 新增依賴
+cargo add <crate>          # 新增依賴（會更新 Cargo.toml）
 cargo doc --open           # 產生並打開文件
 ```
+
+裝完工具鏈、跑得起 `cargo run`、看得懂 `Cargo.toml` 與 `main.rs` 的角色就算就緒。下一篇進變數、可變性與基本型別，這裡的 `cargo run` 會從頭用到尾。

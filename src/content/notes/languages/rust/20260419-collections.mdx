@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 6
 ---
 
+前面型別篇講過固定大小的 array、所有權篇講過 `String` 與 `&str` 的差別，這一篇把三個最常用、會在所有 Rust 程式裡反覆出現的 heap 集合一次串完：`Vec<T>`、`String`、`HashMap<K, V>`。重點不只在 API，更在這些型別跟所有權、借用、`Option` 的互動。
+
 標準庫三個最常用的集合都把資料放在 heap 上，可以動態增長：
 
 | 型別 | 說明 |
@@ -318,3 +320,5 @@ for (k, v) in &map {
 | 讀取 | `v[i]` / `v.get(i)` | `s.chars()` / `s.bytes()` | `m.get(&k)` |
 | 長度 | `len()` | `len()`（byte 數） | `len()` |
 | 走訪 | `for x in &v` | `for c in s.chars()` | `for (k, v) in &m` |
+
+集合篇結束，下一篇進模組系統 `mod` 與 `use`，把目前為止散在 `main.rs` 的程式碼怎麼切成多檔案、怎麼控制可見性說清楚。

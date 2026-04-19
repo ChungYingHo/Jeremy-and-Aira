@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 5
 ---
 
+上一篇看到 `Option<T>` 用 enum 表達「可能沒值」。這一篇主角 `Result<T, E>` 用一樣的 enum 設計表達「可能失敗」。Rust 沒有 try / catch，錯誤就是普通的回傳值，配 `?` 運算子讓錯誤傳遞變得乾淨——這篇要把整套錯誤處理觀念講清楚。
+
 ## Rust 的錯誤分類
 
 Rust 把錯誤分成兩類：
@@ -274,3 +276,5 @@ fn first_element<T>(v: &[T]) -> &T {
     &v[0]
 }
 ```
+
+`Result` + `?` 串完，下一篇進集合（`Vec`、`HashMap`、`String` 操作），後面那些方法多半是回傳 `Option` 或 `Result`，又會用到這篇的工具。

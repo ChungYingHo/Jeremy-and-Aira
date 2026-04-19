@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 4
 ---
 
+所有權建立完，下一步是會用所有權的真正單位——自訂型別。Rust 的 `struct` 跟其他語言差不多，但 `enum` 完全是另一個層級：每個變體可以帶資料，配 `match` 模式匹配能取代繼承、null、type guard 一票東西。這篇把 struct、enum、`Option`、`match`、`if let` / `while let` / `let else` 一次串完。
+
 ## 結構體（struct）
 
 把多個有命名的欄位包成一個型別。
@@ -332,3 +334,5 @@ fn parse_age(s: &str) -> u32 {
 ```
 
 比 `match` 或巢狀 `if let` 平坦許多。
+
+`Option<T>` 處理「可能沒值」的場景；下一篇要看的 `Result<T, E>` 用一樣的 enum + `match` 模式處理「可能失敗」，是 Rust 錯誤處理的核心。

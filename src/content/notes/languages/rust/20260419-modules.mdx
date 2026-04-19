@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 7
 ---
 
+到目前為止程式碼都擠在 `src/main.rs`，真實專案不會這樣寫。這篇把 Rust 怎麼把程式切成多檔案、怎麼控制可見性、怎麼引用第三方 crate 一次串完。掌握這些，下一篇 trait 加上來時整套組織 Rust 程式的工具就齊了。
+
 ## 名詞先釐清
 
 四個層次，從大到小：
@@ -369,3 +371,5 @@ cargo run --bin tool          # 跑 src/bin/tool.rs
 | `unresolved import ...` | use 路徑寫錯 / 模組沒宣告 |
 | `cannot find ... in this scope` | 沒 use 進來 / 不在這個模組可見 |
 | `module ... does not exist` | `mod foo;` 但找不到 `src/foo.rs` |
+
+模組系統打通後，最後一篇 trait 把「行為」這個維度補進來——也就是 Rust 怎麼做多型、抽象與泛型約束。
