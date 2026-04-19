@@ -1,0 +1,312 @@
+---
+title: "[Python] 物件導向"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["Python", "class", "inheritance", "dunder", "dataclass"]
+changelog: []
+sameDateSort: 4
+---
+
+## 定義 class
+
+```python
+class User:
+    def __init__(self, name, age):    # constructor
+        self.name = name              # instance attribute
+        self.age = age
+
+    def greet(self):
+        return f'Hi, I am {self.name}'
+
+u = User('Jeremy', 30)
+print(u.name)        # 'Jeremy'
+print(u.greet())     # 'Hi, I am Jeremy'
+```
+
+要點：
+
+- `__init__` 是初始化方法（不是真的 constructor，instance 由 `__new__` 建立）
+- `self` 是「目前 instance」的明示參數，呼叫時不用傳，是 Python 的設計取捨
+- 屬性直接賦值就建立，沒有「宣告」的概念
+
+## class attribute vs instance attribute
+
+```python
+class Counter:
+    total = 0          # class attribute（所有 instance 共用）
+
+    def __init__(self):
+        self.value = 0  # instance attribute（每個 instance 獨立）
+
+    def inc(self):
+        self.value += 1
+        Counter.total += 1
+```
+
+陷阱：可變 class attribute 會被所有 instance 共用：
+
+```python
+class Bag:
+    items = []         # ❌ 所有 instance 共用同一個 list
+
+    def add(self, x):
+        self.items.append(x)
+
+a = Bag()
+b = Bag()
+a.add(1)
+b.items   # [1]  ← 不該共用
+```
+
+正確：把可變狀態放 `__init__` 內。
+
+## 方法種類：instance / class / static
+
+```python
+class Pizza:
+    def __init__(self, size):
+        self.size = size
+
+    def describe(self):              # instance method
+        return f'Pizza size {self.size}'
+
+    @classmethod
+    def small(cls):                  # class method（cls = 類別本身）
+        return cls(8)
+
+    @classmethod
+    def large(cls):
+        return cls(16)
+
+    @staticmethod
+    def is_valid_size(size):         # 與 class / instance 都無關
+        return 4 <= size <= 32
+
+p = Pizza.small()
+Pizza.is_valid_size(10)
+```
+
+`@classmethod` 常用作替代 constructor（多種建立方式）。
+`@staticmethod` 等同放在 class namespace 下的純函式，少用。
+
+## 屬性可見性的「君子協定」
+
+Python 沒有真的 private，靠命名慣例：
+
+| 命名 | 意思 |
+| :--- | :--- |
+| `name` | 公開 |
+| `_name` | 「內部用」，外部請別碰（純慣例，仍可存取） |
+| `__name` | name mangling，會被改成 `_ClassName__name`（避免子類別不小心覆蓋，不是真隱藏） |
+
+```python
+class A:
+    def __init__(self):
+        self.__secret = 42
+
+a = A()
+a.__secret             # ❌ AttributeError
+a._A__secret           # ✅ 仍然拿得到
+```
+
+## @property：把方法包裝成屬性
+
+```python
+class Circle:
+    def __init__(self, r):
+        self._r = r
+
+    @property
+    def area(self):
+        return 3.14159 * self._r ** 2
+
+    @property
+    def radius(self):
+        return self._r
+
+    @radius.setter
+    def radius(self, value):
+        if value < 0:
+            raise ValueError('negative')
+        self._r = value
+
+c = Circle(5)
+c.area           # 用屬性語法呼叫，不用括號
+c.radius = 10    # 走 setter，會做驗證
+```
+
+對外像屬性、對內可加邏輯，是 Python 替代「getter / setter」的標準做法。
+
+## 繼承
+
+```python
+class Animal:
+    def __init__(self, name):
+        self.name = name
+
+    def speak(self):
+        return 'some sound'
+
+class Dog(Animal):
+    def speak(self):                          # 覆寫
+        return 'woof'
+
+class Puppy(Dog):
+    def __init__(self, name, age):
+        super().__init__(name)                # 呼叫父類 init
+        self.age = age
+
+    def speak(self):
+        return f'{super().speak()} (small)'
+
+p = Puppy('Rex', 1)
+p.speak()    # 'woof (small)'
+```
+
+## 多重繼承與 MRO
+
+Python 支援多重繼承，靠 **MRO（Method Resolution Order，C3 線性化）** 決定方法查找順序：
+
+```python
+class A:
+    def hi(self): return 'A'
+
+class B(A):
+    def hi(self): return 'B'
+
+class C(A):
+    def hi(self): return 'C'
+
+class D(B, C):
+    pass
+
+D.__mro__       # (D, B, C, A, object)
+D().hi()        # 'B'
+```
+
+`super()` 不是「父類」，而是「MRO 的下一個」。實務上多用 mixin，少做深層多重繼承。
+
+## 多型
+
+Python 是 duck typing，「會叫的就是鴨子」。沒有 `interface`，也不用 `instanceof` 判斷型別：
+
+```python
+def make_speak(animal):
+    return animal.speak()    # 只要有 speak 方法就行
+
+class Dog:
+    def speak(self): return 'woof'
+
+class Cat:
+    def speak(self): return 'meow'
+
+make_speak(Dog())
+make_speak(Cat())
+```
+
+新型寫法可用 `Protocol`（typing 模組）做結構性子型別檢查，最後一篇會講。
+
+## dunder methods（魔術方法）
+
+雙底線開頭結尾的方法定義 class 與運算子、內建函式的互動。
+
+| dunder | 觸發場景 |
+| :--- | :--- |
+| `__init__` | `Foo()` 初始化 |
+| `__new__` | 建立 instance（極少自己寫） |
+| `__del__` | 被回收時 |
+| `__repr__` | `repr(x)` / debug 印出 |
+| `__str__` | `str(x)` / `print(x)` |
+| `__eq__`, `__hash__` | `==` / 放進 set / dict key |
+| `__lt__` 等 | `<`、`>`、`<=`、`>=` |
+| `__len__` | `len(x)` |
+| `__iter__`, `__next__` | for 走訪 |
+| `__getitem__`, `__setitem__` | `x[i]` |
+| `__contains__` | `in` 運算子 |
+| `__call__` | `x(...)` 把 instance 當 callable |
+| `__enter__`, `__exit__` | `with` 上下文管理器 |
+
+範例：
+
+```python
+class Vec:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+
+    def __repr__(self):
+        return f'Vec({self.x}, {self.y})'
+
+    def __add__(self, other):
+        return Vec(self.x + other.x, self.y + other.y)
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+    def __hash__(self):
+        return hash((self.x, self.y))
+
+a = Vec(1, 2)
+b = Vec(3, 4)
+print(a + b)            # Vec(4, 6)
+{a, Vec(1, 2)}          # {Vec(1, 2)}（去重）
+```
+
+實作 `__eq__` 通常要一起實作 `__hash__`，否則 instance 無法放進 set / dict key。
+
+## dataclass：少寫樣板
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class Point:
+    x: int
+    y: int
+
+p = Point(1, 2)
+print(p)           # Point(x=1, y=2)
+p == Point(1, 2)   # True
+```
+
+`@dataclass` 自動產生 `__init__`、`__repr__`、`__eq__`。其他選項：
+
+```python
+@dataclass(frozen=True, slots=True)
+class Config:
+    host: str
+    port: int = 8080
+```
+
+- `frozen=True`：immutable，賦值會丟錯
+- `slots=True`：用 `__slots__`，省記憶體、限制不能新增未宣告屬性
+- 也支援 `field(default_factory=list)` 處理可變預設值
+
+## abstract base class
+
+```python
+from abc import ABC, abstractmethod
+
+class Storage(ABC):
+    @abstractmethod
+    def save(self, key: str, value: str) -> None: ...
+
+    @abstractmethod
+    def load(self, key: str) -> str: ...
+
+class MemoryStorage(Storage):
+    def __init__(self):
+        self.data = {}
+    def save(self, key, value):
+        self.data[key] = value
+    def load(self, key):
+        return self.data[key]
+
+# Storage()        # ❌ 不能實例化抽象類別
+m = MemoryStorage() # ✅
+```
+
+繼承後沒實作所有 `@abstractmethod` 就無法實例化。
+
+---
+
+親愛的 AIra，這篇 OOP 從 class 基本、繼承、property、dunder methods 到 dataclass 與 ABC。下一篇講模組與套件。
