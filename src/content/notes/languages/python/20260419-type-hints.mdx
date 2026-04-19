@@ -1,0 +1,350 @@
+---
+title: "[Python] 型別提示與工具"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["Python", "type hints", "typing", "mypy", "Protocol"]
+changelog: []
+sameDateSort: 8
+---
+
+## 型別提示是什麼
+
+Python 是動態語言，型別提示（type hints, PEP 484）只是「給人與工具看的註解」，**runtime 不會檢查**。
+
+```python
+def add(a: int, b: int) -> int:
+    return a + b
+
+add('hello', 1)   # runtime 不會炸（直到 + 失敗才炸）
+```
+
+要實際檢查，靠 **mypy** / **pyright** / IDE 在編譯期（其實是寫程式時）幫忙。
+
+## 基本標註
+
+```python
+name: str = 'Jeremy'
+age: int = 30
+pi: float = 3.14
+ok: bool = True
+nums: list[int] = [1, 2, 3]
+pair: tuple[str, int] = ('age', 30)
+config: dict[str, int] = {'retries': 3}
+ids: set[int] = {1, 2, 3}
+```
+
+Python 3.9+ 內建容器都能直接用泛型語法（不用再 import `List` / `Dict`）。
+
+## Optional 與 Union
+
+```python
+from typing import Optional, Union
+
+def find(name: str) -> Optional[int]:    # Optional[int] = int | None
+    ...
+
+def to_int(x: Union[str, int]) -> int:   # Union[str, int] = str | int
+    ...
+```
+
+Python 3.10+ 用 `|` 取代 `Union`：
+
+```python
+def find(name: str) -> int | None: ...
+def to_int(x: str | int) -> int: ...
+```
+
+## Any vs object vs ...
+
+```python
+from typing import Any
+
+def f(x: Any): ...      # 接受任何，且能對 x 做任何操作（關掉檢查）
+def f(x: object): ...   # 接受任何，但只能做 object 共通的操作（更嚴格）
+```
+
+`Any` 是型別系統的逃生口。新程式碼盡量不寫 `Any`。
+
+## Callable
+
+```python
+from typing import Callable
+
+# 接收 (int, int) -> int
+def apply(fn: Callable[[int, int], int], a: int, b: int) -> int:
+    return fn(a, b)
+
+apply(lambda x, y: x + y, 1, 2)
+```
+
+任意參數：`Callable[..., int]`。
+
+## Literal
+
+把參數鎖在固定字面值：
+
+```python
+from typing import Literal
+
+def fetch(method: Literal['GET', 'POST', 'PUT', 'DELETE']) -> str:
+    ...
+
+fetch('GET')      # ✅
+fetch('PATCH')    # ❌ mypy 報錯
+```
+
+取代「拿 enum 但只是想要幾個字串」的場景。
+
+## 泛型函式
+
+```python
+from typing import TypeVar
+
+T = TypeVar('T')
+
+def first(xs: list[T]) -> T:
+    return xs[0]
+
+first([1, 2, 3])     # T = int，回傳 int
+first(['a', 'b'])    # T = str，回傳 str
+```
+
+Python 3.12+ 有更乾淨的語法：
+
+```python
+def first[T](xs: list[T]) -> T:
+    return xs[0]
+```
+
+加上界（bound）：
+
+```python
+from typing import TypeVar
+
+class Animal: ...
+class Dog(Animal): ...
+
+A = TypeVar('A', bound=Animal)
+
+def name_of(a: A) -> str:
+    return type(a).__name__
+
+# 3.12+ 簡潔版
+def name_of[A: Animal](a: A) -> str: ...
+```
+
+## 泛型類別
+
+```python
+from typing import Generic, TypeVar
+
+T = TypeVar('T')
+
+class Box(Generic[T]):
+    def __init__(self, value: T):
+        self.value = value
+
+b: Box[int] = Box(5)
+
+# 3.12+
+class Box[T]:
+    def __init__(self, value: T):
+        self.value = value
+```
+
+## TypedDict：型別化的 dict
+
+```python
+from typing import TypedDict
+
+class User(TypedDict):
+    id: int
+    name: str
+    email: str
+
+def show(u: User) -> None:
+    print(u['name'])
+
+show({'id': 1, 'name': 'a', 'email': 'a@b'})    # ✅
+show({'id': 1, 'name': 'a'})                     # ❌ 缺 email
+```
+
+可選欄位：
+
+```python
+class User(TypedDict, total=False):
+    id: int
+    name: str
+```
+
+或用 `NotRequired` / `Required`（3.11+）：
+
+```python
+from typing import TypedDict, NotRequired
+
+class User(TypedDict):
+    id: int
+    name: str
+    email: NotRequired[str]
+```
+
+## Protocol：結構型別（duck typing 的型別版）
+
+不用繼承也能符合介面：
+
+```python
+from typing import Protocol
+
+class Drawable(Protocol):
+    def draw(self) -> None: ...
+
+class Circle:
+    def draw(self) -> None:
+        print('○')
+
+class Square:
+    def draw(self) -> None:
+        print('□')
+
+def render(d: Drawable) -> None:
+    d.draw()
+
+render(Circle())     # ✅ Circle 沒繼承 Drawable，但結構符合
+render(Square())     # ✅
+```
+
+對應 TypeScript 的 interface，但更貼合 Python 「duck typing」哲學。
+
+## dataclass 與型別
+
+`@dataclass` 與型別提示天生相容：
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class Point:
+    x: int
+    y: int = 0
+
+p = Point(1, 2)
+```
+
+注意可變預設值要用 `field(default_factory=list)`：
+
+```python
+from dataclasses import dataclass, field
+
+@dataclass
+class Bag:
+    items: list[str] = field(default_factory=list)
+```
+
+## Self（3.11+）
+
+```python
+from typing import Self
+
+class Builder:
+    def with_name(self, name: str) -> Self:
+        self.name = name
+        return self
+
+    def with_age(self, age: int) -> Self:
+        self.age = age
+        return self
+
+# 子類可以鏈式呼叫並回傳子類自身
+```
+
+過去要用 `TypeVar('T', bound='Builder')` 才能達到，現在直接 `Self`。
+
+## Final、ClassVar、ReadOnly
+
+```python
+from typing import Final, ClassVar
+
+PI: Final = 3.14159    # mypy 會擋重新賦值
+
+class Counter:
+    total: ClassVar[int] = 0   # 標明是 class attribute（不是 instance）
+    value: int
+
+    def __init__(self):
+        self.value = 0
+```
+
+## cast 與 # type: ignore
+
+```python
+from typing import cast
+
+x: object = get_something()
+n = cast(int, x)         # 告訴 mypy：「相信我這是 int」（runtime 不會做轉換）
+
+result = some_call()  # type: ignore[some-error-code]
+```
+
+跟 TS 的 `as` / `// @ts-ignore` 一樣，是逃生口。能用其他方式（如 `isinstance` / `assert`）就用。
+
+## mypy：靜態型別檢查器
+
+```bash
+pip install mypy
+mypy src/
+```
+
+`pyproject.toml` 設定：
+
+```toml
+[tool.mypy]
+python_version = "3.13"
+strict = true                   # 一鍵開啟所有嚴格檢查
+exclude = ["tests/"]
+warn_unused_ignores = true
+disallow_any_unimported = true
+```
+
+新專案直接 `strict = true`。舊專案逐檔加 type hints，先在容易的模組開 strict，慢慢推開。
+
+## pyright / Pylance
+
+VS Code 內建的 Pylance 就是 pyright（微軟做的另一套型別檢查器）。
+
+| 工具 | 特色 |
+| :--- | :--- |
+| `mypy` | 老牌，社群最大，CI 標配 |
+| `pyright` | 快很多，IDE 提示體驗好 |
+
+實務常見：本地 IDE 用 Pylance 即時提示，CI 跑 mypy 強制把關。
+
+## runtime 取得型別資訊：typing.get_type_hints
+
+```python
+from typing import get_type_hints
+
+def f(x: int, y: str) -> bool: ...
+
+get_type_hints(f)
+# {'x': <class 'int'>, 'y': <class 'str'>, 'return': <class 'bool'>}
+```
+
+`pydantic`、`fastapi`、`typer` 都靠這個 runtime 讀型別，做驗證、序列化、CLI 解析。
+
+## 寫 type hints 的順序建議
+
+1. 從**對外 API**（公開函式、class）開始加
+2. 加在邊界（IO、API response、設定檔）
+3. 內部小工具暫時可省，讓推導工具自己推
+4. 開 `mypy --strict` 看編譯器抱怨什麼，逐個修
+5. `Any` 只當逃生口，不是預設值
+
+寫 type hints 不是為了寫而寫，是為了：
+
+- IDE 補全與跳轉更準
+- 在改舊程式時，hints 是你「重構安全網」
+- 配合 `pydantic` / `dataclass` 直接拿 hints 做 runtime 驗證
+
+---
+
+親愛的 AIra，這篇收尾把型別提示、`typing` 模組、`Protocol`、TypedDict、mypy / pyright 整理齊全。整個 Python 系列從環境建置一路到型別提示共八篇都收完了。
