@@ -1,0 +1,315 @@
+---
+title: "[Python] 常用標準庫"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["Python", "stdlib", "json", "re", "datetime", "collections"]
+changelog: []
+sameDateSort: 7
+---
+
+Python 「battery included」哲學，標準庫覆蓋極廣。這篇挑日常最常用的整理。
+
+## os / pathlib：作業系統與路徑
+
+```python
+import os
+
+os.getcwd()                      # 當前工作目錄
+os.chdir('/tmp')
+os.environ.get('HOME', '/')      # 讀環境變數
+os.environ['MY_VAR'] = 'x'       # 設定
+os.listdir('.')                  # 列目錄
+os.makedirs('a/b/c', exist_ok=True)
+os.remove('a.txt')
+os.rename('a.txt', 'b.txt')
+```
+
+新程式碼路徑操作優先用 `pathlib.Path`（前一篇已介紹）。
+
+## sys：執行期資訊
+
+```python
+import sys
+
+sys.argv         # 命令列參數，sys.argv[0] 是腳本名
+sys.path         # import 搜尋路徑
+sys.exit(0)      # 退出，0 = 成功，非零 = 錯誤
+sys.platform     # 'win32' / 'darwin' / 'linux'
+sys.version_info # (3, 13, 0, 'final', 0)
+```
+
+## json：序列化
+
+```python
+import json
+
+# Python → JSON 字串
+data = {'name': 'Jeremy', 'age': 30}
+s = json.dumps(data)                    # '{"name": "Jeremy", "age": 30}'
+s = json.dumps(data, indent=2, ensure_ascii=False)   # 漂亮輸出 + 不轉義非 ASCII
+
+# JSON 字串 → Python
+data = json.loads(s)
+
+# 從檔案
+with open('config.json', encoding='utf-8') as f:
+    config = json.load(f)
+
+with open('out.json', 'w', encoding='utf-8') as f:
+    json.dump(data, f, indent=2, ensure_ascii=False)
+```
+
+`ensure_ascii=False` 中文字才不會被轉成 `\uXXXX`。
+
+## re：正則表達式
+
+```python
+import re
+
+# 比對
+m = re.search(r'\d+', 'abc 123 def 456')
+m.group()      # '123'（第一個匹配）
+m.start(), m.end()
+
+# 全部找
+re.findall(r'\d+', 'abc 123 def 456')   # ['123', '456']
+
+# 含群組
+m = re.search(r'(\w+)@(\w+)', 'jeremy@example')
+m.group(0)     # 'jeremy@example'
+m.group(1)     # 'jeremy'
+m.group(2)     # 'example'
+
+# 取代
+re.sub(r'\d+', '#', 'a 1 b 22 c')       # 'a # b # c'
+
+# 預編譯（重複用同個 pattern 時）
+pat = re.compile(r'\b\w+\b')
+pat.findall('hello world')
+
+# 旗標
+re.search(r'hello', 'HELLO', re.IGNORECASE)
+re.search(r'^x', 'a\nx', re.MULTILINE)
+```
+
+常用 metachars：
+
+| | 意義 |
+| :--- | :--- |
+| `\d` `\w` `\s` | 數字、文字、空白 |
+| `\D` `\W` `\S` | 反向 |
+| `.` | 任一字元（不含換行，加 `re.DOTALL` 才含） |
+| `*` `+` `?` | 0+、1+、0 或 1 次 |
+| `{n}` `{n,m}` | 精確 / 範圍次數 |
+| `^` `$` | 行首 / 行尾 |
+| `()` | 捕獲群組 |
+| `(?:...)` | 非捕獲群組 |
+| `(?P<name>...)` | 具名群組 |
+
+## datetime：時間
+
+```python
+from datetime import datetime, date, time, timedelta, timezone
+
+# 現在
+now = datetime.now()                  # 本地時間
+now_utc = datetime.now(timezone.utc)  # 帶時區的 UTC
+
+# 建立
+d = date(2026, 4, 19)
+t = time(14, 30)
+dt = datetime(2026, 4, 19, 14, 30, tzinfo=timezone.utc)
+
+# 解析與格式化
+dt = datetime.strptime('2026-04-19 14:30', '%Y-%m-%d %H:%M')
+s = dt.strftime('%Y/%m/%d')
+
+# ISO 格式（推薦）
+dt.isoformat()                # '2026-04-19T14:30:00'
+datetime.fromisoformat('2026-04-19T14:30:00')
+
+# 算術
+later = now + timedelta(days=7, hours=3)
+diff = later - now
+diff.total_seconds()
+```
+
+:::warning
+跨時區一律用「aware datetime」（帶 `tzinfo`）。「naive datetime」（不帶時區）只有在你確定整個系統都是同一時區時才用。混用兩者會 raise。
+:::
+
+更現代的選擇：第三方 `arrow` 或 `pendulum`。
+
+## collections：增強的容器
+
+### Counter
+
+```python
+from collections import Counter
+
+c = Counter('mississippi')
+# Counter({'i': 4, 's': 4, 'p': 2, 'm': 1})
+
+c.most_common(2)         # [('i', 4), ('s', 4)]
+
+# 計詞頻
+words = 'the quick brown fox jumps over the lazy dog'.split()
+Counter(words)
+```
+
+### defaultdict
+
+```python
+from collections import defaultdict
+
+# value 不存在時自動用 factory 建立
+groups = defaultdict(list)
+for name, group in [('a', 1), ('b', 1), ('c', 2)]:
+    groups[group].append(name)
+# {1: ['a', 'b'], 2: ['c']}
+```
+
+### deque
+
+雙向佇列，兩端 push / pop 都是 O(1)：
+
+```python
+from collections import deque
+
+q = deque([1, 2, 3])
+q.append(4)         # 右端推入
+q.appendleft(0)     # 左端推入
+q.pop()             # 右端取出
+q.popleft()         # 左端取出
+```
+
+`list.pop(0)` 是 O(n)，要 FIFO 一律用 deque。
+
+### namedtuple
+
+```python
+from collections import namedtuple
+
+Point = namedtuple('Point', ['x', 'y'])
+p = Point(1, 2)
+p.x       # 1
+p[0]      # 1
+```
+
+新程式碼通常用 `dataclass` 或 `typing.NamedTuple`（前者更靈活）。
+
+## itertools：迭代器組合
+
+```python
+from itertools import (
+    count, cycle, repeat,
+    chain, zip_longest,
+    accumulate, product,
+    permutations, combinations,
+    groupby, islice, takewhile, dropwhile,
+)
+
+list(islice(count(1), 5))            # [1, 2, 3, 4, 5]
+list(islice(cycle('AB'), 5))         # ['A', 'B', 'A', 'B', 'A']
+list(chain([1, 2], [3, 4]))          # [1, 2, 3, 4]
+
+list(zip_longest([1, 2, 3], ['a'], fillvalue='-'))
+# [(1, 'a'), (2, '-'), (3, '-')]
+
+list(accumulate([1, 2, 3, 4]))       # [1, 3, 6, 10]（預設 sum）
+
+list(product([1, 2], ['a', 'b']))    # [(1,'a'),(1,'b'),(2,'a'),(2,'b')]
+
+list(combinations([1, 2, 3], 2))     # [(1,2),(1,3),(2,3)]
+list(permutations([1, 2, 3], 2))     # [(1,2),(1,3),(2,1),(2,3),(3,1),(3,2)]
+
+# groupby（要先排序）
+data = [('a', 1), ('a', 2), ('b', 3)]
+for key, group in groupby(data, key=lambda x: x[0]):
+    print(key, list(group))
+```
+
+## functools：函式工具
+
+```python
+from functools import reduce, lru_cache, partial, cache, wraps
+
+# reduce
+reduce(lambda a, b: a + b, [1, 2, 3, 4])    # 10
+
+# lru_cache：自動 memoize
+@lru_cache(maxsize=128)
+def fib(n):
+    if n < 2: return n
+    return fib(n - 1) + fib(n - 2)
+
+fib(100)        # 飛快，遞迴結果被 cache
+
+# cache（Python 3.9+）：無上限版的 lru_cache
+@cache
+def f(x): ...
+
+# partial：部分套用
+def power(base, exp): return base ** exp
+square = partial(power, exp=2)
+square(5)       # 25
+```
+
+## subprocess：跑外部程式
+
+```python
+import subprocess
+
+# 推薦用法：run + check + capture
+r = subprocess.run(
+    ['git', 'log', '--oneline', '-5'],
+    capture_output=True,
+    text=True,
+    check=True,                # 非零 exit code 會 raise
+)
+print(r.stdout)
+```
+
+不要用 `os.system` / `os.popen`，已被 subprocess 全面取代。
+
+## logging：取代 print
+
+```python
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+)
+
+log = logging.getLogger(__name__)
+log.info('started')
+log.warning('low disk')
+try:
+    do()
+except Exception:
+    log.exception('failed')   # 自動帶 stack
+```
+
+debug 用 print 沒問題，正式程式碼一律 logging（可分級、可導向、可關掉）。
+
+## argparse：CLI 參數
+
+```python
+import argparse
+
+parser = argparse.ArgumentParser(description='my tool')
+parser.add_argument('input')                       # 位置參數
+parser.add_argument('-o', '--output', default='out.txt')
+parser.add_argument('-v', '--verbose', action='store_true')
+parser.add_argument('-n', type=int, default=10)
+
+args = parser.parse_args()
+print(args.input, args.output, args.verbose, args.n)
+```
+
+需要更現代化、語法更簡潔可看 `typer`（基於 type hints）或 `click`。
+
+---
+
+親愛的 AIra，這篇逛了 Python 標準庫的核心模組：os / sys、json、re、datetime、collections、itertools、functools、subprocess、logging、argparse。最後一篇會講型別提示與 mypy。
