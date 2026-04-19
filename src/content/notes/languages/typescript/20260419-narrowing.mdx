@@ -1,0 +1,278 @@
+---
+title: "[TypeScript] 型別守衛與窄化"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["TypeScript", "type guard", "narrowing", "discriminated union"]
+changelog: []
+sameDateSort: 7
+---
+
+「窄化（narrowing）」指的是在某段程式碼分支中，TS 把變數的型別從廣的縮小到具體的某一種。
+
+## typeof 守衛
+
+針對原始型別：
+
+```typescript
+function pad(value: string | number) {
+  if (typeof value === 'number') {
+    return value.toFixed(2)   // value: number
+  }
+  return value.padStart(5)    // value: string
+}
+```
+
+`typeof` 可能的回傳值（這是 JS 的）：`'string' | 'number' | 'bigint' | 'boolean' | 'symbol' | 'undefined' | 'object' | 'function'`。
+
+注意：陣列、null、物件 typeof 都是 `'object'`，分不清。
+
+## truthiness 守衛
+
+```typescript
+function f(v: string | null | undefined) {
+  if (v) {
+    v.toUpperCase()   // v: string
+  }
+}
+```
+
+陷阱：空字串、`0`、`NaN`、`false` 都是 falsy，會一併被排除。要明確判斷 null / undefined 用 `== null` 或 `?? `：
+
+```typescript
+if (v != null) { /* string */ }   // 同時排掉 null 和 undefined
+```
+
+## equality 守衛
+
+```typescript
+function f(a: string | number, b: string | boolean) {
+  if (a === b) {
+    // 兩邊型別交集是 string，所以 a, b 都被窄化為 string
+    a.toUpperCase()
+    b.toUpperCase()
+  }
+}
+```
+
+跟字面值比較會窄到該字面值：
+
+```typescript
+function f(s: 'a' | 'b' | 'c') {
+  if (s === 'a') {
+    // s: 'a'
+  } else {
+    // s: 'b' | 'c'
+  }
+}
+```
+
+## in 守衛
+
+判斷物件有沒有某個屬性：
+
+```typescript
+type Fish = { swim: () => void }
+type Bird = { fly: () => void }
+
+function move(animal: Fish | Bird) {
+  if ('swim' in animal) {
+    animal.swim()       // Fish
+  } else {
+    animal.fly()        // Bird
+  }
+}
+```
+
+## instanceof 守衛
+
+```typescript
+function logDate(x: Date | string) {
+  if (x instanceof Date) {
+    console.log(x.toISOString())   // Date
+  } else {
+    console.log(x.toUpperCase())   // string
+  }
+}
+```
+
+只能用在有 constructor 的型別（class、Error、Date 等）。
+
+## discriminated union（標籤聯合）
+
+最強大、最該優先用的窄化模式。每個成員帶一個共同的「辨識欄位」（discriminator）：
+
+```typescript
+type Shape =
+  | { kind: 'circle'; radius: number }
+  | { kind: 'square'; size: number }
+  | { kind: 'rect'; w: number; h: number }
+
+function area(s: Shape): number {
+  switch (s.kind) {
+    case 'circle': return Math.PI * s.radius ** 2
+    case 'square': return s.size ** 2
+    case 'rect':   return s.w * s.h
+  }
+}
+```
+
+`s.kind` 是字面值 union，TS 在每個 case 自動把 s 窄化到對應分支。
+
+### 加上 never 做窮舉檢查
+
+```typescript
+function area(s: Shape): number {
+  switch (s.kind) {
+    case 'circle': return Math.PI * s.radius ** 2
+    case 'square': return s.size ** 2
+    case 'rect':   return s.w * s.h
+    default:
+      const _: never = s   // 漏掉 case 這裡會編譯錯
+      return _
+  }
+}
+```
+
+新增一個 Shape 變體後忘記更新 `area`，TS 就會在 default 分支報錯。
+
+## user-defined type guard：is 語法
+
+當內建守衛不夠用時自訂一個：
+
+```typescript
+interface Cat { meow: () => void }
+interface Dog { bark: () => void }
+
+function isCat(x: Cat | Dog): x is Cat {
+  return (x as Cat).meow !== undefined
+}
+
+function play(animal: Cat | Dog) {
+  if (isCat(animal)) {
+    animal.meow()    // Cat
+  } else {
+    animal.bark()    // Dog
+  }
+}
+```
+
+`x is Cat` 是 type predicate，告訴 TS：「這個函式回 true 時，請把 x 當 Cat」。
+
+陷阱：實作必須跟 predicate 一致，TS 不會幫你驗證邏輯正確。
+
+## assertion function：asserts
+
+predicate 是回 boolean，assertion function 是直接 throw：
+
+```typescript
+function assertString(x: unknown): asserts x is string {
+  if (typeof x !== 'string') {
+    throw new Error('not a string')
+  }
+}
+
+function f(v: unknown) {
+  assertString(v)
+  v.toUpperCase()    // ✅ 這之後 v 都是 string
+}
+```
+
+要點：
+
+- 回傳型別寫成 `asserts x is T`
+- 函式必須真的會 throw（否則型別系統騙人）
+- 不能用 arrow function（語法不支援）
+
+## 型別斷言（as）vs 型別守衛
+
+| | `as` | type guard |
+| :--- | :--- | :--- |
+| 是否實際檢查 | ❌ 純編譯期 | ✅ 執行期實際判斷 |
+| 錯了會發生什麼 | 執行期炸 | 不會錯，分支邏輯正確 |
+| 用在何處 | 過渡 / 確定型別但 TS 推不出 | 主要工具 |
+
+```typescript
+const el = document.getElementById('app') as HTMLDivElement   // 信任，不檢查
+const el2 = document.getElementById('app')
+if (el2 instanceof HTMLDivElement) { /* 真的檢查 */ }
+```
+
+## non-null 斷言（!）
+
+```typescript
+const el = document.getElementById('app')!   // 告訴 TS：絕不為 null
+```
+
+跟 `as` 一樣是逃生口。能用守衛就用守衛。
+
+## 常見窄化陷阱
+
+### 1. 在 callback 裡守衛失效
+
+```typescript
+type Box = { value: string | undefined }
+
+function f(box: Box) {
+  if (box.value !== undefined) {
+    [1, 2].forEach(() => {
+      box.value.toUpperCase()   // ❌ box.value 又被當 string | undefined
+    })
+  }
+}
+```
+
+callback 中重新進入新 scope，TS 不再保證 box.value 沒被改過。改存區域變數：
+
+```typescript
+const v = box.value
+if (v !== undefined) {
+  [1, 2].forEach(() => v.toUpperCase())  // ✅ v 不會被別處改
+}
+```
+
+### 2. 函式呼叫後窄化會「重置」
+
+```typescript
+function check(x: string | null) {
+  if (x !== null) {
+    doSomething()
+    x.toUpperCase()   // ✅ 還在窄化範圍內，但若 doSomething 修改外部狀態...
+  }
+}
+```
+
+對區域變數通常 OK；對物件屬性、外部變數要小心。
+
+### 3. typeof null === 'object'
+
+```typescript
+function f(x: object | null) {
+  if (typeof x === 'object') {
+    x.foo   // ❌ x 仍可能是 null
+  }
+  if (x !== null) {
+    // ✅ 排掉 null 後 x: object
+  }
+}
+```
+
+null check 要明確。
+
+## 控制流分析
+
+TS 的窄化是**基於控制流**的：
+
+```typescript
+function f(v: string | number) {
+  if (typeof v !== 'string') {
+    return            // 提早 return 窄化掉一個
+  }
+  v.toUpperCase()     // ✅ v: string
+}
+```
+
+if 內 return / throw 後，下面的程式自動窄化（因為到不了那邊代表前面條件不成立）。
+
+---
+
+親愛的 AIra，這篇把所有窄化機制整理齊全：typeof、in、instanceof、equality、is、asserts、discriminated union 與常見陷阱。最後一篇接著講模組與宣告檔。
