@@ -1,0 +1,297 @@
+---
+title: "[TypeScript] 泛型"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["TypeScript", "generic", "keyof", "infer", "conditional type"]
+changelog: []
+sameDateSort: 5
+---
+
+## 為什麼需要泛型
+
+沒有泛型只能寫死型別：
+
+```typescript
+function firstString(arr: string[]): string { return arr[0] }
+function firstNumber(arr: number[]): number { return arr[0] }
+```
+
+或退而求其次用 `any`，喪失型別資訊：
+
+```typescript
+function first(arr: any[]): any { return arr[0] }
+```
+
+泛型讓型別本身也成為參數：
+
+```typescript
+function first<T>(arr: T[]): T {
+  return arr[0]
+}
+
+const a = first(['a', 'b'])   // T 推導為 string，回傳 string
+const b = first([1, 2])       // T 推導為 number，回傳 number
+const c = first<boolean>([true]) // 顯式指定
+```
+
+## 泛型函式
+
+```typescript
+function pair<A, B>(a: A, b: B): [A, B] {
+  return [a, b]
+}
+
+const p = pair('hi', 42)   // [string, number]
+```
+
+## 泛型介面與型別
+
+```typescript
+interface Box<T> {
+  value: T
+}
+
+const b: Box<number> = { value: 1 }
+
+type Pair<A, B> = { first: A; second: B }
+```
+
+## 泛型類別
+
+```typescript
+class Stack<T> {
+  private items: T[] = []
+  push(x: T) { this.items.push(x) }
+  pop(): T | undefined { return this.items.pop() }
+}
+
+const s = new Stack<number>()
+s.push(1)
+```
+
+## extends 約束
+
+不約束時，`T` 是「任何型別」，能做的事很少：
+
+```typescript
+function len<T>(x: T) {
+  return x.length    // ❌ 不知道 T 有沒有 length
+}
+```
+
+加 `extends` 約束後：
+
+```typescript
+function len<T extends { length: number }>(x: T): number {
+  return x.length    // ✅
+}
+
+len('hello')         // T = string
+len([1, 2, 3])       // T = number[]
+len({ length: 5 })   // ✅
+len(42)              // ❌ number 沒 length
+```
+
+「`extends`」這裡是「**符合這個結構**」，不是「繼承自」。
+
+## 預設型別參數
+
+```typescript
+interface ApiResponse<T = unknown> {
+  ok: boolean
+  data: T
+}
+
+const r: ApiResponse = { ok: true, data: 'whatever' }   // T 預設 unknown
+const r2: ApiResponse<{ id: number }> = { ok: true, data: { id: 1 } }
+```
+
+## keyof：取出物件型別的所有 key
+
+```typescript
+type User = { id: number; name: string; age: number }
+
+type UserKeys = keyof User    // 'id' | 'name' | 'age'
+```
+
+配泛型用，做型別安全的屬性存取：
+
+```typescript
+function getProp<T, K extends keyof T>(obj: T, key: K): T[K] {
+  return obj[key]
+}
+
+const user = { id: 1, name: 'Jeremy' }
+const id = getProp(user, 'id')      // number
+const name = getProp(user, 'name')  // string
+const x = getProp(user, 'foo')      // ❌ 'foo' 不是 keyof user
+```
+
+`T[K]` 叫做 **indexed access type**，根據 K 拿出對應屬性的型別。
+
+## typeof：從值推回型別
+
+```typescript
+const config = {
+  host: 'localhost',
+  port: 3000,
+}
+
+type Config = typeof config
+// { host: string; port: number }
+
+const status = ['idle', 'loading', 'done'] as const
+type Status = typeof status[number]
+// 'idle' | 'loading' | 'done'
+```
+
+`typeof status[number]` 表示「拿陣列任意 index 對應的元素型別」。
+
+## conditional type：型別層級的三元運算
+
+```typescript
+type IsString<T> = T extends string ? true : false
+
+type A = IsString<'hi'>    // true
+type B = IsString<42>      // false
+```
+
+可巢狀：
+
+```typescript
+type TypeName<T> =
+  T extends string ? 'string'
+  : T extends number ? 'number'
+  : T extends boolean ? 'boolean'
+  : T extends Function ? 'function'
+  : 'object'
+```
+
+## distributive conditional：union 上的分配律
+
+當 conditional type 的左邊是裸的型別參數，且傳入 union 時，會「逐個成員分配」：
+
+```typescript
+type ToArray<T> = T extends any ? T[] : never
+
+type R = ToArray<string | number>
+// (string | number) 分配 → string[] | number[]
+// 而不是 (string | number)[]
+```
+
+要禁止分配，把 T 包進 tuple：
+
+```typescript
+type ToArrayNoDistribute<T> = [T] extends [any] ? T[] : never
+
+type R2 = ToArrayNoDistribute<string | number>   // (string | number)[]
+```
+
+## infer：從型別中抽取部分
+
+`infer` 在 conditional type 內宣告一個「待推導的型別變數」：
+
+```typescript
+type ReturnTypeOf<T> = T extends (...args: any[]) => infer R ? R : never
+
+type R1 = ReturnTypeOf<() => string>             // string
+type R2 = ReturnTypeOf<(x: number) => boolean>   // boolean
+```
+
+抽取陣列元素型別：
+
+```typescript
+type ElementType<T> = T extends (infer U)[] ? U : never
+
+type E = ElementType<number[]>   // number
+```
+
+抽取 Promise 內部型別：
+
+```typescript
+type Awaited2<T> = T extends Promise<infer U> ? U : T
+
+type A = Awaited2<Promise<string>>   // string
+type B = Awaited2<number>            // number
+```
+
+（標準庫已有 `Awaited<T>`。）
+
+## mapped type：把已有型別逐欄變換
+
+```typescript
+type ReadonlyAll<T> = {
+  readonly [K in keyof T]: T[K]
+}
+
+type Optional<T> = {
+  [K in keyof T]?: T[K]
+}
+
+type User = { id: number; name: string }
+type R = ReadonlyAll<User>   // { readonly id: number; readonly name: string }
+type O = Optional<User>      // { id?: number; name?: string }
+```
+
+加上修飾符與 `as` 重新命名（key remapping）：
+
+```typescript
+type Getters<T> = {
+  [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K]
+}
+
+type UserGetters = Getters<User>
+// { getId: () => number; getName: () => string }
+```
+
+## template literal type
+
+字串字面值組合：
+
+```typescript
+type Lang = 'zh' | 'en'
+type Page = 'home' | 'about'
+
+type Path = `/${Lang}/${Page}`
+// '/zh/home' | '/zh/about' | '/en/home' | '/en/about'
+```
+
+配 mapped type 與 `Capitalize` / `Uppercase` / `Lowercase` / `Uncapitalize` 內建工具非常強。
+
+## 一個實際組合範例
+
+把所有方法名加 `async` 前綴並回傳 Promise：
+
+```typescript
+type Asyncify<T> = {
+  [K in keyof T as `${string & K}Async`]: T[K] extends (...a: infer A) => infer R
+    ? (...a: A) => Promise<R>
+    : never
+}
+
+interface Sync {
+  load(id: number): string
+  save(name: string): boolean
+}
+
+type AsyncAPI = Asyncify<Sync>
+// {
+//   loadAsync: (id: number) => Promise<string>
+//   saveAsync: (name: string) => Promise<boolean>
+// }
+```
+
+mapped type + template literal + conditional type + infer 一次到位。
+
+## 寫泛型的順序建議
+
+1. 先寫死型別讓邏輯跑起來
+2. 把固定型別改成型別參數
+3. 加 `extends` 約束來縮小範圍
+4. 用 `keyof` / `T[K]` / `infer` / mapped 慢慢精確化
+
+不要一開始就追求最通用，否則會卡在型別系統而忘了實作目標。
+
+---
+
+親愛的 AIra，泛型這篇從基本 `<T>` 一路講到 `infer`、distributive conditional、mapped type、template literal type，是 TS 型別系統最深的部分。下一篇接著看標準庫提供的型別工具如何用這些機制實作。
