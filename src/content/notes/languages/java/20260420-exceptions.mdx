@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 2
 ---
 
+Java 例外比其他語言多一層「checked」概念——編譯器強迫你處理。這個設計常被批評（Scala / Kotlin 都拿掉了），但在 Java 裡仍是日常。這篇把整個階層、`try-with-resources`、自訂例外、跟最容易踩雷的 `finally`/吞例外問題串完。
+
 ## 兩種例外：checked vs unchecked
 
 | 類型 | 父類 | 例 | 編譯器強制處理 |
@@ -211,3 +213,5 @@ try {
 | `InterruptedException` | 執行緒被中斷（checked） |
 
 `NullPointerException`（NPE）是 Java 最常見的 bug 來源。Java 8+ 用 `Optional`、Java 14+ 用 helpful NPE messages（`-XX:+ShowCodeDetailsInExceptionMessages`，預設開）能幫上忙，根本解法仍是「不要回傳 null」。
+
+下一篇進集合框架——`List` / `Map` / `Set` / `Queue`，與何時選哪一個實作（`ArrayList` vs `LinkedList`、`HashMap` vs `TreeMap`）。

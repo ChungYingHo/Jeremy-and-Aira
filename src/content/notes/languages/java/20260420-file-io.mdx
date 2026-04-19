@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 6
 ---
 
+Java 的 IO 有點考古意味——`java.io` 是初代、`java.nio.file` 是 Java 7 的重做。新程式碼一律用後者（`Path` + `Files`），但讀舊 codebase 還是會看到 `File` / `FileInputStream`。這篇以 NIO 為主，舊 API 只看「認得就好」的程度。
+
 ## 三套 API 的關係
 
 | 世代 | 入口 | 何時用 |
@@ -220,3 +222,5 @@ Java 18+ 預設編碼已改成 UTF-8（PEP 686 風格的決策）。但跨版本
 Files.readString(p, StandardCharsets.UTF_8);
 Files.newBufferedWriter(p, StandardCharsets.UTF_8);
 ```
+
+`Files.lines` / `Files.walk` 回傳的 `Stream<T>` 不是普通迴圈——下一篇展開 Java 8 的 Lambda 與 Stream API，這些 IO 範例的全貌才會浮出來。

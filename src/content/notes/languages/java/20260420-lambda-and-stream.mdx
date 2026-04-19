@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 7
 ---
 
+Java 8（2014）是分水嶺：lambda、Stream API、`Optional` 一次到位，整個語言的寫法跟著變。前面集合、IO、`Comparator` 看到的 `->` 與 `Stream<T>`，這篇正式展開。重點不是「會寫 lambda」，是把 functional interface、method reference、stream pipeline 串成一套思路。
+
 ## Lambda 語法
 
 Java 8+，把「行為」當參數傳。
@@ -268,3 +270,5 @@ Map<V, K> inverted = m.entrySet().stream()
 - 鏈式可讀就用 stream，多重巢狀邏輯就回 for
 - side effect（修改外部變數）放 `forEach` 而不是 `peek`
 - 別追求「全 stream」，可讀性優先
+
+下一篇是 Java 系列收尾——建置工具與測試：Maven vs Gradle、JUnit 5 寫法、Mockito 基礎。一個專案能不能交出去，靠這層支撐。

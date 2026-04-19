@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 3
 ---
 
+寫真實程式幾乎一定會用到集合。Java 集合框架（JCF）的關鍵不是「會用 `ArrayList`」，而是「面對需求挑對實作」——`ArrayList` vs `LinkedList`、`HashMap` vs `TreeMap`、何時該用 `ArrayDeque` 取代 `Stack`。這篇把整個階層、慣用法、選型都串完。
+
 ## 整體架構
 
 Java Collection Framework 在 `java.util` 下，三大主幹加 `Map`：
@@ -242,3 +244,5 @@ people.sort(Comparator.comparingInt(Person::age)
 | FIFO / 雙端 | `ArrayDeque` |
 | 取最小 / 最大 | `PriorityQueue` |
 | 純常數 | `List.of` / `Set.of` / `Map.of` |
+
+集合 API 上面的 `<T>` 角括號就是泛型。下一篇正式進泛型——萬用字元 `?`、`extends` / `super` 上下界、為什麼 Java 泛型有「型別擦除」這個獨特包袱。

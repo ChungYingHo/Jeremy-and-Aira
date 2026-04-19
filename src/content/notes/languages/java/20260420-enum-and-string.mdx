@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 5
 ---
 
+兩個常用但容易被忽略的型別放一起講：`enum` 不是 int 別名，本身就是 class，能帶欄位、帶方法、能當策略物件用；`String` 是 immutable，所有 `replace` / `toUpperCase` 都產生新物件——理解這點才知道為什麼要 `StringBuilder`。
+
 ## enum 基本
 
 `enum` 定義一組固定常數，本質是 class。
@@ -240,3 +242,5 @@ String sql = """
 ```
 
 一般場景不會遇到，做文字處理（截斷、計數）才要小心。
+
+下一篇進檔案 IO——舊的 `java.io` 與新的 `java.nio.file`（`Path` / `Files`），以及為什麼新程式碼一律用後者。

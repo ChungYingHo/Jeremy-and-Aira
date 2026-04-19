@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 4
 ---
 
+前一篇集合框架到處看到 `<T>` / `<K, V>`，這篇展開講泛型本身。Java 泛型有個別語言沒有的歷史包袱——「型別擦除」，所以才會出現 `?`、`extends` / `super` 這套設計。理解擦除就能理解大半的泛型「怎麼這樣寫」。
+
 ## 為什麼要泛型
 
 沒泛型時：
@@ -262,3 +264,5 @@ record Pair<A, B>(A first, B second) {
 Pair<String, Integer> p = new Pair<>("age", 30);
 Pair<String, Double> p2 = p.withSecond(3.14);
 ```
+
+下一篇換口味——`enum` 與字串。`enum` 在 Java 是「真正的型別」（不是 int 別名），可以帶方法、帶欄位；字串則展開 `String` immutability、`StringBuilder`、Java 15+ 的 text block。

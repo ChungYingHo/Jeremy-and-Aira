@@ -7,7 +7,7 @@ changelog: []
 sameDateSort: 8
 ---
 
-純 `javac` + `java` 開發小程式還行，正式專案就需要建置工具管依賴、編譯、打包、測試。Java 主流兩套：**Maven** 與 **Gradle**。
+Java 系列收尾——把語法、OOP、集合、stream 寫完之後，要把專案真正跑起來、發出去、有人能維護，靠的就是這層：建置工具與測試。純 `javac` + `java` 開發小程式還行，正式專案需要工具管依賴、編譯、打包、測試。Java 主流兩套：**Maven** 與 **Gradle**。
 
 ## Maven 還是 Gradle？
 
@@ -317,3 +317,5 @@ IDE（IntelliJ / VS Code）通常綠色三角直接跑單一測試。CI 用 `mvn
 - AAA 結構：**A**rrange、**A**ct、**A**ssert
 - 測試之間獨立，不要共享 mutable state（`@BeforeEach` 重設）
 - 不要測 framework 的事（測自己寫的邏輯）
+
+Java 系列到此結束——從介面與抽象、例外、集合、泛型、enum / String、檔案 IO、Lambda / Stream，到 Maven / Gradle / JUnit / Mockito，整套寫真實 Java 專案會碰到的基礎都串完了。下一階段可以挑方向深入：Spring Boot（Web / 資料）、Android、或更貼近 JVM 的 Kotlin / Scala 任一條路都通。

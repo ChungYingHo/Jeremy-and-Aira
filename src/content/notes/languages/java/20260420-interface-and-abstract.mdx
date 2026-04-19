@@ -7,6 +7,8 @@ changelog: []
 sameDateSort: 1
 ---
 
+前面 OOP 入門講過 class 與繼承，這篇進到更上層的型別抽象——`abstract class` 與 `interface`。Java 是單一繼承語言，要做「能力組合」靠的是介面：一個類別能 implements 多個介面，也是 Java 對 mixin / trait / Protocol 這類概念的回答。
+
 ## 抽象類別 abstract class
 
 不能被 `new` 出來，只能被繼承。可以有實作的方法、也可以有抽象方法（`abstract`，沒方法體）。
@@ -178,3 +180,5 @@ class Dog extends Animal {
 ```
 
 漏寫 `@Override` 然後拼錯，會變成「定義了一個新方法」，bug 很難發現。
+
+下一篇接 Java 另一個面向程式設計的核心——例外處理：checked vs unchecked、try-with-resources、何時該包裝何時該重拋。
