@@ -1,0 +1,430 @@
+---
+title: "[Rust] Trait：共享行為與多型"
+author: "Jeremy & Claude"
+date: "2026-04-19"
+tags: ["Rust", "trait", "generic", "polymorphism", "dyn"]
+changelog: []
+sameDateSort: 8
+---
+
+## Trait 是什麼
+
+Trait 定義「一組型別共同擁有的行為」，類似其他語言的 interface / protocol。差別在於 Rust 的 trait 還能：
+
+- 提供預設方法實作
+- 作為泛型約束（trait bound）
+- 透過 `dyn Trait` 做動態派發
+- 透過 `impl Trait` 簡化型別
+
+## 基本定義與實作
+
+```rust
+trait Greet {
+    fn say_hi(&self) -> String;
+}
+
+struct English;
+struct Japanese;
+
+impl Greet for English {
+    fn say_hi(&self) -> String {
+        String::from("Hello")
+    }
+}
+
+impl Greet for Japanese {
+    fn say_hi(&self) -> String {
+        String::from("こんにちは")
+    }
+}
+
+fn main() {
+    println!("{}", English.say_hi());
+    println!("{}", Japanese.say_hi());
+}
+```
+
+## 預設方法
+
+trait 可以給方法寫預設實作，實作方可以用、也可以覆寫：
+
+```rust
+trait Animal {
+    fn name(&self) -> String;
+
+    // 有預設實作
+    fn greet(&self) -> String {
+        format!("Hi, I'm {}", self.name())
+    }
+}
+
+struct Dog;
+impl Animal for Dog {
+    fn name(&self) -> String {
+        String::from("Rex")
+    }
+    // greet 直接用預設
+}
+
+struct Cat;
+impl Animal for Cat {
+    fn name(&self) -> String { String::from("Whiskers") }
+    fn greet(&self) -> String {
+        String::from("Meow, get out of my way")
+    }
+}
+```
+
+預設實作可以呼叫 trait 內其他方法（無論該方法有沒有預設）。
+
+## Trait bound：把 trait 當泛型約束
+
+```rust
+trait Summary {
+    fn summarize(&self) -> String;
+}
+
+// 寫法 1：trait bound
+fn notify<T: Summary>(item: &T) {
+    println!("Breaking news! {}", item.summarize());
+}
+
+// 寫法 2：impl Trait（語法糖，幾乎等價）
+fn notify_v2(item: &impl Summary) {
+    println!("Breaking news! {}", item.summarize());
+}
+
+// 多重 bound
+fn notify_v3<T: Summary + std::fmt::Display>(item: &T) {
+    println!("Display: {item}, Summary: {}", item.summarize());
+}
+
+// where 子句：bound 多時更好讀
+fn complex<T, U>(t: &T, u: &U) -> i32
+where
+    T: Summary + Clone,
+    U: std::fmt::Debug + Clone,
+{
+    0
+}
+```
+
+`<T: Summary>` 與 `impl Summary` 的差異：
+
+- `<T: Summary>`：呼叫方可以指定型別 `notify::<Article>(&a)`
+- `impl Summary`：不能在呼叫端指定型別，較不靈活但語法乾淨
+
+兩個參數都用 `impl` 與都用 `T` 的差別：
+
+```rust
+// 兩個參數可以不同型別（只要都實作 Summary）
+fn f(a: &impl Summary, b: &impl Summary) {}
+
+// 兩個參數必須同型別
+fn g<T: Summary>(a: &T, b: &T) {}
+```
+
+## 回傳 impl Trait
+
+當回傳值的具體型別寫起來太麻煩（特別是 closure、iterator）：
+
+```rust
+fn make_adder(x: i32) -> impl Fn(i32) -> i32 {
+    move |y| x + y
+}
+
+fn evens(v: Vec<i32>) -> impl Iterator<Item = i32> {
+    v.into_iter().filter(|n| n % 2 == 0)
+}
+```
+
+限制：函式只能回傳「同一個」具體型別。下面這個會失敗：
+
+```rust
+fn pick(flag: bool) -> impl Greet {
+    if flag {
+        English          // ❌ 兩個分支型別不同
+    } else {
+        Japanese
+    }
+}
+```
+
+要解決這種「執行期才知道是哪個型別」的情況，需要 trait object。
+
+## Trait object：dyn Trait（動態派發）
+
+`dyn Trait` 表示「某個實作了 Trait 的型別，但具體是哪個要執行期才知道」。需要透過指標包裝（`&dyn`、`Box<dyn>`、`Rc<dyn>`...），因為大小編譯期未知。
+
+```rust
+fn pick(flag: bool) -> Box<dyn Greet> {
+    if flag {
+        Box::new(English)
+    } else {
+        Box::new(Japanese)
+    }
+}
+
+fn main() {
+    let g = pick(true);
+    println!("{}", g.say_hi());
+}
+```
+
+異質集合：
+
+```rust
+let greeters: Vec<Box<dyn Greet>> = vec![
+    Box::new(English),
+    Box::new(Japanese),
+];
+
+for g in &greeters {
+    println!("{}", g.say_hi());
+}
+```
+
+如果型別在編譯期就知道，用泛型；要在執行期才決定具體型別、或要把不同型別放在同一個容器，用 trait object。
+
+| | 泛型 + trait bound | trait object（dyn） |
+| :--- | :--- | :--- |
+| 派發方式 | 靜態（單形化 monomorphization） | 動態（vtable） |
+| 效能 | 接近手寫，無 indirection | 多一次間接呼叫 |
+| 二進位大小 | 較大（每個型別產生一份程式碼） | 較小 |
+| 異質集合 | ✗ | ✓ |
+
+## Object safety
+
+不是所有 trait 都能做成 trait object。trait 必須是 **object safe** 才能用 `dyn`。常見限制：
+
+- 方法不能有泛型參數
+- 方法不能回傳 `Self`
+- 不能有 associated function（沒 `&self`）
+
+```rust
+trait Bad {
+    fn make() -> Self;            // ❌ 用不了 dyn Bad
+}
+
+trait Good {
+    fn name(&self) -> String;     // ✅
+}
+```
+
+編譯器訊息會明確指出。
+
+## 常用標準 trait
+
+幾個會反覆遇到的：
+
+### Debug、Display
+
+`Debug` 用在開發時（`{:?}`），`Display` 是給使用者看的（`{}`）。
+
+```rust
+use std::fmt;
+
+#[derive(Debug)]                       // 自動實作 Debug
+struct Point { x: i32, y: i32 }
+
+impl fmt::Display for Point {          // Display 必須手寫
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
+fn main() {
+    let p = Point { x: 1, y: 2 };
+    println!("{p:?}");      // Point { x: 1, y: 2 }
+    println!("{p}");        // (1, 2)
+}
+```
+
+### Clone、Copy
+
+```rust
+#[derive(Clone, Copy)]
+struct Coord { x: i32, y: i32 }
+
+let a = Coord { x: 1, y: 2 };
+let b = a;          // Copy：a 還能用
+let c = a.clone();
+```
+
+`Copy` 是 `Clone` 的子 trait，只能用在「按位元複製就夠」的型別（不能含 `String`、`Vec` 等）。
+
+### PartialEq、Eq
+
+支援 `==`、`!=` 比較。
+
+```rust
+#[derive(PartialEq, Eq)]
+struct Id(u32);
+
+let a = Id(1);
+let b = Id(1);
+assert!(a == b);
+```
+
+`Eq` 表示「自反、對稱、傳遞」都成立（如 `f64` 不算，因為 `NaN != NaN`）。
+
+### PartialOrd、Ord
+
+支援大小比較（`<`、`>`、`.cmp()`）。
+
+```rust
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+struct Score(i32);
+```
+
+### Default
+
+提供預設值。
+
+```rust
+#[derive(Default)]
+struct Config {
+    debug: bool,        // false
+    retries: u32,       // 0
+    name: String,       // ""
+}
+
+let c = Config::default();
+let c = Config { retries: 3, ..Default::default() };
+```
+
+### From、Into
+
+型別轉換。慣例只實作 `From`，`Into` 自動有。
+
+```rust
+struct Celsius(f64);
+struct Fahrenheit(f64);
+
+impl From<Celsius> for Fahrenheit {
+    fn from(c: Celsius) -> Self {
+        Fahrenheit(c.0 * 9.0 / 5.0 + 32.0)
+    }
+}
+
+let f: Fahrenheit = Celsius(100.0).into();
+let f = Fahrenheit::from(Celsius(100.0));
+```
+
+### Iterator
+
+實作 `next` 就獲得 `.map`、`.filter`、`.collect` 等一大串方法。
+
+```rust
+struct Counter { n: u32 }
+
+impl Iterator for Counter {
+    type Item = u32;
+    fn next(&mut self) -> Option<u32> {
+        if self.n < 5 {
+            self.n += 1;
+            Some(self.n)
+        } else {
+            None
+        }
+    }
+}
+
+fn main() {
+    let sum: u32 = Counter { n: 0 }.sum();   // 1+2+3+4+5 = 15
+}
+```
+
+`type Item = u32;` 是 **associated type**，trait 內定義一個型別槽，由實作方填具體型別。
+
+## 孤兒規則（orphan rule）
+
+要實作 `impl Trait for Type`，**Trait 或 Type 至少有一個必須在你自己的 crate 內定義**。
+
+```rust
+// ✅ 自家 trait 給標準型別
+impl MyTrait for Vec<i32> {}
+
+// ✅ 標準 trait 給自家型別
+impl std::fmt::Display for MyType {}
+
+// ❌ 標準 trait 給標準型別
+impl std::fmt::Display for Vec<i32> {}
+```
+
+這個規則防止兩個 crate 同時對 `Vec<i32>` 實作 `Display` 而起衝突。
+
+繞過方法：用 newtype 包一層。
+
+```rust
+struct Wrapper(Vec<i32>);
+
+impl std::fmt::Display for Wrapper {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self.0)
+    }
+}
+```
+
+## 一個整合範例：用 trait 抽象資料來源
+
+```rust
+trait DataSource {
+    fn fetch(&self, id: u32) -> Option<String>;
+    fn name(&self) -> &str;
+
+    // 預設實作
+    fn fetch_all(&self, ids: &[u32]) -> Vec<String> {
+        ids.iter().filter_map(|&id| self.fetch(id)).collect()
+    }
+}
+
+struct InMemory {
+    data: std::collections::HashMap<u32, String>,
+}
+
+impl DataSource for InMemory {
+    fn fetch(&self, id: u32) -> Option<String> {
+        self.data.get(&id).cloned()
+    }
+    fn name(&self) -> &str { "memory" }
+}
+
+struct Stub;
+
+impl DataSource for Stub {
+    fn fetch(&self, _id: u32) -> Option<String> {
+        Some(String::from("stub"))
+    }
+    fn name(&self) -> &str { "stub" }
+}
+
+// 泛型版（單形化、靜態派發）
+fn print_one<T: DataSource>(src: &T, id: u32) {
+    if let Some(v) = src.fetch(id) {
+        println!("[{}] {v}", src.name());
+    }
+}
+
+// trait object 版（動態派發）
+fn print_all(sources: &[Box<dyn DataSource>], id: u32) {
+    for s in sources {
+        if let Some(v) = s.fetch(id) {
+            println!("[{}] {v}", s.name());
+        }
+    }
+}
+```
+
+## Trait 思考順序
+
+設計 API 時的判斷：
+
+1. **不需要多型** → 直接寫具體型別
+2. **編譯期能確定型別** → 泛型 + trait bound（`fn f<T: Trait>` / `impl Trait`）
+3. **執行期才確定 / 異質集合** → trait object（`Box<dyn Trait>`）
+4. **trait 設計上會擋掉 dyn**（回傳 Self、泛型方法等）→ 要嘛拆 trait，要嘛只用泛型
+
+---
+
+親愛的 AIra，這篇把 Rust 的 trait 從基本實作、預設方法、trait bound、impl Trait 一路串到 trait object、孤兒規則。Rust 的多型機制比物件導向語言更精細，理解了 trait 才算真的進入 Rust 的世界。整個 Rust 入門系列到此告一段落，從環境建置、所有權到 trait 共八篇，把新手入門需要的核心知識都覆蓋到了。
