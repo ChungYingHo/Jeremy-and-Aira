@@ -355,3 +355,27 @@ print(quick_sort(arr))  # [1, 1, 2, 3, 4, 5]
 - **需要穩定排序且資料量大** → Merge Sort（保證 $O(n \log n)$ 且穩定）
 - **一般情況最快** → Quick Sort + 隨機 pivot
 - **Bubble / Selection Sort** → 僅用於教學
+
+## 常見考法
+
+| 題型 | 必備技能 |
+| :--- | :--- |
+| 給陣列跑前 $k$ 輪 | 列每輪比較/交換/狀態表（Bubble、Selection、Insertion 最常見） |
+| 判斷某陣列跑幾輪剛好排序好 | Bubble 用 flag 檢查、Insertion 看已排序前綴 |
+| 比較排序下界 | $\lceil \log_2 n! \rceil$，由 Stirling 得 $\Theta(n \log n)$ |
+| 穩定性判斷 | 相等元素的相對順序是否保持（Merge/Insertion/Bubble 穩定；Selection/Quick 不穩定） |
+| Quick Sort worst case 觸發 | 已排序輸入 + 固定 pivot 策略 → 退化 $O(n^2)$ |
+| Merge 合併步驟 | 雙指標各掃 $n_L, n_R$ 次 → 合併成本 $O(n_L + n_R)$ |
+| 推導 $O(n^2)$ | $\sum_{i=1}^{n-1}(n-i) = \frac{n(n-1)}{2}$ |
+| 推導 $O(n \log n)$ | 遞迴樹 $\log n$ 層、每層合計掃 $n$ 個 → $n \log n$ |
+
+:::warning
+**穩定性陷阱**：Selection 不穩定的原因——「跟未排序區第一個交換」的動作會把相等元素「跳過」其他相等元素（`[3a, 3b, 1]` → 第 1 輪 $3a$ 換到位置 3，跑到 $3b$ 後面，順序顛倒）。**Quick Sort** 因為 partition 時的 swap 也會破壞相等元素的相對順序。考試要會舉反例。
+:::
+
+:::tip
+**複雜度推導常見公式**：
+- Bubble/Selection/Insertion：$T(n) = (n-1) + (n-2) + \cdots + 1 = \frac{n(n-1)}{2} = O(n^2)$
+- Merge/Quick：$T(n) = 2T(n/2) + O(n)$ → 主定理 Case 2 → $O(n \log n)$
+- Quick worst：$T(n) = T(n-1) + O(n) = O(n^2)$（pivot 每次選最大/最小）
+:::
