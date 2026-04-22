@@ -8,6 +8,7 @@ changelog: ['2026-04-10']
 
 import MergeSortVisualizer from '@/components/ArticleRelated/algorithm/MergeSortVisualizer.svelte'
 import QuickSortVisualizer from '@/components/ArticleRelated/algorithm/QuickSortVisualizer.svelte'
+import MaximalPointDiagram from '@/components/ArticleRelated/algorithm/MaximalPointDiagram.svelte'
 
 上一篇淘汰與搜尋法的核心動作是「縮小」——每一步決定哪一塊不用看、丟掉它。這篇講的分而治之（Divide and Conquer）看起來也在縮小，但意思完全不一樣：切完後**每一塊都要解**，最後再把答案合回去。兩者很容易混淆，所以這篇一開頭先把差異講清楚，再一路走完排序、幾何、FFT 五個經典應用。
 
@@ -316,6 +317,8 @@ $$T(n) = T(n-1) + O(n) = O(n^2)$$
 | 標號 | $P_1$ | $P_2$ | $P_3$ | $P_4$ | $P_5$ | $P_6$ | $P_7$ | $P_8$ |
 |------|-------|-------|-------|-------|-------|-------|-------|-------|
 | 座標 | $(1,6)$ | $(2,8)$ | $(3,4)$ | $(4,7)$ | $(5,3)$ | $(6,5)$ | $(7,1)$ | $(8,2)$ |
+
+<MaximalPointDiagram client:only="svelte" />
 
 **切兩半**：$L = \{P_1, P_2, P_3, P_4\}$、$R = \{P_5, P_6, P_7, P_8\}$。
 
