@@ -302,6 +302,50 @@ public class MaxHeap {
 
 ---
 
+## 常見考法
+
+| # | 題型 | 重點 |
+| :---: | :--- | :--- |
+| 1 | **手跑連續 insert 建 heap** | 每次 insert 新元素放尾端 → sift up |
+| 2 | **手跑 Floyd's heapify** | 從 $\lfloor n/2 \rfloor$ 往 1 做 sift down |
+| 3 | **手跑 extract max 連續 $k$ 次** | 根↔尾 swap → 砍尾 → sift down |
+| 4 | **Heap Sort 完整過程** | Build → 反覆 swap root/tail + sift down |
+| 5 | **給陣列判斷是否為合法 heap** | 檢查每個 $i$ 與 $2i$、$2i+1$ 的關係 |
+| 6 | **Build heap $O(n)$ 的推導** | $\sum_{h=0}^{\log n} \frac{n}{2^{h+1}} \cdot h = O(n)$（等比加權和收斂） |
+| 7 | **Insert / Extract $O(\log n)$ 推導** | 樹高 = $\lfloor \log_2 n \rfloor$；每層 $O(1)$ |
+| 8 | **1-indexed 與 0-indexed 公式轉換** | 父：$\lfloor i/2 \rfloor$ vs $\lfloor (i-1)/2 \rfloor$ |
+| 9 | **為什麼 heap 不能 $O(\log n)$ 任意查詢** | 只保證父子、兄弟與層序無序 → 只能線性掃 |
+| 10 | **Top-K 問題用哪種 heap** | 找前 $K$ **大** → $K$ 大小的 **min-heap**（反直覺） |
+
+### 複雜度推導
+
+**Insert / Extract $O(\log n)$**：
+
+$$
+\text{樹高 } h = \lfloor \log_2 n \rfloor,\ \text{每層 swap } O(1) \Rightarrow O(\log n)
+$$
+
+**Floyd's Build Heap $O(n)$**：高度為 $h$ 的節點數 $\le \lceil n / 2^{h+1} \rceil$，每個節點下沉最多 $h$ 層：
+
+$$
+T(n) = \sum_{h=0}^{\lfloor \log n \rfloor} \left\lceil \frac{n}{2^{h+1}} \right\rceil \cdot h \le n \sum_{h=0}^{\infty} \frac{h}{2^{h+1}} = n \cdot 1 = O(n)
+$$
+
+（$\sum h / 2^{h+1} = 1$ 是常見等比加權和。）
+
+**Heap Sort $O(n \log n)$**：Build $O(n)$ + $n-1$ 次 extract × $O(\log n)$ = $O(n \log n)$
+
+:::warning
+**考試常踩的陷阱**
+
+1. **Build heap 是 $O(n)$ 不是 $O(n \log n)$**：連續 insert 才是 $O(n \log n)$
+2. **Heap Sort 不穩定**：相同 key 的相對順序可能被打亂
+3. **extract max 要把尾巴搬到根**，不是把第二大搬上去——要走完 sift down
+4. **Sift down 取左右子較大者**（max-heap）；取錯會破壞性質
+5. **Top-K 大用 min-heap**：因為要淘汰「最小的那個」，heap 大小固定 $K$
+6. **heap 不等於 BST**：heap 只有父子關係、沒有中序排序
+:::
+
 ## 堆積在經典演算法中的角色
 
 許多圖論與貪婪演算法的效能關鍵就在於優先佇列——而優先佇列的主流實作就是堆積。
