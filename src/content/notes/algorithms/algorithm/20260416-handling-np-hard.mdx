@@ -39,12 +39,20 @@ def backtrack(state):
 
 逐列決定「這一列皇后放第幾行」。剪枝條件：新放的位置不能跟前面任何皇后同行或同對角線。
 
+用三個 set 記錄已被佔用的行與對角線：
+
+- `cols`：已被佔用的行編號
+- `diag1`：主對角線 ↘，同一條主對角線上**所有格子的 `row - col` 都相同**（因為往右下走，`row` 和 `col` 同步 $+1$，差不變）
+- `diag2`：副對角線 ↙，同一條副對角線上**所有格子的 `row + col` 都相同**（往左下走，`row` $+1$、`col` $-1$，和不變）
+
+所以判斷「新放的 (row, col) 會不會撞對角線」只要看 `row - col` 跟 `row + col` 是否已在 set 裡。
+
 ```python
 def solve_n_queens(n):
     results = []
     cols = set()
-    diag1 = set()   # row - col
-    diag2 = set()   # row + col
+    diag1 = set()   # row - col：同主對角線 (↘) 值相同
+    diag2 = set()   # row + col：同副對角線 (↙) 值相同
     placement = []
 
     def backtrack(row):
@@ -120,11 +128,12 @@ def can_color(graph, k):
 框架（以 minimization 為例）：
 
 ```text
-best ← +∞
+best ← +∞                          # 目前最佳解（minimization 要越小越好）
 push root onto queue
 while queue not empty:
     node ← pop
-    if bound(node) ≥ best:        # 用估計值剪枝
+    if bound(node) ≥ best:        # bound 是「此分支最低可能達到的成本」（下界）
+                                  # 連下界都已經不比 best 好 → 整個子樹砍掉
         continue
     if node is a leaf:
         if cost(node) < best:
@@ -133,6 +142,13 @@ while queue not empty:
         for child in expand(node):
             push child
 ```
+
+`bound(node)` 的方向要對準目標：
+
+- **minimization**：`bound` 是**下界**（理想情況下能做到多好）；若 `bound ≥ best` 表示此分支即使展開到底也贏不過 best
+- **maximization**（如下面的 knapsack）：`bound` 是**上界**；若 `bound ≤ best` 表示此分支即使展開到底也贏不過 best
+
+「bound 越緊越好」的意思是：下界越大 / 上界越小，越能剪掉更多分支，但計算 bound 本身不能太貴——太貴了會蓋過剪枝省下的時間。
 
 三個組件：
 

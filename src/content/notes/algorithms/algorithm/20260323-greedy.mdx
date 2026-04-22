@@ -99,9 +99,9 @@ import BinPackingDiagram from '@/components/ArticleRelated/algorithm/BinPackingD
 
 ### Prim 演算法
 
-**策略：從任意節點出發，每次把「連到一個新節點的最便宜邊」加進樹，直到所有節點都在裡面。**
+**策略：從任意節點出發，每次從「一端在樹內、另一端在樹外」的候選邊中挑最便宜的一條加入樹，直到所有節點都在裡面。**
 
-概念上像一棵樹不斷「長大」，每步吸收最近的新節點。
+關鍵是「候選邊」的定義——必須剛好一端在樹內、一端在樹外。兩端都在樹內會成環，兩端都在樹外代表這條邊目前搆不到樹。概念上像一棵樹不斷「長大」，每步吸收距離樹最近的那個樹外節點。
 
 <PrimVisualizer client:only="svelte" />
 
@@ -423,6 +423,8 @@ def graham_scan(points):
     stack = [start]
     for p in points:
         while len(stack) >= 2:
+            # 用 stack 頂兩點 (P1, P2) 與候選點 p 做外積，判斷 P1→P2→p 是左轉還是右轉
+            # cross > 0：左轉，P2 保留；cross <= 0：右轉或共線，P2 不是凸包點，彈出
             cross = ((stack[-1][0] - stack[-2][0]) * (p[1] - stack[-2][1])
                    - (stack[-1][1] - stack[-2][1]) * (p[0] - stack[-2][0]))
             if cross <= 0:

@@ -68,13 +68,16 @@ import HeapExtractVisualizer from '@/components/ArticleRelated/data-structure/he
 
 ## 核心操作
 
+以下所有操作都用 **1-indexed** 表示法。隨時記得：index $i$ 的父 = $\lfloor i / 2 \rfloor$、左子 = $2i$、右子 = $2i + 1$。「葉節點」定義為 index 落在 $\lfloor n/2 \rfloor + 1 \sim n$ 範圍的節點（下方沒有子）。
+
 ### Insert — 向上浮 (Sift Up)
 
 步驟：
 
-1. 把新元素放在陣列尾端（維持完全二元樹形狀）
-2. 與父節點比較，若違反堆積性質就交換
-3. 持續向上，直到符合性質或到達根節點
+1. 把新元素放在陣列尾端（index = 當前 size + 1，維持完全二元樹形狀）
+2. 令 $i$ = 新元素目前的 index；比較 $\text{arr}[i]$ 與父 $\text{arr}[\lfloor i/2 \rfloor]$
+3. 若違反堆積性質（max-heap 中子 `>` 父）就 swap，然後 $i \leftarrow \lfloor i/2 \rfloor$（往上爬一層）
+4. 重複步驟 2–3，直到符合性質或 $i = 1$（已到根）
 
 從空的 max-heap 依序 insert `[3, 1, 6, 5, 2, 4]`（1-indexed）：
 
@@ -105,10 +108,11 @@ import HeapExtractVisualizer from '@/components/ArticleRelated/data-structure/he
 
 取出根（最大值）的步驟：
 
-1. 記錄根節點值當作回傳結果
-2. 把**最後一個**元素搬到根（維持完全二元樹形狀）
-3. 比較當前節點與兩個子節點，與**較大的**子節點交換（若需要）
-4. 持續向下，直到符合性質或成為葉節點
+1. 記錄 $\text{arr}[1]$ 當作回傳結果
+2. 把**最後一個**元素（$\text{arr}[n]$）搬到 index 1，刪除尾端（維持完全二元樹形狀）
+3. 令 $i = 1$；讀左子 $\text{arr}[2i]$ 與右子 $\text{arr}[2i+1]$（若存在），挑兩者中**較大**者的 index 為 $c$
+4. 若 $\text{arr}[i] <$ $\text{arr}[c]$ 則 swap，接著 $i \leftarrow c$（下沉到較大的子節點）
+5. 重複步驟 3–4，直到符合性質或 $i$ 沒有子節點（即 $2i > n$，$i$ 已是葉）
 
 承上例 `[_, 6, 5, 4, 1, 2, 3]`，連續執行兩次 extract max：
 

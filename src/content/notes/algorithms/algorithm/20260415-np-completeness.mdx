@@ -247,12 +247,26 @@ $$
 
 #### SAT $\le_p$ 3-SAT
 
-關鍵想法：任何 SAT clause 都可以拆成只含 3 個 literal 的 clause。
+關鍵想法：任何 SAT clause 都可以改寫成等價的一組「每條 clause 剛好 3 個 literal」的 clause 集合。
 
-- clause 只有 1 個 literal $x_1$ → 擴成 $(x_1 \lor y \lor z) \land (x_1 \lor y \lor \neg z) \land (x_1 \lor \neg y \lor z) \land (x_1 \lor \neg y \lor \neg z)$，這要求 $x_1$ 為 true
-- clause 有 $k > 3$ 個 literal → 引入輔助變數把它「串起來」成多個 3-literal clause
+**規則**：
 
-每條原 clause 變成常數條 3-clause，整體線性時間完成——reduction 成立。
+- **1 個 literal $x$**：補兩個新變數 $y, z$，擴成 4 條：
+  $(x \lor y \lor z) \land (x \lor y \lor \neg z) \land (x \lor \neg y \lor z) \land (x \lor \neg y \lor \neg z)$
+  把這 4 條的 $y, z$ 所有組合都寫下來後，AND 起來等價於「$x$ 必須為 true」
+- **2 個 literal $(x_1 \lor x_2)$**：補一個新變數 $y$，擴成 2 條：
+  $(x_1 \lor x_2 \lor y) \land (x_1 \lor x_2 \lor \neg y)$
+- **3 個 literal**：不動
+- **$k > 3$ 個 literal $(l_1 \lor l_2 \lor \cdots \lor l_k)$**：引入 $k - 3$ 個新變數 $y_1, \ldots, y_{k-3}$「串」起來：
+  $(l_1 \lor l_2 \lor y_1) \land (\neg y_1 \lor l_3 \lor y_2) \land (\neg y_2 \lor l_4 \lor y_3) \land \cdots \land (\neg y_{k-3} \lor l_{k-1} \lor l_k)$
+
+**具體例**：$(x_1 \lor x_2 \lor x_3 \lor x_4)$（$k = 4$）引入 1 個新變數 $y_1$，變成：
+
+$$(x_1 \lor x_2 \lor y_1) \land (\neg y_1 \lor x_3 \lor x_4)$$
+
+驗證：若原 clause 至少一個 literal 為 true，必能選一個 $y_1$ 值讓兩條 3-clause 都滿足；反之若原 clause 全 false，這兩條無論 $y_1$ 怎麼選都有一條會是 false——等價關係成立。
+
+每條原 clause 只會膨脹成**常數條或 $O(k)$ 條**新 3-clause，整體線性時間完成——reduction 成立。
 
 #### 3-SAT $\le_p$ Clique
 

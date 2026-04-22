@@ -69,7 +69,12 @@ $$
 
 <ChainingDiagram client:only="svelte" />
 
-查詢時先算 hash 找到 slot，再在串列內逐一比對 key。
+查詢時先算 hash 找到 slot，再在串列內逐一比對 key。以上表找 `36`：
+
+1. 算 `hash(36) = 36 mod 7 = 1`，進 slot 1
+2. 串列 `[15, 22, 8, 36, 29]` 逐一比對：`15 ≠`、`22 ≠`、`8 ≠`、`36 ✓` 命中（第 4 次比對）
+
+找不存在的 `10`：`hash(10) = 3`，slot 3 為空 → 直接回報不存在。
 
 ```java
 import java.util.LinkedList;
@@ -150,6 +155,8 @@ public class HashTableChaining {
 ### 平方探測 (Quadratic Probing)
 
 每次跳的距離變成平方：$h(k, i) = (h(k) + i^2) \bmod m$。
+
+變數 $i$ 是**探測次數**，從 $0$ 開始；每次探測到的 slot 已被占用就 $i \mathrel{+}= 1$ 再試下一個，直到找到空 slot 為止。$i = 0$ 代表第一次探測（即 $h(k)$ 本身）。
 
 同 key、同表：
 
