@@ -335,6 +335,53 @@ FPTAS 只可能出現在「弱 NP-complete」問題上，例如 knapsack、subse
 
 沒有哪個一定好。實務上：**小規模用精確法、中規模用近似、大規模用 heuristic，困難問題甚至混用**。
 
+## 常見考法
+
+| # | 題型 | 重點 |
+| :---: | :--- | :--- |
+| 1 | **N-Queens 回溯手跑** | `cols` / `row-col` / `row+col` 三個 set；$n=4$ 的全部 2 解 |
+| 2 | **Subset Sum 回溯剪枝** | 由大到小排序；剩餘最小 > remain 直接砍 |
+| 3 | **分支設限 vs 回溯差異** | 分支設限多了 bound（下界 / 上界）剪枝；用於最佳化 |
+| 4 | **Knapsack 分支設限 bound 計算** | 排序 $v/w$ → 貪心允許切物品 → upper bound |
+| 5 | **近似比計算 $\rho$** | 最小化 $\rho = \text{ALG}/\text{OPT}$；最大化 $\rho = \text{OPT}/\text{ALG}$ |
+| 6 | **Vertex Cover 2-approx 證明** | 選邊 matching $M$ → $\text{OPT} \ge \|M\|$、$\text{ALG} = 2\|M\|$ |
+| 7 | **Metric TSP via MST 2-approx** | $\text{OPT} \ge \text{MST}$；DFS 走兩次 + shortcut |
+| 8 | **Set Cover greedy $O(\ln n)$** | 每次選蓋最多新元素；$\rho = H_n$ |
+| 9 | **FPTAS vs PTAS 差異** | FPTAS 對 $n, 1/\varepsilon$ **雙多項式**；PTAS 可對 $1/\varepsilon$ 指數 |
+| 10 | **Knapsack FPTAS rescale 技巧** | $K = \varepsilon V_{\max}/n$；DP 變 $O(n^3/\varepsilon)$ |
+| 11 | **bound 方向（min 用下界、max 用上界）** | 方向反了剪枝會砍錯 |
+
+### Bounding 方向速查
+
+```text
+minimization: bound = 下界（此分支能達到的最好/最小值）
+              若 bound ≥ best  →  砍（展開到底也贏不過 best）
+
+maximization: bound = 上界（此分支能達到的最好/最大值）
+              若 bound ≤ best  →  砍（展開到底也贏不過 best）
+```
+
+### TSP 分支設限 bound 範例（下界）
+
+```text
+bound(node) = 當前路徑成本
+            + Σ (未加入城市 v 的最輕連出邊) / 2
+```
+
+除以 2 的原因：每條邊在 cycle 中會被兩端計算各一次。
+
+:::warning
+**考試常踩的陷阱**
+
+1. **回溯忘了 undo**：離開分支前必須還原狀態；不然兄弟分支會被污染
+2. **近似比 $\rho$ 方向**：最小化是 $\text{ALG}/\text{OPT}$、最大化是 $\text{OPT}/\text{ALG}$，都 $\ge 1$
+3. **bound 方向反**：min 用下界、max 用上界；反了會剪掉最佳解
+4. **FPTAS 不是萬能**：只「弱 NP-hard」問題有（Knapsack、Subset Sum）；強 NP-hard（一般 TSP、Max Clique）連 PTAS 都不存在
+5. **Vertex Cover 2-approx 取點要兩端都放**：只放一端會破壞 $\text{ALG} = 2\|M\|$ 的結構
+6. **Metric TSP 限定三角不等式**：一般 TSP 沒有常數近似（除非 P=NP）
+7. **Christofides = 1.5-approx**：是 metric TSP 目前最好的常數近似（需要 minimum weight matching）
+:::
+
 ## 整理
 
 整套「遇到 NP-complete 問題怎麼辦」的決策：
