@@ -291,6 +291,42 @@ $$(x_1 \lor x_2 \lor y_1) \land (\neg y_1 \lor x_3 \lor x_4)$$
 
 一路 chain 下去就把前面列的 15 個問題全都證成 NPC。**新問題要證 NPC 不用回頭爬到 SAT**，找個「顯然可 reduce 過來」的已知 NPC 是起點就行。
 
+## 常見考法
+
+| # | 題型 | 重點 |
+| :---: | :--- | :--- |
+| 1 | **P / NP / NPC / NP-hard 定義辨析** | P 能解；NP 能驗證；NPC = NP ∩ NP-hard；NP-hard 不必在 NP 裡（可能更難） |
+| 2 | **給問題判斷屬於哪一類** | 排序、MST、最短路徑 → P；SAT、TSP、Knapsack → NPC；Halting → 比 NPC 還難 |
+| 3 | **寫多項式驗證器證 $L \in \text{NP}$** | 給定答案（證書）→ 多項式時間檢查；如 SAT 代入賦值、TSP 加 cycle 長度 |
+| 4 | **Reduction $A \le_p B$ 的方向性** | $A$ 比 $B$ 容易；解 $B$ 就能解 $A$；$B$ 至少跟 $A$ 一樣難 |
+| 5 | **SAT → 3-SAT 擴展規則** | $k$ literal 要 $k-3$ 個新變數串起來 |
+| 6 | **3-SAT → Clique 建圖規則** | 每 literal 一頂點；不同 clause 且不互補才連邊；$m$-clique ↔ 可滿足 |
+| 7 | **IS / VC / Clique 三兄弟互轉** | IS 補圖 → Clique；VC = $V \setminus$ IS |
+| 8 | **Pseudo-polynomial 的意思** | $O(nW)$ 對**數值**多項式，但 $W$ 編碼長度是 $\log W$，對**輸入長度**指數 |
+| 9 | **2-SAT vs 3-SAT 差異** | 2-SAT 是 P（implication graph + SCC）；3-SAT 才是 NPC |
+| 10 | **Hamiltonian vs Euler 差異** | Euler（邊）：$O(E)$ 可判；Hamiltonian（點）：NPC |
+
+### Reduction 的判別要訣
+
+```text
+要證 L 是 NPC：
+    Step 1: 證 L ∈ NP           ← 給多項式驗證器
+    Step 2: 取已知 NPC 問題 A
+    Step 3: 建 f : A → L 的多項式轉換
+    Step 4: 證 x ∈ A  ⟺  f(x) ∈ L
+```
+
+:::warning
+**考試常踩的陷阱**
+
+1. **NP 不是「non-polynomial」**：是「Nondeterministic Polynomial」；NP ⊇ P
+2. **NP-hard 不一定在 NP 裡**：例如 halting problem 是 NP-hard 但不是 NPC（連驗證都做不到）
+3. **Reduction 方向搞反**：$A \le_p B$ 表示「$A$ 較易、$B$ 較難」，不是反過來
+4. **只證 $L \in \text{NP-hard}$ 不夠**：還要證 $L \in \text{NP}$ 才能成為 NPC
+5. **0/1 Knapsack 的 DP $O(nW)$ 不算多項式解**：$W$ 以二進位編碼是 pseudo-polynomial
+6. **2-coloring 是 P、3-coloring 是 NPC**：門檻就在 2 vs 3
+:::
+
 ---
 
 知道一個問題是 NP-complete 並不代表該放棄，只是承認「不可能快又精確」。實務上有三條退路：**縮小輸入範圍、容忍近似解、容忍機率**。下一篇會進入這些技巧——回溯法與分支設限精確搜（小規模下可行）、近似演算法（犧牲精度換多項式）、以及它們各自的適用情境。
