@@ -48,6 +48,8 @@ Workspace
 2. `src/foo/mod.rs`（資料夾風格，舊式）
 3. `src/foo/` 配 `src/foo.rs`（新式 inline，2018 edition 之後）
 
+Rust 2018 edition 起**優先用 `src/foo.rs`**（平行檔案）；`src/foo/mod.rs` 是舊式寫法（子模組多時目錄結構清楚，但檔名全叫 `mod.rs` 容易在編輯器混淆），新程式碼建議避免。
+
 範例專案結構：
 
 ```
@@ -145,6 +147,8 @@ fn main() {
 ```
 
 enum：標 `pub` 後**所有變體自動 pub**（因為大家用 enum 通常是要 match 所有 case）。
+
+設計理由：enum 的 `match` 必須窮舉所有變體；若某變體對外隱藏，使用方永遠寫不出完整 `match`（除非用 `_`，但失去型別安全的好處）。struct 欄位可獨立隱藏，enum 變體不行。
 
 ```rust
 mod color {

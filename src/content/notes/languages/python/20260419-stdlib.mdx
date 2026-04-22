@@ -231,6 +231,8 @@ for key, group in groupby(data, key=lambda x: x[0]):
     print(key, list(group))
 ```
 
+注意：`groupby` **只把相鄰的相同 key 歸為一組**，不會做整體去重或全域 group。所以幾乎一定要先 `sorted(data, key=...)` 再 `groupby(sorted_data, key=...)`，兩者 key 要一致。否則結果會被打散成多個小組。
+
 ## functools：函式工具
 
 ```python

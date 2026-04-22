@@ -241,6 +241,8 @@ static Stream<Arguments> provideCases() {
 }
 ```
 
+`Arguments.of(arg1, arg2, ...)` 的參數順序對應 test method 的參數順序（`@ParameterizedTest void fromMethod(int input, String expected)` 就是 `Arguments.of(1, "one")`）。JUnit 在 runtime 用反射按順序塞進去，型別不符會丟 `ParameterResolutionException`。
+
 ## 巢狀測試
 
 按情境分組：

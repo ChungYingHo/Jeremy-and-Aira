@@ -53,6 +53,19 @@ type DeepReadonly<T> = {
 }
 ```
 
+對比：
+
+```typescript
+type Config = { db: { host: string } }
+
+const c1: Readonly<Config> = { db: { host: 'x' } }
+c1.db = { host: 'y' }        // Error: db is readonly
+c1.db.host = 'y'             // OK（只鎖最外層）
+
+const c2: DeepReadonly<Config> = { db: { host: 'x' } }
+c2.db.host = 'y'             // Error: host is readonly（深層也鎖）
+```
+
 ## Pick\<T, K>：挑選欄位
 
 ```typescript

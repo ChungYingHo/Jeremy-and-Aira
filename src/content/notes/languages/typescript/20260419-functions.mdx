@@ -135,6 +135,8 @@ interface Deck {
 
 `this: Deck` 不是真實參數，是給 TS 看的型別標註，編譯後消失。呼叫時不用傳。
 
+`this: Deck` 不是執行期參數，只是告訴 TS：此函式必須透過某個 `Deck` instance 呼叫（例如 `deck.pick()`）。直接 `const fn = deck.pick; fn()` 會編譯錯誤，因為 `this` 綁不到 `Deck`。
+
 ## 函式型別的子類型規則
 
 兩條重要規則，不熟會踩雷。
@@ -174,6 +176,19 @@ function identity<T>(x: T): T {
 identity<string>('hi')   // 顯式
 identity('hi')           // 推導出 T = string
 ```
+
+更實用的例子：
+
+```typescript
+function firstOrNull<T>(arr: T[]): T | null {
+  return arr.length > 0 ? arr[0] : null
+}
+
+const n = firstOrNull([1, 2, 3])    // T 推導為 number, 回傳 number | null
+const s = firstOrNull(['a'])        // T 推導為 string
+```
+
+TS 從參數型別推導 `T`，不用手寫 `firstOrNull<number>(...)`。
 
 更深入的泛型放下一篇。
 

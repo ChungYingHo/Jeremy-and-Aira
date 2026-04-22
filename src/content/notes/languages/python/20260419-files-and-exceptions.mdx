@@ -242,6 +242,8 @@ with Timer():
     do_heavy_work()
 ```
 
+三個參數：`exc_type` 是例外類別、`exc_value` 是例外 instance、`tb` 是 traceback 物件。正常離開 `with` 時三個都是 `None`。回傳 `True` 表示「例外我收下了」，會吞掉該例外；回傳 `False` 或不回傳則讓例外繼續往上傳。
+
 或用 `contextlib`：
 
 ```python
@@ -261,6 +263,8 @@ with timer():
 ```
 
 `yield` 之前對應 `__enter__`，之後對應 `__exit__`。`try / finally` 確保例外時也會跑釋放邏輯。
+
+執行流程：`with` 進入時執行到 `yield`，`yield` 的值綁給 `as` 變數；`with` 區塊結束（正常或 exception）後，程式從 `yield` 繼續執行到 `try/finally` 結束。若區塊內拋 exception，會在 `yield` 處重新 raise——想壓下例外就用 `try/except` 包住 `yield`。
 
 ## 常用內建例外
 

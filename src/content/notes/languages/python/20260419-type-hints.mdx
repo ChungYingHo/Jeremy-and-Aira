@@ -331,6 +331,8 @@ get_type_hints(f)
 # {'x': <class 'int'>, 'y': <class 'str'>, 'return': <class 'bool'>}
 ```
 
+`get_type_hints(fn)` 回傳一個 `dict`：參數名對應型別、額外一個鍵 `'return'` 對應回傳型別（class 則是欄位對應型別）。runtime 取型別資訊（例如 pydantic、dataclasses、FastAPI）都靠這個。
+
 `pydantic`、`fastapi`、`typer` 都靠這個 runtime 讀型別，做驗證、序列化、CLI 解析。
 
 ## 寫 type hints 的順序建議

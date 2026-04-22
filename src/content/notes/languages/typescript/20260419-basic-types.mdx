@@ -284,4 +284,6 @@ const f: Foo = new Foo()   // 第一個 Foo 是型別、第二個 Foo 是值
 
 `type` 與 `interface` 只存在於型別空間，編譯後會被擦除（type erasure）。執行期沒有 TS 型別資訊，所以不能用 `if (typeof x === 'MyInterface')` 這種寫法。
 
+「型別空間」指編譯期檢查層，存在的只有型別名、interface、type alias 等，執行期看不到；「值空間」指執行期實際存在的東西，如變數、函式、class instance。TS 編譯後會刪除所有純型別符號（type erasure），剩下就是純 JavaScript。
+
 下一篇正式進 `interface` 與 `type`，把這篇行內物件型別寫起來會亂的問題解掉。

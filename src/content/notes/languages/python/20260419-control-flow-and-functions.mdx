@@ -260,6 +260,8 @@ c()   # 2
 
 `nonlocal` 指向外層（非 global）作用域，`global` 指向最外層全域作用域。
 
+沒有 `nonlocal` 會怎樣？`n += 1` 等同於 `n = n + 1`，Python 看到賦值就把 `n` 當成「新的區域變數」，但右側讀 `n` 時還沒定義——觸發 `UnboundLocalError`。`nonlocal` 明確告訴 Python「這個 `n` 是外層作用域的那個」。
+
 ## docstring
 
 函式第一行寫字串就會變成 docstring，被 `help()` 讀取：
@@ -299,6 +301,7 @@ list(filter(lambda x: x % 2 == 0, [1, 2, 3, 4])) # [2, 4]
 # reduce 要 import
 from functools import reduce
 reduce(lambda a, b: a + b, [1, 2, 3, 4])   # 10
+# 累積過程：a=1, b=2 → 3；a=3, b=3 → 6；a=6, b=4 → 10
 ```
 
 慣例：能寫 comprehension 就寫 comprehension，可讀性比 `map` / `filter` 好。

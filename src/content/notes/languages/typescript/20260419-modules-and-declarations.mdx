@@ -52,6 +52,8 @@ export type { User }
 
 開 `verbatimModuleSyntax: true` 強制要求所有純型別匯入都加 `type`。
 
+為什麼要強制？純型別 import 若不加 `type`，某些編譯工具（esbuild、swc、bundler）會誤把它當值 import 保留下來；等到執行期發現那個符號不存在就炸。`verbatimModuleSyntax` 讓 `import { T }` 一律被視為值 import、`import type { T }` 一律編譯期消失，沒有灰色地帶。
+
 ## 路徑與 moduleResolution
 
 兩個常見值：
@@ -69,6 +71,8 @@ import { add } from './math.js'
 ```
 
 理由：TS 不改路徑，輸出後是 `.js`，import 路徑要對得起最終實際存在的檔。
+
+Node 的 ESM loader 只認 `.js` 檔（或顯式 `.mjs`），不知道 TS 的存在；而 TS 編譯時不會改寫 import 路徑字串。所以在 `.ts` 檔裡得預先寫編譯後的 `.js` 路徑——看似怪但這是「TS 不做路徑改寫」設計的必然結果。
 
 ## 路徑別名（paths）
 

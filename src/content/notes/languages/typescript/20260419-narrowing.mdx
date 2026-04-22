@@ -160,6 +160,8 @@ function play(animal: Cat | Dog) {
 
 `x is Cat` 是 type predicate，告訴 TS：「這個函式回 true 時，請把 x 當 Cat」。
 
+`x is Cat` 是 TS 獨有的「型別謂詞」語法，只在型別檢查層有意義；編譯到 JS 後整個消失（剩下的只是普通 `boolean` 函式）。寫這個語法等於跟 TS 承諾「當我回 true，x 確實是 Cat」——TS 不驗證你說的對不對，所以實作裡要誠實。
+
 陷阱：實作必須跟 predicate 一致，TS 不會幫你驗證邏輯正確。
 
 ## assertion function：asserts

@@ -138,6 +138,8 @@ if xs:        # 等同 if len(xs) > 0
 
 ## list（陣列）
 
+list 是 **mutable**（可變）——`append`、`pop`、`sort` 都直接改動原物件，不回傳新 list；tuple 則是 **immutable**（不可變），建立後不能改。mutable 物件若多處共用同一個 reference，一處改動其他地方會看到——這是 Python 常見 bug 來源。
+
 可變、有序、可混型別：
 
 ```python
@@ -281,6 +283,7 @@ unique_lengths = {len(w) for w in ['a', 'ab', 'abc', 'a']}
 
 # 巢狀
 matrix = [[i * 3 + j for j in range(3)] for i in range(3)]
+# → [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
 ```
 
 ## None：Python 的「無值」

@@ -228,6 +228,8 @@ make_speak(Cat())
 | `__call__` | `x(...)` 把 instance 當 callable |
 | `__enter__`, `__exit__` | `with` 上下文管理器 |
 
+`__enter__` / `__exit__` 是 **context manager 協議**，用來搭配 `with` 語法管理需要成對 open/close 的資源（檔案、網路連線、鎖等）。進入 `with` 區塊呼叫 `__enter__`，離開時（不管正常或 exception）呼叫 `__exit__`。
+
 範例：
 
 ```python
@@ -254,6 +256,8 @@ print(a + b)            # Vec(4, 6)
 ```
 
 實作 `__eq__` 通常要一起實作 `__hash__`，否則 instance 無法放進 set / dict key。
+
+為什麼要一起實作？Python 規定「相等的物件必須有相同 hash」（反之不需要）。若只覆寫 `__eq__` 不管 `__hash__`，Python 會自動把 `__hash__` 設為 `None`——instance 不能放進 `set`、不能當 `dict` 的 key。想保持 hashable 就要兩個都寫。
 
 ## dataclass：少寫樣板
 

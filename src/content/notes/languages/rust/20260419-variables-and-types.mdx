@@ -106,6 +106,8 @@ let y = x.checked_add(10);  // None（溢位）
 let z = x.wrapping_add(10); // 4
 let w = x.saturating_add(10); // 255（停在最大值）
 ```
+
+實務上：想明確處理溢位用 `checked_add`（回傳 `Option`）；想要 wrap-around 行為（例如密碼學）用 `wrapping_add`；想要飽和到邊界值（例如計數器）用 `saturating_add`。
 :::
 
 ### 浮點數
@@ -252,5 +254,7 @@ let s = "42".parse().unwrap();         // ❌ 不知道要 parse 成什麼
 let s: i32 = "42".parse().unwrap();    // ✅
 let s = "42".parse::<i32>().unwrap();  // ✅ turbofish
 ```
+
+`.parse()` 是泛型方法（`fn parse<F>() -> Result<F, _>`），回傳型別必須明確（變數標註 `: i32` 或 `parse::<i32>()` turbofish），否則編譯器無法決定解析目標型別。
 
 變數、型別、函式與控制流程都建立了，下一篇進 Rust 最招牌的觀念——所有權與借用。前面 `String` 與 `&str` 留下來的「擁有」與「借用」之差會在那裡正式說明。

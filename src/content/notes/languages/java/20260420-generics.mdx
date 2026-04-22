@@ -178,7 +178,11 @@ Object o = xs.get(0);   // 只知道是某個 Integer 的父類
 
 ## type erasure：泛型只活在編譯期
 
-JVM **看不到**泛型，runtime 全被抹成原始型別（`T` → `Object`、`T extends Number` → `Number`）。後果：
+JVM **看不到**泛型，runtime 全被抹成原始型別（`T` → `Object`、`T extends Number` → `Number`）。
+
+「擦除」發生在**編譯期末段**：.java 編譯到 .class 時，`List<String>` 會被替換為 raw `List`，所有 `T` 變成 `Object`（或 bound 上界）。runtime 看到的是沒有泛型資訊的 class 檔——這就是為什麼 `list instanceof List<String>` 不能寫（語法禁止）。
+
+後果：
 
 ### 1. 不能 `new T()`
 
@@ -230,6 +234,8 @@ void f(List<Integer> a) {}     // ❌ 兩者 erasure 都是 List
 ## 泛型與繼承的反直覺處
 
 `List<Dog>` **不是** `List<Animal>` 的子型別（不變 invariant）：
+
+「invariant（不變）」在泛型語境指：即使 `Dog extends Animal`，`List<Dog>` 也**不是** `List<Animal>` 的 subtype。反例想像：如果 `List<Dog>` 能傳給吃 `List<Animal>` 的 method，那個 method 可以 `add(new Cat())` 進去——型別系統破功。陣列則是 covariant（協變）、但代價是 runtime 要 `ArrayStoreException` 補檢查。
 
 ```java
 List<Dog> dogs = new ArrayList<>();

@@ -156,6 +156,13 @@ for (String w : words) {
 群組分類常用：
 
 ```java
+record Item(String category, int value) {}
+List<Item> data = List.of(
+    new Item("A", 1),
+    new Item("B", 2),
+    new Item("A", 3)
+);
+
 Map<String, List<Integer>> groups = new HashMap<>();
 data.forEach(d ->
     groups.computeIfAbsent(d.category(), k -> new ArrayList<>()).add(d.value())

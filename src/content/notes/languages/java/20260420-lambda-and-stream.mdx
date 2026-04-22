@@ -88,6 +88,8 @@ long count = names.stream()
 - **single-use**：跑完一個終端操作就用完了，不能重複
 - **不修改來源**：原 collection 不變
 
+lazy 的意思：`map`、`filter` 這類**中間操作**只是把動作登記下來、不真的跑；直到**終端操作**（`collect`、`forEach`、`count` 等）被呼叫才一次串起來執行。終端操作完 stream 就「耗盡」了，再呼叫會丟 `IllegalStateException`——stream 不能重用，要重跑就從 source 再開一條。
+
 ## 建立 Stream
 
 ```java
@@ -158,6 +160,13 @@ OptionalInt max = IntStream.of(3, 1, 4).max();
 ```java
 import static java.util.stream.Collectors.*;
 
+record Person(String name, String department, int age) {}
+List<Person> people = List.of(
+    new Person("Alice", "Eng", 30),
+    new Person("Bob", "Sales", 25),
+    new Person("Carol", "Eng", 28)
+);
+
 List<String> list = stream.collect(toList());
 Set<String>  set  = stream.collect(toSet());
 String joined     = stream.collect(joining(", ", "[", "]"));
@@ -207,6 +216,8 @@ long count = list.parallelStream()
 
 走 ForkJoinPool。**只有大資料量、純運算、無共享狀態**才會比較快，否則反而慢。日常 99% 用 sequential。
 
+parallelStream 適合「純 CPU 運算、無共享可變狀態、資料量 $> 10^4$ 量級」才划算。I/O 密集（DB、網路）會阻塞 ForkJoinPool 的 worker；小資料或 `forEach` 帶 side effect 都會被同步/fork 的開銷吃掉好處，反而更慢。
+
 ## Optional：替代 null
 
 包裝「可能有值、可能沒有」：
@@ -232,6 +243,8 @@ u.filter(user -> user.isActive());
 - 回傳值「可能不存在」用 `Optional<T>`
 - **欄位、參數、集合元素不要用 Optional**（過度包裝）
 - 不要回傳 `null Optional`（永遠 `Optional.empty()`）
+
+為什麼欄位/參數/集合元素不要用 Optional？（1）`Optional` 本身可能是 `null`（`Optional<T> x = null`），反而多一層 `NullPointerException` 風險；（2）序列化框架（Jackson、JPA）處理 `Optional` 欄位一向麻煩；（3）`List<Optional<T>>` 比 `List<T>` 又過濾 `null` 語意更清楚。Optional 的定位是回傳型別標示「可能沒有」。
 
 ## 常見組合範例
 

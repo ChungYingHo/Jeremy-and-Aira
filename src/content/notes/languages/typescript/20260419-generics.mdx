@@ -96,6 +96,8 @@ len(42)              // ❌ number 沒 length
 
 「`extends`」這裡是「**符合這個結構**」，不是「繼承自」。
 
+泛型 constraint 的 `extends` **不是 class 繼承**，而是「結構相容」檢查：T 必須至少具備 `length: number` 這個欄位。傳 `string`、`number[]`、`{ length: number }` 都 OK，因為它們都有 `length: number`。
+
 ## 預設型別參數
 
 ```typescript
@@ -149,6 +151,8 @@ type Status = typeof status[number]
 
 `typeof status[number]` 表示「拿陣列任意 index 對應的元素型別」。
 
+索引型別 `Arr[number]` 讀的是「陣列型別在任一數字索引位置的元素型別」。例如 `const status = ['ok', 'fail'] as const`，`typeof status` 是 `readonly ['ok', 'fail']`，`typeof status[number]` 就是 `'ok' | 'fail'`。
+
 ## conditional type：型別層級的三元運算
 
 ```typescript
@@ -180,6 +184,8 @@ type R = ToArray<string | number>
 // (string | number) 分配 → string[] | number[]
 // 而不是 (string | number)[]
 ```
+
+為何 `ToArray<string | number>` 變成 `string[] | number[]`？因為 conditional type `T extends U ? X : Y` 中，若 `T` 是**裸**型別參數（沒包在 tuple 或其他結構裡）且傳入 union，TS 會逐個成員套用條件再 union 起來，稱為 distributive。想關掉這行為，把 `T` 包起來：`[T] extends [U] ? X : Y`。
 
 要禁止分配，把 T 包進 tuple：
 

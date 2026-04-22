@@ -45,7 +45,8 @@ try {
 
 ```java
 try {
-    risky();
+    Files.readString(Path.of("config.json"));   // 可能丟 IOException
+    stmt.executeQuery("SELECT 1");               // 可能丟 SQLException
 } catch (IOException | SQLException e) {
     log.error("IO or DB failed", e);
 }
@@ -135,7 +136,7 @@ public class RateLimitException extends ApiException { ... }
 
 ```java
 try {
-    loadConfig();
+    Files.readString(Path.of("config.json"));
 } catch (IOException e) {
     throw new ConfigException("cannot load config", e);   // 第二參數是 cause
 }

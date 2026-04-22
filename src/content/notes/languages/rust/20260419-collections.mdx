@@ -93,6 +93,8 @@ let sum: i32 = v.iter().sum();
 let max = v.iter().max();          // Option<&i32>
 ```
 
+`.iter()` 產生 `&i32`、`.filter()` 內拿到的是 `&&i32`（參考的參考）；`.copied()` 把 `&i32` 複製成 `i32`（`i32` 是 `Copy`，免費）；若是 `String` 則用 `.cloned()`。
+
 `.iter()` 借用、`.iter_mut()` 可變借用、`.into_iter()` 取走所有權。
 
 ### 借用規則在 Vec 上的具體表現
@@ -105,6 +107,8 @@ println!("{first}");
 ```
 
 為什麼這不能編？因為 `push` 可能觸發重新分配（容量不夠時），原本 `first` 指的記憶體位址會失效，變成懸空指標。Rust 在編譯期就擋下來。
+
+`Vec` 容量滿時 `push` 會在 heap 上配置更大空間、把舊資料整段搬過去、釋放舊空間。所以指向 Vec 內元素的指標在 `push` 後可能失效——這也是 Rust 借用規則禁止同時持有 `&vec` 與呼叫 `vec.push()` 的理由。
 
 ## String
 
@@ -186,6 +190,8 @@ let hello = &s[0..1];     // "h"
 | 何時用 | 需要修改 / 持有 | 唯讀傳遞 |
 
 函式參數通常用 `&str`，因為 `&String` 可自動 deref 成 `&str`，吃面更廣。
+
+字串字面值 `"hello"` 型別是 `&'static str`，指向編譯後 binary 內的唯讀區；`String` 擁有 heap 資料，可增長修改；`&str` 是字串切片，可指向 `String` 的一部分，生命週期必須 $\leq$ 來源。
 
 ## HashMap\<K, V>
 

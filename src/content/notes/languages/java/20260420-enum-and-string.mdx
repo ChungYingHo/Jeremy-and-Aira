@@ -76,6 +76,8 @@ enum Op {
 Op.ADD.apply(2, 3);      // 5
 ```
 
+實作機制：每個常數背後是一個匿名 subclass（anonymous subclass of enum），大括號 `{ ... }` 裡的方法覆寫了 enum 層級宣告的同名抽象 / 具象 method。所以 `Op.ADD.apply(1, 2)` 其實是走 ADD 這個 anonymous subclass 的實作。
+
 ## enum 內建方法
 
 ```java

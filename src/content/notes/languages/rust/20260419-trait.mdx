@@ -158,6 +158,8 @@ fn pick(flag: bool) -> impl Greet {
 
 `dyn Trait` 表示「某個實作了 Trait 的型別，但具體是哪個要執行期才知道」。需要透過指標包裝（`&dyn`、`Box<dyn>`、`Rc<dyn>`...），因為大小編譯期未知。
 
+為什麼 `&dyn Trait` 或 `Box<dyn Trait>`？因為 trait object 的具體型別到執行期才確定（可能是 5 byte 的某 struct、也可能是 200 byte 的另一個），編譯期無法得知 stack 上要預留多大空間。包裝成指標（指標大小固定）後，編譯期就知道大小了。
+
 ```rust
 fn pick(flag: bool) -> Box<dyn Greet> {
     if flag {
@@ -202,6 +204,8 @@ for g in &greeters {
 - 方法不能有泛型參數
 - 方法不能回傳 `Self`
 - 不能有 associated function（沒 `&self`）
+
+動態派發透過 vtable（函式指標表）呼叫方法；vtable 每個欄位都是單一函式指標，但泛型方法會依 `T` 實體化成多個版本，一張 vtable 放不下；回傳 `Self` 則因不同實作的 `Self` 大小不同，caller 無法預知 stack 佈局。
 
 ```rust
 trait Bad {
@@ -338,6 +342,8 @@ fn main() {
 ```
 
 `type Item = u32;` 是 **associated type**，trait 內定義一個型別槽，由實作方填具體型別。
+
+associated type 是 trait 的「內建型別槽」，每個 `impl` 只能填一個值（例如 `Iterator for MyIter` 只能有一種 `Item`）；相比之下泛型 `Iterator<T>` 允許同一個型別對不同 `T` 各實作一次，更彈性但 API 也更囉嗦。Rust 選 associated type 因為大多數情況只需要一種對應關係。
 
 ## 孤兒規則（orphan rule）
 

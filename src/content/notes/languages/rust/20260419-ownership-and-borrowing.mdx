@@ -54,6 +54,8 @@ stack                heap
 └──────────┘
 ```
 
+`String` 在 stack 上的三個欄位——`ptr`（指向 heap 上的字元序列起址）、`len`（目前使用的長度）、`cap`（已配置的容量）。move 只複製這三個欄位，heap 上的資料不動。
+
 ## Move：所有權的轉移
 
 ```rust
@@ -278,6 +280,8 @@ fn to_upper(s: &mut String) {
     *s = s.to_uppercase();
 }
 ```
+
+`&mut String` 要先解參考 `*s` 才能整個覆寫內容；或用 `s.make_ascii_uppercase()` 就地改、不需重新配置。
 
 ## 心智模型總結
 

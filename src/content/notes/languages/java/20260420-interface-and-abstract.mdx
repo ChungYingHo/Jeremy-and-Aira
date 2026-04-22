@@ -82,6 +82,8 @@ new User().greet();    // "Hi, Jeremy"
 
 主要用途：替既有介面加新方法又不破壞所有 implementor。
 
+兩個介面同名 default method 會怎樣？class 同時 implement 兩個會編譯錯誤（diamond problem）。解法：實作 class 覆寫該方法並用 `Interface.super.method()` 明確指定要用哪個，例如 `Walker.super.move()`。
+
 ## static method 與 private method（Java 9+）
 
 ```java

@@ -130,6 +130,8 @@ function handle(r: Result<number>) {
 
 辨識欄位（這裡是 `ok`）讓 TS 在 if / switch 後自動窄化分支。型別守衛章節會更深入。
 
+「辨識」指的是 union 裡每個分支都有一個共同欄位（例如 `ok: true | false` 或 `kind: 'circle' | 'square'`），TS 在 `if/switch` 中讀取這個欄位的值後，自動把變數型別縮成對應分支（type narrowing）。沒有這個共同欄位，TS 無法判斷當下是哪一種。
+
 ## 函式型別
 
 ```typescript
@@ -214,6 +216,8 @@ const point: Point = p   // ✅ p 結構符合 Point 即可
 ```
 
 只看「形狀對不對」，不看「叫什麼名字」。這是 TS 哲學的核心之一。
+
+對比：Java/C# 是 nominal typing（名義型別）——就算兩 class 欄位完全一樣，沒有明確 `implements` 同一個 interface 就不相容。TS 是 structural typing（結構型別）——只看形狀對不對，名字無關。好處：可以無痛相容第三方型別；代價：形狀剛好一樣但語意不同的東西會被當成同一型別。
 
 ### 多餘屬性檢查的例外
 

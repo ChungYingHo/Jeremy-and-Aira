@@ -185,6 +185,8 @@ while (true) {
 }
 ```
 
+實務上要有結束條件：捕捉外部 signal（例如 `AtomicBoolean running` + shutdown hook）或計數到達後 `break`。另外 `WatchKey.cancel()` 停止監看特定路徑、`WatchService.close()` 關整個服務。
+
 寫熱重載 / 檔案同步工具會用到。
 
 ## 老 API：`java.io.File`（維護用看得懂就好）
