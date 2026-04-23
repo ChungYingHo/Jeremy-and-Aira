@@ -67,6 +67,8 @@ $$
 | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: |
 | 內容 | — | [15, 22, 8, 36, 29] | — | — | — | — | — |
 
+以下互動圖解重現上面這五筆 key 依序掛入 slot 1 的過程，點「下一步」可逐筆觀察串列如何越掛越長：
+
 <ChainingDiagram client:only="svelte" />
 
 查詢時先算 hash 找到 slot，再在串列內逐一比對 key。以上表找 `36`：
@@ -130,6 +132,8 @@ public class HashTableChaining {
 ## 開放定址法 (Open Addressing)
 
 碰撞時不另外開串列，直接在表內找下一個可用的 slot。探測策略有三種主流做法。
+
+以下互動圖解用同一組 key `[15, 22, 8, 36, 29]`（全都 hash 到 slot 1）示範三種探測法的落點差異——點按鈕切換策略，琥珀色編號代表每次探測的順序：
 
 <OpenAddressingDiagram client:only="svelte" />
 

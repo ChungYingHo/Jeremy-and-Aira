@@ -14,8 +14,8 @@
     return slots
   })()
   $: message = step === 0
-    ? '尚未插入任何 key'
-    : `Insert ${currentKey} → h(${currentKey}) = ${currentKey} mod ${M} = ${currentKey % M} → 掛到 slot ${currentKey % M}`
+    ? '尚未插入任何 key，點「下一步」開始'
+    : `插入 ${currentKey}：${currentKey} mod ${M} = ${currentKey % M}，掛到 slot ${currentKey % M} 的串列尾端`
 
   function next() {
     if (step < KEYS.length) step += 1
@@ -33,7 +33,7 @@
 <div class="w-full max-w-2xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
   <div class="px-4 pt-4 pb-2">
     <p class="text-center text-xs text-slate-500 font-mono">
-      鏈結法 Chaining · m = {M} · h(k) = k mod {M} · 依序插入 [{KEYS.join(', ')}]
+      鏈結法 · 表大小 m = {M} · hash 函式 h(k) = k mod {M} · 依序插入 [{KEYS.join(', ')}]
     </p>
   </div>
 

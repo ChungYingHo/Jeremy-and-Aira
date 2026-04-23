@@ -71,20 +71,16 @@
   })()
 
   $: message = (() => {
-    if (step === 0) return '尚未插入任何 key'
+    if (step === 0) return '尚未插入任何 key，點「下一步」開始'
     if (currentPath.failed) {
-      return `Insert ${currentKey} → 探測路徑 ${currentPath.probes.join(' → ')} 全部被占用，循環回到已占 slot → 插入失敗`
+      return `插入 ${currentKey}：探測過 ${currentPath.probes.join(' → ')} 全被占用，探測序列開始循環，插入失敗`
     }
-    const steps = currentPath.probes.map((p, i) => {
-      if (i === 0) return `slot ${p}`
-      return `slot ${p}`
-    })
     if (currentPath.probes.length === 1) {
-      return `Insert ${currentKey} → slot ${currentPath.probes[0]} 空 → 放入`
+      return `插入 ${currentKey}：slot ${currentPath.probes[0]} 是空的，直接放進去`
     }
-    const path = currentPath.probes.slice(0, -1).map(p => `slot ${p} 占`).join(' → ')
-    const last = `slot ${currentPath.probes[currentPath.probes.length - 1]} 空 → 放入`
-    return `Insert ${currentKey} → ${path} → ${last}`
+    const path = currentPath.probes.slice(0, -1).map(p => `slot ${p} 被占`).join(' → ')
+    const last = `slot ${currentPath.probes[currentPath.probes.length - 1]} 空，放進去`
+    return `插入 ${currentKey}：${path} → ${last}`
   })()
 
   function selectMode(m) {
@@ -108,7 +104,7 @@
 <div class="w-full max-w-2xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
   <div class="px-4 pt-4 pb-2">
     <p class="text-center text-xs text-slate-500 font-mono mb-3">
-      開放定址法 · m = {M} · 依序插入 [{KEYS.join(', ')}] · 全部 hash 到 slot 1
+      開放定址法 · 表大小 m = {M} · 依序插入 [{KEYS.join(', ')}]（全部 hash 到 slot 1）
     </p>
     <div class="flex flex-wrap gap-2 justify-center">
       {#each Object.entries(modes) as [key, m]}
