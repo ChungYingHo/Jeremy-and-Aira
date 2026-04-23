@@ -6,15 +6,19 @@ tags: [algorithm, backtracking, branch-and-bound, approximation, heuristic]
 changelog: ['2026-04-16']
 ---
 
-知道一個問題是 NP-complete 代表「不可能又快又精確」，但不代表沒得做。實務上有三條路：**精確但只在小規模下跑得動**（回溯法、分支設限法）、**多項式但只保證近似**（近似演算法）、**沒理論保證但實務表現好**（heuristics）。這篇把前兩條主軸講透，最後以 heuristic 收尾。
+## 演算法概念
 
-## 回溯法（Backtracking）
+知道一個問題是 NP-complete 代表「不可能又快又精確」，但不代表沒得做。實務上有三條退路：**精確但只在小規模跑得動**（回溯法、分支設限法）、**多項式但只保證近似**（近似演算法）、**沒理論保證但實務表現好**（heuristics）。選哪一條取決於輸入規模、是否能容忍誤差、以及問題結構。這篇把前兩條主軸講透，近似演算法挑五個經典，最後以 heuristic 收尾。
 
-核心思想：**系統性地窮舉所有候選解，但一旦判斷當前分支不可能出解就立即回頭**，不把時間花在注定失敗的子樹上。
+## 各適用情境
 
-### 框架
+### 回溯法（Backtracking）
 
-絕大多數回溯問題都長這個骨架：
+#### 演算法策略
+
+把所有候選解想成一棵樹——**從根一路往下做選擇**，每到一層就試一個 choice；如果發現這個分支**不可能走到合法解**就**立刻退回上一層**試別的，不浪費時間展開注定失敗的子樹。骨架三件事：**是不是解、有哪些 choice 可試、選了之後可不可能還有救**。
+
+絕大多數回溯問題長這個樣子：
 
 ```python
 def backtrack(state):
@@ -22,38 +26,51 @@ def backtrack(state):
         record(state)
         return
     for choice in next_choices(state):
-        if is_promising(state, choice):   # 剪枝
+        if is_promising(state, choice):   # 剪枝：這條走下去還有機會嗎
             apply(state, choice)
             backtrack(state)
-            undo(state, choice)           # 還原
+            undo(state, choice)           # 離開前還原，避免污染兄弟分支
 ```
 
-兩個要點：
+兩個常出包的地方：`is_promising`（剪枝條件太鬆沒效果、太緊砍掉正解）、`undo`（忘了還原會讓兄弟分支看到髒狀態）。
 
-1. **is_promising**：判斷加入這個 choice 後還有沒有可能走到 solution
-2. **undo**：離開這層前還原狀態（避免副作用污染兄弟分支）
+#### 複雜度
 
-### 範例 1：N-Queens
+最壞情況跟暴力一樣——$n$ 個決策每個 $k$ 種選擇就是 $O(k^n)$、排列型是 $O(n!)$。回溯法**不改變最壞情況**，但**平均情況**能差好幾個數量級，因為剪枝讓大量分支根本不展開。所以能不能用得動，看剪枝條件能不能把「主幹分支」大量砍掉。
 
-在 $n \times n$ 棋盤放 $n$ 個皇后，要求**任兩個皇后不同列、不同行、不同對角線**。
+適用時機：**精確解是必要的、輸入規模小（幾十到幾百）、剪枝條件明顯**。
 
-逐列決定「這一列皇后放第幾行」。剪枝條件：新放的位置不能跟前面任何皇后同行或同對角線。
+#### 範例
 
-用三個 set 記錄已被佔用的行與對角線：
+**題目 1：N-Queens**
 
-- `cols`：已被佔用的行編號
-- `diag1`：主對角線 ↘，同一條主對角線上**所有格子的 `row - col` 都相同**（因為往右下走，`row` 和 `col` 同步 $+1$，差不變）
-- `diag2`：副對角線 ↙，同一條副對角線上**所有格子的 `row + col` 都相同**（往左下走，`row` $+1$、`col` $-1$，和不變）
+在 $n \times n$ 棋盤（$n$ 是邊長，以 $n=4$ 為例就是 4×4 棋盤）上放 $n$ 個皇后，要求**任兩個皇后不同列（row）、不同行（column）、不同對角線（diagonal）**。
 
-所以判斷「新放的 (row, col) 會不會撞對角線」只要看 `row - col` 跟 `row + col` 是否已在 set 裡。
+**步驟**：逐列（`row` 從 0 遞增到 $n-1$）決定「這一列皇后放第幾行（`col`）」。用三個 set 記已被佔用的行與對角線：
+
+- `cols`：已被佔用的**行編號**集合
+- `diag1`：已被佔用的**主對角線 ↘**。同一條主對角線上所有格子的 `row - col` 值相同——往右下走 `row` 和 `col` 同步 $+1$，差不變
+- `diag2`：已被佔用的**副對角線 ↙**。同一條副對角線上所有格子的 `row + col` 值相同——往左下走 `row` $+1$、`col` $-1$，和不變
+
+判斷「新放的 `(row, col)` 會不會撞對角線」只要看 `row - col`、`row + col` 是否已在 set 裡。
+
+- 第 0 列：試 `col = 0`，放下 → `cols = {0}`、`diag1 = {0}`、`diag2 = {0}`
+- 第 1 列：`col = 0` 撞 `cols`；`col = 1` 撞 `diag2`（和 $= 2$ 不衝突，但 `row - col = 0` 撞 `diag1`）；`col = 2` 可放 → 記錄後遞迴
+- ……若某層所有 `col` 都被剪掉，回到上層換 `col` 再試
+- 到 `row == n` 時代表 $n$ 列都放好了，記錄一組解
+
+$n = 4$ 共 2 解、$n = 8$ 共 92 解；沒剪枝的暴力 $O(n^n)$，剪完 $n=8$ 可以秒解。
+
+<details>
+<summary>Python 實作</summary>
 
 ```python
 def solve_n_queens(n):
     results = []
-    cols = set()
-    diag1 = set()   # row - col：同主對角線 (↘) 值相同
-    diag2 = set()   # row + col：同副對角線 (↙) 值相同
-    placement = []
+    cols = set()          # 已佔用的 column
+    diag1 = set()         # row - col：同主對角線 ↘ 值相同
+    diag2 = set()         # row + col：同副對角線 ↙ 值相同
+    placement = []        # placement[row] = 該列皇后所在的 col
 
     def backtrack(row):
         if row == n:
@@ -72,36 +89,54 @@ def solve_n_queens(n):
     return results
 ```
 
-沒有剪枝的話是 $n^n$，剪完之後 $n=8$ 可以秒解。
+</details>
 
-### 範例 2：Subset Sum
+**題目 2：Subset Sum**
 
-給整數組 $A$ 和目標 $t$，找是否有子集和等於 $t$。
+給整數陣列 `nums`（正整數組 $A$）和目標值 `target`（目標和 $t$），問是否存在子集和剛好等於 $t$。
+
+**剪枝技巧**：
+
+- 先把 `nums` **由大到小排序**（大的先試，早早鎖定或排除大分支）
+- 負餘額（`remain < 0`）直接砍
+- 剩下的最小元素都比當前 `remain`（剩下要湊的量）大 → 不可能湊到 → 砍
+
+<details>
+<summary>Python 實作</summary>
 
 ```python
 def subset_sum(nums, target):
     nums.sort(reverse=True)
     def dfs(i, remain):
+        # i：下一個要考慮的索引
+        # remain：還需要湊的和
         if remain == 0:
             return True
         if i == len(nums) or remain < 0:
             return False
-        if remain < nums[-1]:        # 剩下的最小值都比 remain 大
+        if remain < nums[-1]:                  # 最小元素都比 remain 大
             return False
-        if dfs(i + 1, remain - nums[i]):   # 選
+        if dfs(i + 1, remain - nums[i]):       # 選 nums[i]
             return True
-        return dfs(i + 1, remain)          # 不選
+        return dfs(i + 1, remain)              # 不選 nums[i]
     return dfs(0, target)
 ```
 
-剪枝技巧：先**由大到小排序**、遇到負 remainder 或剩餘元素最小值都超過 remainder 就砍。
+</details>
 
-### 範例 3：Graph Coloring（$k$ 染色）
+**題目 3：Graph Coloring（$k$ 染色）**
+
+給無向圖 `graph`（頂點數 $n$）和色數 $k$，問能否用 $k$ 色染所有頂點，使每條邊兩端顏色不同。
+
+**步驟**：逐個頂點 `v` 從 0 到 $n-1$，試顏色 `c` 從 1 到 $k$，若 `v` 的所有鄰居都不是 `c` 就塗上；塗完繼續下一個頂點。某頂點試完所有顏色都失敗，就回頭改前一個。
+
+<details>
+<summary>Python 實作</summary>
 
 ```python
 def can_color(graph, k):
     n = len(graph)
-    color = [0] * n
+    color = [0] * n                 # color[v] = 0 代表還沒染；1..k 代表已染的顏色
     def ok(v, c):
         return all(color[u] != c for u in graph[v])
     def dfs(v):
@@ -112,28 +147,47 @@ def can_color(graph, k):
                 color[v] = c
                 if dfs(v + 1):
                     return True
-                color[v] = 0
+                color[v] = 0        # 回溯：還原
         return False
     return dfs(0)
 ```
 
-### 回溯法的本質
+</details>
 
-回溯法不改變**最壞情況**複雜度（還是指數），但**平均情況**能差好幾個數量級——因為剪枝讓大量分支根本不展開。適用時機：**精確解是必要的、輸入規模小（幾十到幾百）、剪枝條件明顯**。
+---
 
-## 分支設限法（Branch and Bound）
+### 分支設限法（Branch and Bound）
 
-回溯法主要解「判斷 / 枚舉」類問題，**分支設限法**則是把它擴展到**最佳化**問題上：除了可行性剪枝，還用「下界（minimization）/ 上界（maximization）」估計提前砍掉不可能贏過目前最佳解的分支。
+#### 演算法策略
 
-框架（以 minimization 為例）：
+回溯法主要解「判斷 / 枚舉」類問題，分支設限法把它擴展到**最佳化**問題：除了可行性剪枝，**多算一個「這條分支最多能走到多好」的估計值 `bound`**，和目前已知最佳解 `best` 比較——如果連 `bound` 都贏不了 `best`，整個子樹直接砍。
+
+三個組件：
+
+1. **Branching**：把問題切成子問題（通常跟回溯一樣）
+2. **Bounding**：快速估計子問題的極限值（minimization 是下界、maximization 是上界）
+3. **搜尋順序**：DFS、BFS 或 best-first（priority queue 依 `bound` 排序）
+
+搜尋順序影響很大——best-first 常能最快找到好解、進而砍掉最多分支，但記憶體用得兇。
+
+Bound 方向對照（非常容易搞反，務必記牢）：
 
 ```text
-best ← +∞                          # 目前最佳解（minimization 要越小越好）
+minimization: bound = 下界（此分支能達到的最好/最小值）
+              若 bound ≥ best  →  砍（展開到底也贏不過 best）
+
+maximization: bound = 上界（此分支能達到的最好/最大值）
+              若 bound ≤ best  →  砍（展開到底也贏不過 best）
+```
+
+骨架（以 minimization 為例）：
+
+```text
+best ← +∞                           # 目前最佳解（minimization 要越小越好）
 push root onto queue
 while queue not empty:
     node ← pop
-    if bound(node) ≥ best:        # bound 是「此分支最低可能達到的成本」（下界）
-                                  # 連下界都已經不比 best 好 → 整個子樹砍掉
+    if bound(node) ≥ best:          # 連下界都贏不過 best → 整個子樹砍
         continue
     if node is a leaf:
         if cost(node) < best:
@@ -143,36 +197,57 @@ while queue not empty:
             push child
 ```
 
-`bound(node)` 的方向要對準目標：
+Bound「越緊越好」的意思：下界越大 / 上界越小，剪枝越兇；但計算 bound 本身不能太貴——太貴會蓋過剪枝省下的時間。
 
-- **minimization**：`bound` 是**下界**（理想情況下能做到多好）；若 `bound ≥ best` 表示此分支即使展開到底也贏不過 best
-- **maximization**（如下面的 knapsack）：`bound` 是**上界**；若 `bound ≤ best` 表示此分支即使展開到底也贏不過 best
+#### 複雜度
 
-「bound 越緊越好」的意思是：下界越大 / 上界越小，越能剪掉更多分支，但計算 bound 本身不能太貴——太貴了會蓋過剪枝省下的時間。
+跟回溯一樣：最壞指數，平均靠 bound 的緊度決定。實務上小到中等規模（$n \le 30 \sim 50$）表現非常好，遠快過純暴力。
 
-三個組件：
+#### 範例
 
-1. **branching**：把問題切成子問題（通常跟回溯一樣）
-2. **bounding**：快速估計子問題的下界（越緊越好）
-3. **搜尋順序**：DFS、BFS 或 best-first（priority queue）
+**題目：0/1 Knapsack 的分支設限**
 
-搜尋順序影響很大——**best-first** 常常能最快找到好解、進而砍掉最多分支，但記憶體用得兇。
+$n$ 個物品（第 $i$ 個價值 $v_i$、重量 $w_i$），背包容量 $W$，求不超重的子集中總價值最大。
 
-### 範例：0/1 Knapsack 的分支設限
+**關鍵 bounding 技巧**：
 
-最佳化版 knapsack：$n$ 個物品，容量 $W$，最大化總值。
+1. 先按**單位重量價值** $v_i / w_i$（每公斤值多少錢）**由大到小排序**
+2. 在某個決策點，已經選的總重是 `cur_w`、總價 `cur_v`；上界 = `cur_v` + 剩餘容量用剩下物品**貪心（允許切物品）**填滿的價值
+3. 允許切物品的貪心只會更好不會更差，所以這個值是**嚴格上界**；如果連它都 $\le$ `best`，砍
 
-**關鍵 bounding 技巧**：先按**單位重量價值**（$v_i / w_i$）排序，當前分支的**上界 = 當前已選價值 + 剩餘容量貪心填（可分割填法）**。這個上界必定 $\ge$ 真正最佳（因為它允許切物品），如果連這個上界都比目前 best 差，整個子樹就可以砍。
+**步驟（以 $n=3$、$W=10$、物品按 $v/w$ 降序為例）**：
+
+| 物品 | 價值 $v$ | 重量 $w$ | $v/w$ |
+| :---: | :---: | :---: | :---: |
+| A | 60 | 2 | 30 |
+| B | 100 | 4 | 25 |
+| C | 120 | 6 | 20 |
+
+根節點上界 = A 全拿 60 + B 全拿 100 + C 拿剩 4 的 4/6 = $60 + 100 + 80 = 240$。
+
+- **選 A**（cur_w=2, cur_v=60）→ 上界 240 > 0，展開
+  - **選 B**（cur_w=6, cur_v=160）→ 上界 160 + 120·(4/6) = 240，展開
+    - **選 C**（cur_w=12 超重）→ 砍
+    - **不選 C**（cur_w=6, cur_v=160）→ leaf，`best = 160`
+  - **不選 B**（cur_w=2, cur_v=60）→ 上界 60 + 120·(8/6) = 220 > 160，展開
+    - **選 C**（cur_w=8, cur_v=180）→ leaf，`best = 180`
+    - **不選 C**（cur_w=2, cur_v=60）→ leaf，60 不更新
+- **不選 A**（cur_w=0, cur_v=0）→ 上界 100 + 120 = 220 > 180，展開……（細節略）
+
+最終 `best = 180`（拿 A + C）。
+
+<details>
+<summary>Python 實作</summary>
 
 ```python
 def knapsack_bb(items, W):
     # items = [(value, weight)]
-    items.sort(key=lambda x: -x[0] / x[1])
+    items.sort(key=lambda x: -x[0] / x[1])     # 按 v/w 由大到小
     n = len(items)
-    best = 0
+    best = 0                                    # 目前最佳總價值
 
     def upper_bound(i, cur_w, cur_v):
-        # 從 item i 開始貪心裝（允許切）
+        # 從第 i 個物品開始，剩餘容量允許切物品地貪心填滿
         bound = cur_v
         w = cur_w
         for k in range(i, n):
@@ -180,35 +255,46 @@ def knapsack_bb(items, W):
             if w + wt <= W:
                 w += wt; bound += v
             else:
-                bound += v * (W - w) / wt
+                bound += v * (W - w) / wt      # 切最後一塊
                 break
         return bound
 
     def dfs(i, cur_w, cur_v):
         nonlocal best
-        if cur_w > W: return
+        if cur_w > W:
+            return
         if i == n:
             best = max(best, cur_v)
             return
         if upper_bound(i, cur_w, cur_v) <= best:
-            return                     # 設限剪枝
+            return                              # 設限剪枝：贏不過 best
         v, wt = items[i]
-        dfs(i + 1, cur_w + wt, cur_v + v)   # 拿
-        dfs(i + 1, cur_w, cur_v)            # 不拿
+        dfs(i + 1, cur_w + wt, cur_v + v)       # 拿
+        dfs(i + 1, cur_w, cur_v)                # 不拿
 
     dfs(0, 0, 0)
     return best
 ```
 
-小規模（$n \le 50$ 左右）表現非常好，遠快過純 brute force。
+</details>
 
-### 範例：TSP 的分支設限
+**題目：TSP 的分支設限**
 
-輸入：$n$ 個城市 + 距離矩陣。
+輸入 $n$ 個城市 + 距離矩陣 $d$（$d_{ij}$ 是城市 $i$ 到 $j$ 的距離）。求最短 Hamilton cycle。
 
-常見 bounding 做法：當前路徑成本 + **每個尚未加入城市「最輕的連出邊」之和 / 2**。這個下界在所有延伸路徑都成立，所以可當 minimization 下界。搜尋順序用 best-first（priority queue 依 bound 排序）效果最好——小到中等規模（$n \le 30\sim40$）能算到精確最佳解。
+常見 bounding 做法（minimization 下界）：
 
-### 回溯 vs 分支設限
+```text
+bound(node) = 當前路徑已固定的成本
+            + Σ （每個尚未加入 cycle 的城市 v 的「兩條最輕連出邊」平均）
+            ÷ 2
+```
+
+除以 2 的原因：每條邊在最終 cycle 中會被兩端各算一次，平均下來等於邊權的一半。
+
+搜尋順序用 best-first（priority queue 依 bound 排序）效果最好；小到中等規模（$n \le 30 \sim 40$）能算到精確最佳解。
+
+#### 回溯 vs 分支設限
 
 | | 回溯法 | 分支設限法 |
 | :--- | :--- | :--- |
@@ -219,32 +305,60 @@ def knapsack_bb(items, W):
 
 兩者本質很接近，都是**枚舉 + 剪枝**，只是剪枝工具不同。
 
-## 近似演算法（Approximation Algorithms）
+---
 
-精確解搆不到多項式時，退一步：**多項式時間求出「不會差最佳解太多」的解**。這就是近似演算法的領域。
+### 近似演算法（Approximation）
 
-### 近似比
+#### 演算法策略
 
-設 $\text{ALG}(I)$ 為演算法輸出解的目標值、$\text{OPT}(I)$ 為最佳解目標值。
+精確解搆不到多項式時，退一步：**多項式時間求出「不會差最佳解太多」的解**。定義一個指標叫**近似比** $\rho$（rho，approximation ratio）——ALG 比 OPT 能差多少倍，比例越接近 1 越好。
 
-- **最小化問題**：近似比 $\rho = \max_I \dfrac{\text{ALG}(I)}{\text{OPT}(I)} \ge 1$
-- **最大化問題**：近似比 $\rho = \max_I \dfrac{\text{OPT}(I)}{\text{ALG}(I)} \ge 1$
+設 $\text{ALG}(I)$ 為演算法對輸入實例 $I$（problem instance，一組具體輸入）輸出解的目標值，$\text{OPT}(I)$ 為最佳解目標值：
 
-$\rho$ 越接近 1 越好。$\rho = 2$ 意思是「永遠不會超過最佳的 2 倍（或至少最佳的一半）」。
+- **最小化問題**：$\rho = \max_I \dfrac{\text{ALG}(I)}{\text{OPT}(I)} \ge 1$
+- **最大化問題**：$\rho = \max_I \dfrac{\text{OPT}(I)}{\text{ALG}(I)} \ge 1$
 
-### 分類
+$\rho = 2$ 意思是「永遠不會超過最佳的 2 倍（或至少是最佳的一半）」。
+
+近似類別由好到差：
 
 | 類別 | 定義 | 代表 |
 | :--- | :--- | :--- |
 | **常數近似** | $\rho$ 是常數 | Vertex Cover 2-approx |
 | **對數近似** | $\rho = O(\log n)$ | Set Cover greedy |
-| **PTAS** | 任意 $\varepsilon > 0$，$(1+\varepsilon)$-approx，時間多項式於 $n$（但可指數於 $1/\varepsilon$） | Euclidean TSP |
+| **PTAS** | 任給 $\varepsilon > 0$（可指定多精確），有 $(1+\varepsilon)$-approx，時間多項式於 $n$（但可指數於 $1/\varepsilon$） | Euclidean TSP |
 | **FPTAS** | PTAS 且時間**同時**多項式於 $n$ 和 $1/\varepsilon$ | Knapsack FPTAS |
-| **不可近似** | 假設 $\text{P} \neq \text{NP}$ 下，沒有常數近似 | General TSP、Max Clique |
+| **不可近似** | 在 $\text{P} \neq \text{NP}$ 下沒有常數近似 | General TSP、Max Clique |
 
-### 範例 1：Vertex Cover 的 2-approximation
+#### 複雜度
 
-演算法：**每次挑一條未覆蓋的邊，把兩個端點都放入 cover，然後移除所有被 cover 到的邊**。
+各演算法不同，都是**多項式時間**（否則沒意義）。關鍵是 $\rho$ 值與執行時間的 tradeoff——更好的 $\rho$ 通常代價是更大的常數或更長的預處理。
+
+#### 範例
+
+**題目 1：Vertex Cover 的 2-approximation**
+
+給無向圖 $G=(V,E)$，求最小頂點子集覆蓋所有邊。
+
+**策略**：重複「挑一條還沒被覆蓋的邊 $(u,v)$，把 $u$ 和 $v$ **兩端都放進 cover**，然後移除所有新被覆蓋的邊」。
+
+**步驟**（簡單三角形 + 一邊懸掛的範例，邊 $\{(1,2), (2,3), (1,3), (3,4)\}$）：
+
+- 挑 $(1,2)$ → `cover = {1, 2}`，移除 $(1,2)$、$(2,3)$（被 2 覆蓋）、$(1,3)$（被 1 覆蓋）
+- 剩下 $(3,4)$，挑它 → `cover = {1, 2, 3, 4}`，邊全清
+- 輸出 `{1, 2, 3, 4}`（大小 4）；最佳是 `{1, 3}` 或 `{2, 3}`（大小 2），$\text{ALG}/\text{OPT} = 2$
+
+**為什麼是 2-近似**：
+
+- 演算法每輪選的邊兩兩不共享頂點，構成一個 **matching** $M$（邊集合，無共用端點）
+- 最佳 vertex cover 為了覆蓋 $M$ 的每條邊，**每條至少得選一個端點**（不然那條邊沒被蓋）
+- 所以 $\text{OPT} \ge |M|$
+- 我們放了 $2|M|$ 個點 → $\text{ALG} = 2|M| \le 2 \cdot \text{OPT}$
+
+簡單到不可思議，但 2 已經是目前最好的常數近似。
+
+<details>
+<summary>Python 實作</summary>
 
 ```python
 def vertex_cover_2_approx(edges):
@@ -257,118 +371,122 @@ def vertex_cover_2_approx(edges):
     return cover
 ```
 
-證明為什麼是 2-近似：
+</details>
 
-- 演算法選出的邊形成一個 **matching**（兩兩不共享頂點）
-- 最佳 vertex cover 為了蓋住 matching 的每條邊，**每條至少得選一個端點**
-- 所以 $\text{OPT} \ge |M|$（$M$ 是選到的 matching）
-- 我們放了 $2|M|$ 個點 → $\text{ALG} = 2|M| \le 2 \cdot \text{OPT}$
+**題目 2：Metric TSP 的 2-approximation（MST-based）**
 
-簡單到不可思議，但近似比 2 已經是目前最好的常數。
+限制條件：距離滿足**三角不等式** $d(a,c) \le d(a,b) + d(b,c)$——對 Euclidean 距離、道路距離都成立。
 
-### 範例 2：TSP（含三角不等式）的 2-approximation via MST
+**策略**：
 
-限制條件：**距離滿足三角不等式**（$d(a,c) \le d(a,b) + d(b,c)$），這對 Euclidean 距離、道路距離成立。
-
-演算法：
-
-1. 建最小生成樹 $T$（Prim / Kruskal）
-2. DFS 走 $T$，記錄訪問順序
-3. 照順序連起來（跳過重複），形成 Hamilton cycle
+1. 建最小生成樹 $T$（cost $=$ MST 總權重；Prim 或 Kruskal 都行）
+2. 從任一點 DFS 走 $T$，記錄訪問順序 `order`（每個頂點第一次被拜訪的時間）
+3. 照 `order` 把頂點連成 cycle（跳過已拜訪的）——就是近似 TSP 路徑
 
 **為什麼是 2-近似**：
 
-- 任何 TSP cycle 去掉一邊就是生成樹，所以 $\text{OPT}_\text{TSP} \ge \text{cost}(\text{MST})$
-- DFS 每條 MST 邊走兩次，總長 $= 2 \cdot \text{cost}(\text{MST})$
-- 跳過重複（shortcut）靠三角不等式不會變長
-- 所以 $\text{ALG} \le 2 \cdot \text{cost}(\text{MST}) \le 2 \cdot \text{OPT}$
+- 任何 TSP cycle 去掉一邊就是生成樹，所以 $\text{OPT}_\text{TSP} \ge \text{cost}(T)$
+- DFS 把每條 MST 邊走兩次，遊走總長 $= 2 \cdot \text{cost}(T)$
+- 跳過重複點（shortcut）靠三角不等式不會變長
+- 所以 $\text{ALG} \le 2 \cdot \text{cost}(T) \le 2 \cdot \text{OPT}$
 
 Christofides 演算法把它壓到 $\frac{3}{2}$-近似（多一步 minimum weight matching），是 metric TSP 目前最好的常數近似。
 
-### 範例 3：Set Cover 的貪婪近似
+**題目 3：Set Cover 的貪婪近似**
 
-前面貪婪那篇講過：**每次選「蓋到最多未蓋元素」的子集**。
+給 universe $U$ 和子集族 $\mathcal{S} = \{S_1, \ldots, S_m\}$，求最少個子集聯集 $= U$。
 
-- 近似比 $\rho = H_n = 1 + \frac{1}{2} + \cdots + \frac{1}{n} \approx \ln n$
-- 在 $\text{P} \neq \text{NP}$ 下，不存在更好的常數近似（$(1-\varepsilon)\ln n$ 是下界）
+**策略**：每輪選「蓋到最多未被蓋元素」的 $S_i$，加進解、把 $S_i$ 裡的元素標記為已蓋，重複到全部蓋完。
 
-### 範例 4：Bin Packing 的 FFD
+- 近似比 $\rho = H_n = 1 + \frac{1}{2} + \cdots + \frac{1}{n} \approx \ln n$（$H_n$ 是第 $n$ 個調和數，$n = |U|$）
+- 在 $\text{P} \neq \text{NP}$ 下，不存在更好的常數近似（$(1-\varepsilon)\ln n$ 是理論下界）
 
-**First-Fit Decreasing**：物品先由大到小排序，每個物品塞進第一個放得下的 bin，放不下就開新 bin。
+**題目 4：Bin Packing 的 FFD**
 
-- 近似比 $\frac{11}{9}\cdot\text{OPT} + \frac{6}{9}$
-- 實務上表現非常好，是 bin packing 的標配
+**First-Fit Decreasing**：物品先**由大到小排序**，每個物品塞進「第一個放得下」的既有 bin（從左到右掃），放不下就開新 bin。
 
-### 範例 5：Knapsack 的 FPTAS
+- 近似比 $\text{ALG} \le \frac{11}{9}\cdot\text{OPT} + \frac{6}{9}$
+- 實務表現非常好，是 bin packing 的標配
 
-knapsack 的 DP 是 pseudo-polynomial（$O(nW)$ 或 $O(nV)$），直接跑大 instance 還是會爆。FPTAS 的技巧：**價值 rescale**。
+**題目 5：Knapsack 的 FPTAS**
+
+Knapsack 的 DP 是 pseudo-polynomial（$O(nW)$ 或 $O(nV)$，$V$ 是最大價值），大 instance 還是會爆。FPTAS 用「**價值 rescale**」技巧——把價值除以一個精心挑的 $K$、四捨五入後跑 DP，以損失一點精度換大幅加速。
+
+**步驟**：
+
+1. 令 $V_\max = \max_i v_i$（所有物品裡最大的單一價值）
+2. 設 $K = \dfrac{\varepsilon \cdot V_\max}{n}$（rescale 粒度；$\varepsilon$ 是使用者指定的容許誤差）
+3. 新價值 $v'_i = \lfloor v_i / K \rfloor$（縮小後的整數值）
+4. 用 $O(n \cdot \sum v'_i)$ 的標準 DP 解新 instance
+
+**為什麼可行**：
+
+- 新價值總和 $\sum v'_i \le n \cdot V_\max / K = n^2 / \varepsilon$
+- DP 時間 $O(n^3 / \varepsilon)$——對 $n$ 和 $1/\varepsilon$ 都是多項式
+- 可證答案滿足 $\text{ALG} \ge (1-\varepsilon) \cdot \text{OPT}$
+
+<details>
+<summary>Python 實作骨架</summary>
 
 ```python
 def knapsack_fptas(items, W, epsilon):
-    # items = [(value, weight)]
+    # items = [(value, weight)]；epsilon 是容許誤差（例 0.1 = 10%）
     n = len(items)
     V_max = max(v for v, w in items)
     K = epsilon * V_max / n
     scaled = [(int(v / K), w) for v, w in items]
-    # 用 O(n * sum(scaled_v)) DP 解
+    # 用 O(n * sum(v' for v' in scaled)) 的價值向 DP 解 scaled
+    # 狀態：dp[v'_sum] = 達到該總縮放價值所需的最小總重量
+    # 最後找 dp[v'_sum] <= W 中最大的 v'_sum，還原成真實價值
     ...
 ```
 
-Rescale 後新價值的總和 $\le n \cdot V_\max / K = n^2 / \varepsilon$，DP 跑 $O(n^3 / \varepsilon)$——對 $n$ 和 $1/\varepsilon$ 都是多項式，同時保證 $(1-\varepsilon)$-近似。
+</details>
 
 :::note
-FPTAS 只可能出現在「弱 NP-complete」問題上，例如 knapsack、subset sum。TSP（一般距離）、Max Clique 這些「強 NP-hard」問題在 $\text{P} \neq \text{NP}$ 下連 PTAS 都不存在。這條分界線叫 **APX-hardness**。
+FPTAS 只可能出現在「**弱 NP-complete**」問題上（如 knapsack、subset sum，數值輸入），TSP（一般距離）、Max Clique 這些「**強 NP-hard**」問題在 $\text{P} \neq \text{NP}$ 下連 PTAS 都不存在。這條分界線叫 **APX-hardness**。
 :::
 
-## Heuristics：沒保證但有效
+---
 
-當 NP-hard 問題規模實在太大，近似演算法的多項式都嫌慢，就會退到**沒有理論保證的 heuristic**，靠經驗設計「大多數情況看起來不錯」的策略。常見套路：
+### Heuristics：沒保證但有效
+
+#### 演算法策略
+
+當 NP-hard 問題規模太大、近似的多項式都嫌慢，就會退到**沒有理論保證的 heuristic**，靠經驗設計「大多數情況看起來不錯」的策略。不保證 $\rho$、不保證收斂，但工程上可以交差。
+
+常見套路：
 
 | 方法 | 核心想法 | 典型應用 |
 | :--- | :--- | :--- |
-| **貪婪 heuristic** | 每步選局部最好 | bin packing、TSP nearest-neighbor |
-| **local search** | 從任意解開始，不斷微調（2-opt、swap） | TSP、VLSI placement |
+| **貪婪 heuristic** | 每步選局部最好 | Bin packing、TSP nearest-neighbor |
+| **Local Search** | 從任意解開始，不斷微調（2-opt、swap） | TSP、VLSI placement |
 | **Simulated Annealing** | 允許一定機率接受「變差」的步，避免卡在 local min | 最佳化通解 |
 | **Genetic Algorithm** | 維持一群解，交配 + 突變 + 選擇 | 布局、排程 |
 | **Tabu Search** | local search 加「禁忌表」避免走回頭路 | 排程、圖問題 |
 | **機器學習 / RL** | 用模型預測下一步怎麼走 | 近年 AlphaFold、routing |
 
-沒有哪個一定好。實務上：**小規模用精確法、中規模用近似、大規模用 heuristic，困難問題甚至混用**。
+#### 複雜度
+
+取決於選定的策略與迭代次數——多半是可控的多項式時間，但沒有理論最優保證。
+
+實務原則：**小規模用精確法、中規模用近似、大規模用 heuristic，困難問題甚至混用**（例：先 heuristic 找初始解、再 local search 微調）。
 
 ## 常見考法
 
 | # | 題型 | 重點 |
 | :---: | :--- | :--- |
-| 1 | **N-Queens 回溯手跑** | `cols` / `row-col` / `row+col` 三個 set；$n=4$ 的全部 2 解 |
+| 1 | **N-Queens 回溯手跑** | `cols` / `row-col` / `row+col` 三個 set；$n=4$ 的 2 解 |
 | 2 | **Subset Sum 回溯剪枝** | 由大到小排序；剩餘最小 > remain 直接砍 |
 | 3 | **分支設限 vs 回溯差異** | 分支設限多了 bound（下界 / 上界）剪枝；用於最佳化 |
 | 4 | **Knapsack 分支設限 bound 計算** | 排序 $v/w$ → 貪心允許切物品 → upper bound |
-| 5 | **近似比計算 $\rho$** | 最小化 $\rho = \text{ALG}/\text{OPT}$；最大化 $\rho = \text{OPT}/\text{ALG}$ |
+| 5 | **近似比 $\rho$ 計算** | 最小化 $\rho = \text{ALG}/\text{OPT}$；最大化 $\rho = \text{OPT}/\text{ALG}$ |
 | 6 | **Vertex Cover 2-approx 證明** | 選邊 matching $M$ → $\text{OPT} \ge \|M\|$、$\text{ALG} = 2\|M\|$ |
 | 7 | **Metric TSP via MST 2-approx** | $\text{OPT} \ge \text{MST}$；DFS 走兩次 + shortcut |
 | 8 | **Set Cover greedy $O(\ln n)$** | 每次選蓋最多新元素；$\rho = H_n$ |
 | 9 | **FPTAS vs PTAS 差異** | FPTAS 對 $n, 1/\varepsilon$ **雙多項式**；PTAS 可對 $1/\varepsilon$ 指數 |
 | 10 | **Knapsack FPTAS rescale 技巧** | $K = \varepsilon V_{\max}/n$；DP 變 $O(n^3/\varepsilon)$ |
-| 11 | **bound 方向（min 用下界、max 用上界）** | 方向反了剪枝會砍錯 |
-
-### Bounding 方向速查
-
-```text
-minimization: bound = 下界（此分支能達到的最好/最小值）
-              若 bound ≥ best  →  砍（展開到底也贏不過 best）
-
-maximization: bound = 上界（此分支能達到的最好/最大值）
-              若 bound ≤ best  →  砍（展開到底也贏不過 best）
-```
-
-### TSP 分支設限 bound 範例（下界）
-
-```text
-bound(node) = 當前路徑成本
-            + Σ (未加入城市 v 的最輕連出邊) / 2
-```
-
-除以 2 的原因：每條邊在 cycle 中會被兩端計算各一次。
+| 11 | **Bound 方向（min 用下界、max 用上界）** | 方向反了會把最佳解砍掉 |
 
 :::warning
 **考試常踩的陷阱**
@@ -377,7 +495,7 @@ bound(node) = 當前路徑成本
 2. **近似比 $\rho$ 方向**：最小化是 $\text{ALG}/\text{OPT}$、最大化是 $\text{OPT}/\text{ALG}$，都 $\ge 1$
 3. **bound 方向反**：min 用下界、max 用上界；反了會剪掉最佳解
 4. **FPTAS 不是萬能**：只「弱 NP-hard」問題有（Knapsack、Subset Sum）；強 NP-hard（一般 TSP、Max Clique）連 PTAS 都不存在
-5. **Vertex Cover 2-approx 取點要兩端都放**：只放一端會破壞 $\text{ALG} = 2\|M\|$ 的結構
+5. **Vertex Cover 2-approx 取點要兩端都放**：只放一端會破壞 $\text{ALG} = 2|M|$ 的結構
 6. **Metric TSP 限定三角不等式**：一般 TSP 沒有常數近似（除非 P=NP）
 7. **Christofides = 1.5-approx**：是 metric TSP 目前最好的常數近似（需要 minimum weight matching）
 :::
@@ -389,9 +507,9 @@ bound(node) = 當前路徑成本
 | 狀況 | 建議 |
 | :--- | :--- |
 | 規模很小（$n \le 30$），要精確 | 回溯法 / 分支設限 |
-| 規模中等、問題結構好 | DP（如果 pseudo-poly 可接受）或 FPTAS |
+| 規模中等、問題結構好 | DP（若 pseudo-poly 可接受）或 FPTAS |
 | 大規模、能容忍誤差 | 近似演算法 |
-| 巨大規模或結構亂 | heuristic / local search / metaheuristic |
+| 巨大規模或結構亂 | Heuristic / local search / metaheuristic |
 | 特殊輸入分布 | 針對輸入特徵設計 custom heuristic |
 
-演算法系列到此告一段落——從複雜度分析、排序、貪婪、淘汰搜尋、分而治之、動態規劃，到 NP-completeness 理論與因應。這條路的邏輯是一致的：**先看問題能不能快（P）、不能快就看能不能驗（NP）、再不行就接受「夠好」**。後面若要再深入，可以挑專題：圖論進階（max flow、matching）、線性規劃、隨機演算法、平攤分析、或近期的量子演算法。每條路都通。
+演算法系列到此告一段落——從複雜度分析、排序、貪婪、淘汰搜尋、分而治之、動態規劃，到 NP-completeness 理論與因應。這條路的邏輯一致：**先看問題能不能快（P）、不能快就看能不能驗（NP）、再不行就接受「夠好」**。後面若要再深入，可以挑專題：圖論進階（max flow、matching）、線性規劃、隨機演算法、平攤分析、近期的量子演算法。每條路都通。
