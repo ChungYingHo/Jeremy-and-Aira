@@ -10,7 +10,7 @@ sameDateSort: 1
 import ChainingDiagram from '@/components/ArticleRelated/data-structure/hash-table/ChainingDiagram.svelte'
 import OpenAddressingDiagram from '@/components/ArticleRelated/data-structure/hash-table/OpenAddressingDiagram.svelte'
 
-**雜湊表 (Hash Table)** 是以「鍵 (Key)」直接定位「值 (Value)」的資料結構。透過 **雜湊函式 (Hash Function)** 把 key 映射到陣列索引，平均時間複雜度達 $O(1)$，是實務上最常見的查詢結構。
+**雜湊表 (Hash Table)** 是以「鍵 (Key)」直接定位「值 (Value)」的資料結構——給個 key，透過**雜湊函式 (Hash Function)** 直接算出該 key 所在的陣列位置（index），平均時間複雜度達 $O(1)$，是實務上最常見的查詢結構。後面會用到的符號：$n$（已放入的元素數）、$m$（表的總 slot 數）、$\alpha = n/m$（load factor，載入率）。
 
 典型應用：字典、集合、資料庫索引、快取、編譯器符號表。
 
@@ -76,6 +76,9 @@ $$
 
 找不存在的 `10`：`hash(10) = 3`，slot 3 為空 → 直接回報不存在。
 
+<details>
+<summary>Java 實作（鏈結法）</summary>
+
 ```java
 import java.util.LinkedList;
 
@@ -115,6 +118,8 @@ public class HashTableChaining {
     }
 }
 ```
+
+</details>
 
 :::info
 鏈結法的優點是實作直觀、不怕表被填滿；缺點是每個 slot 要多存一個串列指標，且 cache locality 較差。Java 的 `HashMap` 在 JDK 8 之後採用鏈結法，當單一 bucket 的串列長度超過門檻（預設 8）時，會把該串列升級成紅黑樹，以改善最壞情況效能。
@@ -219,17 +224,11 @@ public class HashTableChaining {
 
 ## 負載因子與 Rehash
 
-**負載因子 (Load Factor)** 定義為：
+**負載因子 (Load Factor)** $\alpha = n/m$（已放入元素數 ÷ 總 slot 數），衡量表有多擠：
 
-$$
-\alpha = \frac{n}{m}
-$$
-
-其中 $n$ 是元素數、$m$ 是表的大小。
-
-- $\alpha$ 越大，碰撞越頻繁，效能越差
+- $\alpha$ 越大 → 碰撞越頻繁 → 效能越差
 - 開放定址法通常要求 $\alpha \le 0.75$
-- 鏈結法允許 $\alpha > 1$，但超過後效能會快速下滑
+- 鏈結法允許 $\alpha > 1$（串列可無限長），但超過後效能會快速下滑
 
 當 $\alpha$ 超過門檻時觸發 **Rehash**：
 
