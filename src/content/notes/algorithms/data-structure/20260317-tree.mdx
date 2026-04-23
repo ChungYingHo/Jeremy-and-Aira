@@ -38,7 +38,7 @@ import BinaryTreeTypesDiagram from '@/components/ArticleRelated/data-structure/t
 
 最常見的樹類型。每個節點最多兩個子節點：**左子節點 (Left Child)** 與**右子節點 (Right Child)**。
 
-二元樹的細分類型：
+二元樹的細分類型：以下四張圖並排展示四種形狀，差別在於「子節點有沒有填滿」「最後一層怎麼排」。
 
 <BinaryTreeTypesDiagram />
 
@@ -169,7 +169,7 @@ class TreeNode {
 
 ## 樹的走訪 (Traversal)
 
-走訪是指依照某種順序拜訪樹中的每一個節點。常見的走訪方式分為兩大類：
+走訪是指依照某種順序拜訪樹中的每一個節點。常見的走訪方式分為兩大類：**深度優先 (DFS)** 與**廣度優先 (BFS)**。以下互動圖解以同一棵 BST 示範四種走訪順序，點按鈕切換模式，動畫會逐一標記節點被拜訪的先後：
 
 <TreeDiagram client:only="svelte" />
 
