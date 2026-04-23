@@ -62,6 +62,8 @@ import HeapExtractVisualizer from '@/components/ArticleRelated/data-structure/he
 | 值 | 6 | 5 | 4 | 1 | 2 | 3 |
 | 父 | — | 6 | 6 | 5 | 5 | 4 |
 
+以下互動圖解把這棵樹與陣列並排呈現，點任一節點就能即時看到它的 index 與 parent / left / right 公式的計算結果：
+
 <HeapArrayMappingDiagram client:only="svelte" />
 
 ---
@@ -100,6 +102,8 @@ import HeapExtractVisualizer from '@/components/ArticleRelated/data-structure/he
      1 2   3
 ```
 
+以下動畫逐步重現上面六次 insert 的 sift-up 過程——新插入的節點會先落在陣列尾端，再往上和父節點比較：
+
 <HeapInsertVisualizer client:only="svelte" />
 
 - 時間複雜度：$O(\log n)$（最多爬樹高那麼多層）
@@ -137,6 +141,8 @@ import HeapExtractVisualizer from '@/components/ArticleRelated/data-structure/he
 | 4 | index 3 值 2 已無子節點，停 | [_, 4, 3, 2, 1] |
 
 回傳 5。
+
+以下動畫從 `[_, 6, 5, 4, 1, 2, 3]` 開始連續執行 extract max，觀察取出順序與每次 sift-down 的過程——你會發現取出順序恰好是遞減，這就是 Heap Sort 的核心：
 
 <HeapExtractVisualizer client:only="svelte" />
 
