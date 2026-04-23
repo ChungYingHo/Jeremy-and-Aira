@@ -31,6 +31,18 @@ import BinPackingDiagram from '@/components/ArticleRelated/algorithm/BinPackingD
 
 ## 各適用情境
 
+:::info
+**圖論演算法的複雜度怎麼看**
+
+接下來的 Prim、Kruskal、Sollin、Dijkstra 複雜度都用 $|V|$（頂點數）和 $|E|$（邊數）兩個變數表示，跟前篇用單一 $n$ 的寫法不同。怎麼對應到常見等級？
+
+- $|E|$ 的範圍：最少 $|V| - 1$（樹）、最多 $|V|^2$（完全圖），所以 $|E|$ 介於 $O(|V|)$ 和 $O(|V|^2)$ 之間
+- $O(|E| \log |V|)$ 在**稀疏圖**（$|E| \approx |V|$）約是 $O(n \log n)$ 等級；在**稠密圖**（$|E| \approx |V|^2$）約是 $O(n^2 \log n)$ 等級
+- 不管是哪一種，都仍是**多項式複雜度** (polynomial)，不是指數級
+
+看到 $|E|$ 就想成「最壞是 $|V|^2$」，代進去就能對應到常見等級的直覺。
+:::
+
 ### Prim（最小生成樹）
 
 #### 演算法策略
