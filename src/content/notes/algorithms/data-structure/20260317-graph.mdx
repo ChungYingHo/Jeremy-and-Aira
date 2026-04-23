@@ -11,7 +11,7 @@ import GraphDiagram from '@/components/ArticleRelated/data-structure/graph/Graph
 import AdjacencyDiagram from '@/components/ArticleRelated/data-structure/graph/AdjacencyDiagram.svelte'
 import DirectedGraphDiagram from '@/components/ArticleRelated/data-structure/graph/DirectedGraphDiagram.svelte'
 
-**圖 (Graph)** 是一種非線性資料結構，由**頂點 (Vertex)** 與**邊 (Edge)** 組成，描述物件之間的關係，是資料結構中表達能力最強的一種。
+**圖 (Graph)** 是一種非線性資料結構，由**頂點 (Vertex，$V$)** 與**邊 (Edge，$E$)** 組成，描述物件之間的關係，是資料結構中表達能力最強的一種。後面常用 $|V|$ 代表頂點數、$|E|$ 代表邊數。
 
 應用範例：捷運路線圖、社群媒體好友關係、Google Maps 導航路徑、電腦網路連線拓樸。
 
@@ -83,7 +83,10 @@ static void addEdge(Map<Integer, List<Integer>> graph, int u, int v) {
 
 ### 鄰接矩陣 (Adjacency Matrix)
 
-用一個二維陣列表示頂點之間的連接關係。`matrix[i][j] = 1` 表示頂點 $i$ 與頂點 $j$ 之間有邊，`0` 則表示沒有邊。
+用一個二維陣列 `matrix` 表示頂點之間的連接關係：`matrix[i][j] = 1` 代表頂點 $i$ 與頂點 $j$ 之間有邊，`0` 代表沒有邊。
+
+<details>
+<summary>Java 實作</summary>
 
 ```java
 public class AdjacencyMatrix {
@@ -113,9 +116,14 @@ public class AdjacencyMatrix {
 }
 ```
 
+</details>
+
 ### 鄰接串列 (Adjacency List)
 
 每個頂點對應一個串列，存放所有相鄰頂點。實務中更常見——大多數圖的邊數遠少於頂點數的平方，鄰接串列可節省大量記憶體。
+
+<details>
+<summary>Java 實作</summary>
 
 ```java
 import java.util.*;
@@ -145,6 +153,8 @@ public class AdjacencyList {
 }
 ```
 
+</details>
+
 <AdjacencyDiagram client:only="svelte" />
 
 ### 兩種方式的比較
@@ -156,7 +166,7 @@ public class AdjacencyList {
 | 走訪所有相鄰頂點 | $O(|V|)$ | $O(\text{degree})$ |
 | 適合使用時機 | 邊很多（稠密圖） | 邊較少（稀疏圖） |
 
-其中 $|V|$ 是頂點數，$|E|$ 是邊數。
+（$\text{degree}$ 是該頂點的度數——它連出的邊數。）
 
 ## 圖的走訪 (Traversal)
 
@@ -188,6 +198,9 @@ public class AdjacencyList {
 | 6 | 逐層回溯結束 | — | — | 空 |
 
 **走訪順序：0 → 1 → 2 → 4 → 3**
+
+<details>
+<summary>Java 實作（DFS）</summary>
 
 ```java
 import java.util.*;
@@ -227,6 +240,8 @@ public class GraphDFS {
 }
 ```
 
+</details>
+
 ### 廣度優先搜尋 (BFS)
 
 思路：先探索所有鄰居，再往更遠處走。使用**佇列 (Queue)** 實作，確保先發現的鄰居先被處理。
@@ -243,6 +258,9 @@ public class GraphDFS {
 | 5 | 4 | 4 | 無（2、3 都已訪） | \[\] | 同上 |
 
 **走訪順序：0 → 1 → 3 → 2 → 4**（與 DFS 不同——BFS 先把距離 1 的點全訪完，再進到距離 2）
+
+<details>
+<summary>Java 實作（BFS）</summary>
 
 ```java
 import java.util.*;
@@ -290,6 +308,8 @@ public class GraphBFS {
     }
 }
 ```
+
+</details>
 
 ### 走訪的時間複雜度
 
