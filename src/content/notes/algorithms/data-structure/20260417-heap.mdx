@@ -47,7 +47,7 @@ import HeapExtractVisualizer from '@/components/ArticleRelated/data-structure/he
 - 左子：$2i + 1$
 - 右子：$2i + 2$
 
-以 max-heap `[_, 6, 5, 4, 1, 2, 3]`（1-indexed，索引 0 空著）為例：
+以 max-heap `[_, 6, 5, 4, 1, 2, 3]`（1-indexed，`_` 代表 index 0 保留不用，讓 $i \cdot 2$、$i \cdot 2 + 1$ 的公式直接對上位置）為例：
 
 ```
          6  (index 1)
@@ -219,6 +219,9 @@ Floyd's 版本較快的直覺：越接近葉子節點越多、但下沉高度越
 
 Java 的 `PriorityQueue`、Python 的 `heapq`、C++ STL 的 `priority_queue` 底層皆為堆積。
 
+<details>
+<summary>Java PriorityQueue 用法</summary>
+
 ```java
 import java.util.PriorityQueue;
 
@@ -234,11 +237,16 @@ public class PQExample {
 }
 ```
 
+</details>
+
 ---
 
 ## Heap 的實作
 
-以 1-indexed max-heap 為例：
+以 1-indexed max-heap 為例。
+
+<details>
+<summary>Java 完整實作（insert / extractMax / siftUp / siftDown）</summary>
 
 ```java
 import java.util.ArrayList;
@@ -299,6 +307,8 @@ public class MaxHeap {
     }
 }
 ```
+
+</details>
 
 ---
 
