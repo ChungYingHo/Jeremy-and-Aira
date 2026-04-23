@@ -41,6 +41,8 @@ import DirectedGraphDiagram from '@/components/ArticleRelated/data-structure/gra
 - **無向圖 (Undirected Graph)**：邊沒有方向，A 連 B 代表雙向可通行
 - **有向圖 (Directed Graph / Digraph)**：邊有方向，A → B 不代表 B → A
 
+以下左右並列同一組點，對照邊「有沒有箭頭」造成的差異：
+
 <DirectedGraphDiagram client:only="svelte" />
 
 在程式建立圖時，差別只在 `addEdge` 是否雙向設定：
@@ -155,6 +157,8 @@ public class AdjacencyList {
 
 </details>
 
+以下互動圖解把「鄰接矩陣」與「鄰接串列」放在同一張圖旁邊對照——滑鼠移到任一頂點，會同時在兩種表示法中高亮它的相鄰關係：
+
 <AdjacencyDiagram client:only="svelte" />
 
 ### 兩種方式的比較
@@ -171,6 +175,8 @@ public class AdjacencyList {
 ## 圖的走訪 (Traversal)
 
 與樹相同，分為 DFS 與 BFS 兩種。差別在於圖可能存在環，需額外記錄**已拜訪的節點**以避免無限迴圈。
+
+以下互動圖解以同一張 5 頂點的圖示範，點按鈕切換 DFS / BFS，動畫會逐一標記節點被拜訪的順序：
 
 <GraphDiagram client:only="svelte" />
 
