@@ -27,7 +27,7 @@ const splitSummary = (text: string) => {
 
     <header class="text-center mb-16 space-y-4">
       <h1 class="font-serif text-4xl md:text-6xl font-semibold tracking-tight text-ink">
-        The Creators
+        The Author
       </h1>
       <p class="text-ink-faint font-mono text-sm tracking-[0.2em] uppercase">
         Behind the Code
@@ -88,10 +88,10 @@ const splitSummary = (text: string) => {
                   
                   {/* Name & Role */}
                   <div>
-                    <h2 class={`
-                      font-serif text-4xl md:text-5xl font-semibold mb-3
-                      ${author.isSecret ? 'text-ink/20 tracking-tighter' : 'text-ink'}
-                    `}>
+                    <h2
+                      class={`text-5xl md:text-6xl font-bold mb-3 leading-none ${author.isSecret ? 'text-ink/20' : 'text-ink'}`}
+                      style="font-family: 'Caveat', cursive"
+                    >
                       {author.name}
                     </h2>
                     

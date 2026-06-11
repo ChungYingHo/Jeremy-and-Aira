@@ -18,7 +18,7 @@ export const AUTHORS: Author[] = [
     imgPath: '/assets/authors/jeremy.png',
     isSecret: false,
     summary: 'All we have to decide is what to do with the time that is given us.\n— J.R.R. Tolkien, The Fellowship of the Ring',
-    description: 'Hi, I’m Jeremy, a front-end engineer.\nI believe that even small, consistent efforts can gradually make a difference in the world.\n\nWelcome to the Jeremy & Aira blog. From vocus to Docusaurus, this is already the fourth iteration of this site. Each redesign has been more than a change of tools or frameworks — it has been a way for me to reorganize how I learn and how I think.\n\nHere, you’ll find practical insights into web development, deeper explorations of computer science fundamentals, and reflections on technical growth and life choices.\n\nFor me, this blog represents an important milestone. It serves both as a record of my technical journey and as a starting point for redefining my future direction.\nWhether you’re just passing by or choosing to walk along for a while, I’m truly glad to meet you here.',
+    description: 'Hi, I’m Jeremy, a front-end engineer.\nI believe that even small, consistent efforts can gradually make a difference in the world.\n\nWelcome to my blog. From vocus to Docusaurus, this is already the fourth iteration of this site. Each redesign has been more than a change of tools or frameworks — it has been a way for me to reorganize how I learn and how I think.\n\nHere, you’ll find practical insights into web development, deeper explorations of computer science fundamentals, and reflections on technical growth and life choices.\n\nFor me, this blog represents an important milestone. It serves both as a record of my technical journey and as a starting point for redefining my future direction.\nWhether you’re just passing by or choosing to walk along for a while, I’m truly glad to meet you here.',
     currentRole: [
       'Senior Frontend Engineer',
       'Frontend Architect',
@@ -32,6 +32,11 @@ export const AUTHORS: Author[] = [
       ithome: 'https://ithelp.ithome.com.tw/users/20157439'
     },
     portfolio: [
+      {
+        name: 'Exam Review System',
+        link: 'https://tcm-sand.vercel.app/',
+        summary: 'An online study and review system I built for a professional exam — question banks, practice sessions, and progress tracking all in one place, full-stack from front end to deployment. Still a work in progress, so the front door stays locked for now.'
+      },
       {
         name: 'Env Aligner',
         link: 'https://www.npmjs.com/package/env-aligner',
@@ -56,9 +61,11 @@ export const AUTHORS: Author[] = [
     isHiddenFromAbout: true,
     coAuthorImgs: ['/assets/authors/jeremy.png', '/assets/authors/claude.png'],
   },
-  {
-    name: 'Aira Studio',
-    imgPath: '/assets/authors/aira.png',
-    isSecret: true,
-  }
+  // Aira Studio：Jeremy 的附屬工作室／第二人格，日後可能獨立成站。
+  // 暫不顯示為作者卡（保留設定以便日後復用）。
+  // {
+  //   name: 'Aira Studio',
+  //   imgPath: '/assets/authors/aira.png',
+  //   isSecret: true,
+  // },
 ]

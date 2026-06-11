@@ -160,12 +160,12 @@
           z-20
         "
       >
-        <span class="
-          font-serif text-xs md:text-sm font-semibold tracking-[0.15em] lg:tracking-[0.2em] whitespace-nowrap
-          text-ink group-hover:text-moss
-          transition-all duration-300
-        ">
-          JEREMY &times; AIRA
+        <span class="flex items-baseline gap-2 whitespace-nowrap">
+          <span
+            class="text-ink group-hover:text-moss transition-colors duration-300"
+            style="font-family: 'Caveat', cursive; font-weight: 700; font-size: 1.65rem; line-height: 1"
+          >Jeremy</span>
+          <span class="font-serif italic text-moss-soft text-[10px] md:text-[11px] tracking-[0.16em]">aira studio</span>
         </span>
       </a>
 
