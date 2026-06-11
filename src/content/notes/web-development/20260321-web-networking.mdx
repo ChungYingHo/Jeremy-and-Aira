@@ -3,7 +3,7 @@ title: '[Web] 網路基礎：IP、Domain、TCP/IP 與 CDN'
 author: 'Jeremy & Claude'
 date: '2026-03-21'
 tags: [web, network, dns, tcp/ip, http, cdn, domain]
-changelog: []
+changelog: ['2026-06-11']
 ---
 
 import TcpIpLayersDiagram from '@/components/ArticleRelated/web/TcpIpLayersDiagram.svelte'
@@ -12,59 +12,59 @@ import CdnDiagram from '@/components/ArticleRelated/web/CdnDiagram.svelte'
 
 ## IP 位址
 
-每台連上網路的裝置都有一個 IP 位址，作為裝置在網路上的唯一識別。資料封包依靠 IP 位址決定送達目標。
+每台連上網路的裝置都有一個 IP 位址，這是它在網路上的唯一身分。封包要送到哪台機器，看的就是 IP。
 
-**IPv4** 格式：
+**IPv4** 長這樣：
 
 ```
 93.184.216.34
 ```
 
-四組數字，每組 0–255，以小數點分隔。IPv4 位址空間約 43 億個，已不敷全球裝置使用。
+四組數字，每組 0–255，用小數點隔開。整個 IPv4 空間大約 43 億個位址，早就不夠全球裝置分了。
 
-**IPv6** 格式：
+**IPv6** 長這樣：
 
 ```
 2606:2800:220:1:248:1893:25c8:1946
 ```
 
-十六進位加冒號，位址空間近乎無限。目前 IPv4 與 IPv6 並存，多數服務同時支援。
+十六進位加冒號，位址多到近乎用不完。目前兩者並存，多數服務同時支援。
 
-人類無法記憶 IP 位址，因此需要 Domain 與 DNS 將可讀名稱對應至 IP。
+問題是，沒有人記得住這串數字。所以才有 Domain 和 DNS，把好記的名字對應到 IP。
 
 ## Domain 與 DNS
 
-Domain（網域）是人類可讀的名稱，如 `google.com`、`github.com`。DNS（Domain Name System）負責將 domain 解析為 IP 位址。
+Domain（網域）就是給人看的名字，像 `google.com`、`github.com`。DNS（Domain Name System）負責把 domain 解析成 IP 位址。
 
-Domain 結構由右至左：
+Domain 的結構要從右往左看：
 
 - **TLD（頂級網域）**：最右邊，像 `.com`、`.org`、`.tw`
 - **二級網域**：你登記的名字，像 `google`、`github`
 - **子網域**：最左邊，像 `www`、`mail`、`api`
 
-例：`mail.google.com` — `.com` 是 TLD，`google` 是二級網域，`mail` 是子網域。
+拿 `mail.google.com` 來拆：`.com` 是 TLD，`google` 是二級網域，`mail` 是子網域。
 
 ### DNS 解析流程
 
-瀏覽器不直接持有 domain 對應的 IP，需經過多層查詢：
+瀏覽器手上沒有 domain 對 IP 的對照表，得一層一層問出來：
 
 <DnsResolutionDiagram client:visible />
 
-流程：瀏覽器 → Recursive Resolver（ISP 或如 Google `8.8.8.8`）→ Root Nameserver → TLD Nameserver → Authoritative Nameserver → 取得 IP 位址。
+順序是：瀏覽器 → Recursive Resolver（ISP 提供的，或像 Google 的 `8.8.8.8`）→ Root Nameserver → TLD Nameserver → Authoritative Nameserver → 拿到 IP。
 
 :::info
-實際查詢通常僅需數毫秒，因為每一層皆有快取。查詢結果依 TTL 設定暫存，期間內不需重新查詢。
+看起來要問四層，實際上通常幾毫秒就結束，因為每一層都有快取。查到的結果會照 TTL 設定暫存，在有效期間內就不用重問。
 :::
 
-變更 DNS 設定後，全球各地快取須逐步過期才會生效，此等待期稱為 **DNS propagation**，通常需數小時至 48 小時。
+也因為到處都是快取，改 DNS 設定之後不會馬上生效——要等全球各地的快取陸續過期。這段等待期叫 **DNS propagation**，通常幾小時到 48 小時不等。
 
 ## TCP/IP
 
-TCP/IP 是網路通訊的基礎協定組，將通訊分為四層：
+TCP/IP 是網路通訊的基礎協定組，把整個通訊過程切成四層：
 
 <TcpIpLayersDiagram client:visible />
 
-各層職責：
+各層各管各的事：
 
 | 層級 | 負責內容 |
 | :--- | :--- |
@@ -75,7 +75,7 @@ TCP/IP 是網路通訊的基礎協定組，將通訊分為四層：
 
 ### TCP vs UDP
 
-傳輸層兩大協定：
+傳輸層有兩大協定，取捨很明確——要可靠還是要快：
 
 | | TCP | UDP |
 | :--- | :--- | :--- |
@@ -86,12 +86,12 @@ TCP/IP 是網路通訊的基礎協定組，將通訊分為四層：
 | 適用場景 | 網頁載入、檔案下載 | 線上遊戲、視訊通話 |
 
 :::tip
-TCP 三次握手流程：Client → SYN → Server → SYN-ACK → Client → ACK，三步驟確保雙方準備就緒後才開始傳輸。
+TCP 三次握手：Client → SYN → Server → SYN-ACK → Client → ACK。三步走完，雙方都確認對方準備好了，才開始傳資料。
 :::
 
 ## HTTP 與 HTTPS
 
-**HTTP（HyperText Transfer Protocol）** 定義瀏覽器與伺服器間的通訊格式：
+**HTTP（HyperText Transfer Protocol）** 定義瀏覽器和伺服器之間講話的格式：
 
 - **Request**：方法（GET、POST 等）、路徑、Header
 - **Response**：狀態碼（200 OK、404 Not Found 等）、Header、Body
@@ -118,9 +118,9 @@ Content-Length: 25
 {"ok":true,"userId":42}
 ```
 
-HTTP 為明文傳輸，中間節點可讀取所有內容。
+注意一件事：HTTP 是明文傳輸，路上經過的每個節點都讀得到全部內容。
 
-**HTTPS** 在 HTTP 下加入 **TLS（Transport Layer Security）** 加密層。連線時雙方協商金鑰，後續傳輸皆以該金鑰加密，即使被攔截也無法解讀。
+**HTTPS** 就是在 HTTP 底下墊一層 **TLS（Transport Layer Security）** 加密。建立連線時雙方先協商出金鑰，之後傳的東西全部用這把金鑰加密——就算被攔截，也只是一堆看不懂的密文。
 
 :::warning
 現在幾乎所有網站都應該用 HTTPS。瀏覽器會對 HTTP 網站顯示「不安全」警告，搜尋引擎也偏好 HTTPS 網站。如果你在架站，讓 TLS 憑證這件事盡早處理好。

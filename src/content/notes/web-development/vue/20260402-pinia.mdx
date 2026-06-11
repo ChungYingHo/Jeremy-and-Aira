@@ -4,12 +4,12 @@ author: 'Jeremy & Claude'
 date: '2026-04-02'
 tags: ['vue', 'pinia', 'state management', 'store']
 sameDateSort: 4
-changelog: []
+changelog: ['2026-06-11']
 ---
 
 ## 為什麼需要狀態管理？
 
-當多個不具直接父子關係的元件需要共享同一份資料時，props 逐層傳遞或 `provide/inject` 的維護成本會隨規模增長。範例：
+幾個彼此沒有父子關係的元件要共享同一份資料時，麻煩就來了。看個例子：
 
 ```
 App
@@ -19,9 +19,9 @@ App
     └── Settings    ← 需要修改 user
 ```
 
-三者不具直接父子關係，用 props 需逐層向下傳遞；用 `provide/inject` 則需每處分別注入，修改時牽連範圍大。
+這三個元件不在同一條父子鏈上。用 props 得一層層往下傳；用 `provide/inject` 也得在每個地方分別注入，要改的時候牽連一大片。專案越大，這個成本越高。
 
-**狀態管理**：將跨元件共享的資料集中於單一位置。任何元件皆可直接存取或修改，變動自動反映至所有使用端。
+**狀態管理**的思路是：把跨元件共享的資料集中放在一個地方。哪個元件要用就直接拿、要改就直接改，改完所有用到的地方自動更新。
 
 ---
 
@@ -50,7 +50,7 @@ app.mount('#app')
 
 ## 建立 Store
 
-Store 是集中管理狀態的單元。Pinia 提供兩種定義語法。
+Store 就是集中管理狀態的單位。Pinia 有兩種定義寫法。
 
 ### Option Store（選項式）
 
@@ -76,7 +76,7 @@ export const useCounterStore = defineStore('counter', {
 
 ### Setup Store（組合式）— 推薦
 
-與 Composition API 寫法相同：
+寫起來跟 Composition API 一模一樣：
 
 ```js
 // stores/counter.js
@@ -100,13 +100,13 @@ export const useCounterStore = defineStore('counter', () => {
 })
 ```
 
-兩種寫法效果相同。Setup Store 的對應關係：`ref` → state、`computed` → getter、function → action。
+兩種寫法效果相同。Setup Store 的對應關係很好記：`ref` 就是 state、`computed` 就是 getter、function 就是 action。
 
 ---
 
 ## State — 狀態
 
-State 是 store 內的資料，對應 `ref`（Option Store 則為 `state()` 回傳值）。
+State 是 store 裡存的資料。Setup Store 裡就是 `ref`，Option Store 則是 `state()` 回傳的東西。
 
 ### 在元件裡使用
 
@@ -161,13 +161,13 @@ const { count, name } = storeToRefs(counter)
 const { increment } = counter
 ```
 
-原因：`counter.count` 本質上是 `ref`，直接解構取得的是當下的原始值而非 ref 物件。`storeToRefs` 會保留 ref 連結。
+為什麼？`counter.count` 本質上是個 `ref`，直接解構拿到的只是當下的原始值，不是 ref 本身。`storeToRefs` 會幫你保住 ref 的連結。
 
 ---
 
 ## Getters — 計算屬性
 
-Getter 等同 `computed`，根據 state 計算衍生資料，具快取特性。
+Getter 就是 store 版的 `computed`：從 state 算出衍生資料，一樣有快取。
 
 ```js
 export const useCartStore = defineStore('cart', () => {
@@ -219,7 +219,7 @@ export const useCartStore = defineStore('cart', () => {
 
 ## Actions — 操作
 
-Action 是修改 state 的函式。與 Vuex 不同，**Pinia 沒有 mutation**，直接以函式修改 state。
+Action 就是修改 state 的函式。跟 Vuex 最大的不同：**Pinia 沒有 mutation**，想改 state 就直接在函式裡改。
 
 ```js
 export const useAuthStore = defineStore('auth', () => {
@@ -249,7 +249,7 @@ export const useAuthStore = defineStore('auth', () => {
 })
 ```
 
-Action 支援同步與非同步（async/await）。
+同步、非同步（async/await）都可以，沒有額外限制。
 
 ---
 
@@ -384,11 +384,11 @@ export const useThemeStore = defineStore('theme', () => {
 
 ## 什麼時候該用 Pinia？
 
-不是所有狀態都需要放進 Pinia。判斷標準：
+不是所有狀態都該丟進 Pinia。可以這樣判斷：
 
 **適合放進 Pinia 的：**
-- 多個不相關的元件都需要用到的資料（使用者資訊、購物車、主題）
-- 需要在頁面切換後還保留的狀態
+- 多個不相關的元件都會用到的資料（使用者資訊、購物車、主題）
+- 頁面切換後還要保留的狀態
 - 業務邏輯複雜、需要集中管理的狀態
 
 **不需要放進 Pinia 的：**

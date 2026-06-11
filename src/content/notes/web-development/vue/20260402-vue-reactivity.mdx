@@ -4,17 +4,17 @@ author: 'Jeremy & Claude'
 date: '2026-04-02'
 tags: ['vue', 'reactivity', 'ref', 'reactive', 'computed', 'watch']
 sameDateSort: 0
-changelog: []
+changelog: ['2026-06-11']
 ---
 
 ## 什麼是「響應式」？
 
 - **核心概念**：資料變了，畫面自動跟著變
-- 不需要手動操作 DOM（`document.querySelector` / `innerHTML`），Vue 自動處理
+- 不用自己動手操作 DOM（`document.querySelector` / `innerHTML`），這些 Vue 都會處理好
 
 ### 底層原理
 
-Vue 3 的響應式透過 JavaScript `Proxy` 實現。Vue 將資料包裝為 Proxy 物件，在讀取或修改時攔截操作，觸發對應的畫面更新。
+Vue 3 的響應式是用 JavaScript 的 `Proxy` 做的：把資料包成 Proxy 物件，讀取和修改都會被攔截到，Vue 就趁這個時機追蹤依賴、觸發畫面更新。
 
 ```js
 // 概念上大概長這樣（不是真正的原始碼）
@@ -33,14 +33,14 @@ const data = new Proxy({ count: 0 }, {
 })
 ```
 
-- Vue 2 使用 `Object.defineProperty`，無法偵測「新增屬性」與「刪除屬性」，因此需要 `Vue.set()` API
-- Vue 3 改用 `Proxy`，上述限制不再存在
+- Vue 2 用的是 `Object.defineProperty`，偵測不到「新增屬性」和「刪除屬性」，所以才需要 `Vue.set()` 這種 API
+- Vue 3 改用 `Proxy` 之後，這個限制就不存在了
 
 ---
 
 ## ref — 最常用的響應式 API
 
-`ref` 是 Vue 3 Composition API 中最常用的響應式 API。
+`ref` 是 Vue 3 Composition API 裡最常用的響應式 API。
 
 ```vue
 <script setup>
@@ -60,9 +60,9 @@ function increment() {
 
 ### 重點
 
-- **在 JS 裡要加 `.value`** — `ref` 回傳包裝物件，值存在 `.value`
-- **在 template 裡不用加** — Vue 自動解包（unwrap），直接寫 `{{ count }}`
-- **任意型別皆可** — 字串、數字、布林、陣列、物件皆適用
+- **在 JS 裡要加 `.value`** — `ref` 回傳的是一個包裝物件，值放在 `.value` 裡
+- **在 template 裡不用加** — Vue 會自動解包（unwrap），直接寫 `{{ count }}` 就好
+- **什麼型別都能包** — 字串、數字、布林、陣列、物件都行
 
 ```js
 const name = ref('Jeremy')        // 字串
@@ -73,13 +73,13 @@ const user = ref({ name: 'Aira' }) // 物件
 
 ### 為什麼需要 `.value`？
 
-JavaScript 基本型別（string、number、boolean）是傳值的，無法被 Proxy 追蹤。`ref` 將值包成物件，透過 `.value` 存取，使 Proxy 能偵測變化。Template 中 Vue 自動解包，不需手動存取 `.value`。
+JavaScript 的基本型別（string、number、boolean）是傳值的，Proxy 追蹤不到。所以 `ref` 把值包進一個物件，存取都走 `.value`，Proxy 才有東西可以攔。Template 裡 Vue 幫你自動解包，所以不用寫 `.value`。
 
 ---
 
 ## reactive — 物件的響應式
 
-`reactive` 專門用於物件的響應式宣告，不需要 `.value` 即可存取屬性。
+`reactive` 是物件專用的響應式宣告，好處是存取屬性不用 `.value`。
 
 ```vue
 <script setup>
@@ -104,7 +104,7 @@ function increment() {
 
 > **Vue 官方推薦優先使用 `ref`。**
 
-`reactive` 有以下限制：
+因為 `reactive` 有幾個坑：
 
 **限制 1：不能整個替換**
 
@@ -134,11 +134,11 @@ const { count } = state
 const count = reactive(0)
 ```
 
-`ref` 不受上述限制，大部分情境適用。
+這些坑 `ref` 都沒有，所以大部分情境直接用 `ref` 就好。
 
 ### 適合使用 reactive 的場景
 
-一組相關狀態，且不會整個替換：
+一組關係緊密的狀態，而且確定不會整個替換掉——這種時候 `reactive` 用起來比較順手：
 
 ```js
 // 表單資料很適合用 reactive
@@ -149,7 +149,7 @@ const form = reactive({
 })
 ```
 
-用 `ref` 包物件也可以達到同樣效果：
+不過用 `ref` 包物件也能做到一樣的事：
 
 ```js
 const form = ref({
@@ -166,7 +166,7 @@ form.value.username = 'jeremy'
 
 ## computed — 計算屬性
 
-`computed` 根據其他響應式資料衍生出新值，具備快取機制。
+`computed` 用來從其他響應式資料算出一個新值，而且自帶快取。
 
 ```vue
 <script setup>
@@ -198,8 +198,8 @@ function getFullName() {
 
 用起來好像差不多？差別在於**快取**。
 
-- `computed` 有快取：只有當依賴的資料變了才會重新計算。如果 `firstName` 和 `lastName` 都沒變，不管你在 template 裡用幾次 `{{ fullName }}`，都只會算一次。
-- `method` 沒快取：每次 template 重新渲染，函式都會被執行一次。
+- `computed` 有快取：只有依賴的資料變了才會重新計算。如果 `firstName` 和 `lastName` 都沒變，不管你在 template 裡用幾次 `{{ fullName }}`，都只算一次。
+- `method` 沒快取：每次 template 重新渲染，函式就被執行一次。
 
 用生活比喻：`computed` 就像冰箱裡的便當，做好了就放著，要吃的時候直接拿。`method` 就像現點現做的餐廳，每次都要重新煮。
 
@@ -272,7 +272,7 @@ watch(
 
 ### 深層監聽
 
-如果你監聽一個 `ref` 包的物件，預設只會在「整個物件被替換」時觸發。如果你要監聽物件裡面的屬性變化，要加 `deep: true`：
+如果你監聽一個 `ref` 包的物件，預設只會在「整個物件被替換」時觸發。要監聽物件裡面的屬性變化，得加 `deep: true`：
 
 ```js
 const user = ref({ name: 'Jeremy', age: 28 })
@@ -288,7 +288,7 @@ watch(user, (newUser) => {
 
 ## watchEffect — watch 的懶人版
 
-`watchEffect` 跟 `watch` 很像，但它不需要你指定要監聽什麼。它會**自動收集依賴** — 你在 callback 裡面用了什麼響應式資料，它就會監聽什麼。
+`watchEffect` 跟 `watch` 很像，但它不需要你指定要監聽什麼。它會**自動收集依賴** — 你在 callback 裡面用了什麼響應式資料，它就監聽什麼。
 
 ```js
 import { ref, watchEffect } from 'vue'
@@ -318,7 +318,7 @@ watchEffect(() => {
 
 ### 停止監聽
 
-不管是 `watch` 還是 `watchEffect`，都會回傳一個「停止函式」。在元件卸載時它們會自動停止，但如果你需要手動停止：
+不管是 `watch` 還是 `watchEffect`，都會回傳一個「停止函式」。元件卸載時它們會自動停止，但如果你想提前停掉：
 
 ```js
 const stop = watchEffect(() => {

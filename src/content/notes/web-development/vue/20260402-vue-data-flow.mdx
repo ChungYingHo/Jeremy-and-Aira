@@ -4,22 +4,22 @@ author: 'Jeremy & Claude'
 date: '2026-04-02'
 tags: ['vue', 'props', 'emit', 'provide', 'inject', 'v-model', 'data flow']
 sameDateSort: 1
-changelog: []
+changelog: ['2026-06-11']
 ---
 
 ## 單向資料流（One-way Data Flow）
 
-Vue 元件間資料傳遞的核心原則：
+Vue 元件之間傳資料，有一條核心原則：
 
 - 資料從父元件往下流到子元件
-- 子元件不能直接修改父元件的資料，只能透過事件通知父元件
-- 確保資料來源與流向可追蹤，降低 debug 難度
+- 子元件不能直接改父元件的資料，只能發事件通知父元件去改
+- 這樣資料的來源和流向都看得清楚，debug 起來輕鬆很多
 
 ---
 
 ## props — 父傳子
 
-父元件透過屬性將資料傳給子元件。
+父元件把資料當成屬性，往下傳給子元件。
 
 ```vue
 <!-- 父元件 -->
@@ -79,7 +79,7 @@ const props = defineProps<{
 }>()
 ```
 
-TS 寫法搭配 `withDefaults` 設定預設值：
+TS 寫法要設預設值的話，搭配 `withDefaults`：
 ```ts
 const props = withDefaults(defineProps<{
   name: string
@@ -98,16 +98,16 @@ const props = withDefaults(defineProps<{
 props.name = 'Aira'
 ```
 
-修改方式：
-1. 用 `emit` 通知父元件修改（推薦）
-2. 複製到本地 `ref`（特定情境適用）
+真的要改，有兩條路：
+1. 用 `emit` 通知父元件去改（推薦）
+2. 複製一份到本地 `ref`（特定情境才用）
 
 ```js
 const localName = ref(props.name)
 // 注意：之後 props.name 再變，localName 不會跟著變
 ```
 
-若需要本地可改、同時隨 props 更新，搭配 `watch` 同步：
+如果想要本地可以改、又要跟著 props 更新，就再搭一個 `watch` 同步：
 
 ```js
 import { ref, watch } from 'vue'
@@ -122,7 +122,7 @@ watch(() => props.name, (v) => {
 
 ## emit — 子傳父
 
-子元件透過「發射事件」通知父元件，由父元件決定如何處理。
+子元件想跟父元件溝通，就「發射事件」上去，怎麼處理由父元件決定。
 
 ```vue
 <!-- 子元件 Counter.vue -->
@@ -176,7 +176,7 @@ const emit = defineEmits<{
 
 ## provide / inject — 跨層級傳資料
 
-props / emit 適合父子層級。當元件巢狀較深時：
+props / emit 在父子之間用起來很順，但元件巢狀一深就麻煩了：
 
 ```
 App
@@ -186,15 +186,15 @@ App
             └── Avatar    ← 它需要 App 層的 user 資料
 ```
 
-若每一層都用 props 逐層傳遞：
+如果每一層都用 props 接力傳下去：
 
 ```
 App (user) → Layout (:user) → Sidebar (:user) → UserInfo (:user) → Avatar (:user)
 ```
 
-即為 **props drilling** — 中間層不使用該資料卻被迫接收，維護成本高。
+這就是 **props drilling**——中間那幾層根本用不到這份資料，卻被迫當傳聲筒，維護起來很累。
 
-`provide` / `inject` 解決此問題：祖先元件用 `provide` 提供資料，後代元件用 `inject` 直接取用，中間層無需介入。
+`provide` / `inject` 就是來解這個的：祖先元件用 `provide` 把資料提供出去，後代元件不管隔幾層，直接用 `inject` 拿，中間層完全不用管。
 
 ```vue
 <!-- 祖先元件 App.vue -->
@@ -224,16 +224,16 @@ const user = inject('user')
 
 ### 注意事項
 
-1. **只能往下**：inject 只能取到祖先 provide 的資料，不能反向。
-2. **預設值**：無對應 provide 時可指定預設值：
+1. **只能往下**：inject 只拿得到祖先 provide 的資料，不能反過來。
+2. **預設值**：找不到對應的 provide 時，可以給個預設值：
    ```js
    const user = inject('user', { name: 'Guest' })
    ```
-3. **唯讀**：防止子孫修改，搭配 `readonly`：
+3. **唯讀**：不想讓子孫亂改，就包一層 `readonly`：
    ```js
    provide('user', readonly(user))
    ```
-4. **用 Symbol 當 key**：避免命名衝突，大型專案建議使用：
+4. **用 Symbol 當 key**：字串 key 可能撞名，大型專案建議改用 Symbol：
    ```js
    // keys.js
    export const USER_KEY = Symbol('user')
@@ -247,17 +247,17 @@ const user = inject('user')
 
 ### 適用場景
 
-- 跨多層的資料（theme、locale、user 資訊）
-- 一組元件共享狀態（如 `<Form>` 與其下所有 `<Input>` 共享驗證邏輯）
-- 不需要全域狀態管理（Pinia）但需跨元件共享
+- 要跨很多層的資料（theme、locale、user 資訊）
+- 一組元件共享狀態（像 `<Form>` 和它底下所有 `<Input>` 共享驗證邏輯）
+- 想跨元件共享，但還用不到全域狀態管理（Pinia）的時候
 
-不相關的元件間共享（如 Header 和 Footer），或狀態邏輯複雜時，使用 Pinia。
+至於完全不相關的元件要共享（像 Header 和 Footer），或狀態邏輯已經很複雜，那就直接上 Pinia。
 
 ---
 
 ## v-model — 雙向綁定的語法糖
 
-最常見用於表單：
+最常見的用法是表單：
 
 ```vue
 <input v-model="name" />
@@ -289,7 +289,7 @@ const model = defineModel()
 </template>
 ```
 
-Vue 3.4 引入了 `defineModel`，讓這件事變得超級簡單。在此之前你需要自己定義 props 和 emit，現在一行搞定。
+Vue 3.4 引入了 `defineModel`，讓這件事變得超級簡單。在此之前你得自己定義 props 和 emit，現在一行搞定。
 
 ### 多個 v-model
 

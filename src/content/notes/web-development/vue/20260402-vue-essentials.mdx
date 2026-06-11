@@ -4,12 +4,12 @@ author: 'Jeremy & Claude'
 date: '2026-04-02'
 tags: ['vue', 'v-for', 'v-if', 'lifecycle', 'composable']
 sameDateSort: 2
-changelog: []
+changelog: ['2026-06-11']
 ---
 
 ## v-for — 列表渲染
 
-`v-for` 用於將陣列或物件的每個項目渲染為 DOM 元素。
+`v-for` 把陣列或物件的每一項渲染成對應的 DOM 元素，是列表渲染的基本款。
 
 ```vue
 <script setup>
@@ -29,9 +29,9 @@ const fruits = ref(['蘋果', '香蕉', '橘子'])
 
 ### key 的作用
 
-- Vue 的 **diff 演算法** 透過 `key` 辨認每個元素的身份，決定新增、刪除、移動哪些 DOM 節點
-- 沒有 `key` 時，Vue 採用「就地複用」策略 — 重用現有 DOM 元素並替換內容
-- 就地複用在列表項目有內部狀態（如 input 輸入值）時會導致狀態錯位
+- Vue 的 **diff 演算法**靠 `key` 認出每個元素是誰，才能決定哪些 DOM 節點該新增、刪除、移動
+- 沒給 `key` 的話，Vue 會「就地複用」——直接重用現有的 DOM 元素，只換掉內容
+- 列表項目帶有內部狀態時（例如 input 的輸入值），就地複用會讓狀態跟著錯位
 
 **反面教材：用 index 當 key**
 
@@ -40,7 +40,7 @@ const fruits = ref(['蘋果', '香蕉', '橘子'])
 <li v-for="(item, index) in list" :key="index">
 ```
 
-刪除 `[A, B, C]` 中的 B 後，`[A, C]` 的 index key 變為 `[0, 1]`。Vue 誤判 key=1 的內容從 B 變成 C，導致不必要的更新且內部狀態錯位。
+假設列表是 `[A, B, C]`，刪掉 B 之後剩 `[A, C]`，index key 變成 `[0, 1]`。Vue 會誤以為 key=1 的內容從 B「變成」了 C，多做一次沒必要的更新，內部狀態也跟著錯位。
 
 **正確做法：用唯一 ID**
 
@@ -82,7 +82,7 @@ const fruits = ref(['蘋果', '香蕉', '橘子'])
 </div>
 ```
 
-`v-if` 是真正的條件渲染 — 條件為 false 時 DOM 元素不會建立，變為 true 才建立，再變回 false 則銷毀。
+`v-if` 是真正的條件渲染：條件是 false 時，DOM 元素根本不會建立；變 true 才建立，再變回 false 就直接銷毀。
 
 ### v-show
 
@@ -92,7 +92,7 @@ const fruits = ref(['蘋果', '香蕉', '橘子'])
 </div>
 ```
 
-`v-show` 僅切換 CSS `display: none`，DOM 元素始終存在。
+`v-show` 只是切換 CSS 的 `display: none`，DOM 元素一直都在。
 
 ### 比較
 
@@ -103,8 +103,8 @@ const fruits = ref(['蘋果', '香蕉', '橘子'])
 | 切換成本 | 高（每次都要建立/銷毀） | 低（只是改 CSS） |
 | 適合 | 條件很少改變 | 頻繁切換 |
 
-- 頻繁切換（tab、tooltip）適合 `v-show`
-- 條件很少變動（登入/未登入）適合 `v-if`
+- 頻繁切換的東西（tab、tooltip）用 `v-show`
+- 條件很少變的（登入/未登入）用 `v-if`
 
 ### v-if 和 v-for 不要放在同一個元素上
 
@@ -118,21 +118,21 @@ const fruits = ref(['蘋果', '香蕉', '橘子'])
 </template>
 ```
 
-Vue 3 中 `v-if` 優先權高於 `v-for`，導致 `v-if` 無法存取 `item`。
+在 Vue 3 裡 `v-if` 的優先權比 `v-for` 高，所以 `v-if` 那邊根本拿不到 `item`。
 
-更好的做法是用 `computed` 預先過濾：
+更好的做法是用 `computed` 先把列表過濾好：
 
 ```js
 const activeItems = computed(() => list.value.filter(item => item.isActive))
 ```
 
-再以 `v-for="item in activeItems"` 渲染。
+再用 `v-for="item in activeItems"` 渲染就行。
 
 ---
 
 ## 生命週期 — Lifecycle Hooks
 
-Vue 元件經歷建立、掛載、更新、銷毀等階段，每個階段提供對應的 hook 供插入邏輯。
+一個 Vue 元件會經歷建立、掛載、更新、銷毀幾個階段，每個階段都有對應的 hook，讓你在那個時間點插入自己的邏輯。
 
 ### Composition API 常用 hooks
 
@@ -169,7 +169,7 @@ onUnmounted(() => {
 | `onBeforeUnmount` | 卸載前 | 清理工作（計時器等） |
 | `onUnmounted` | 卸載完成 | 最終清理 |
 
-實務上最常用的是 `onMounted` 和 `onUnmounted`。
+實務上最常用的就是 `onMounted` 和 `onUnmounted` 這一對。
 
 ### 範例：打 API
 
@@ -216,11 +216,11 @@ onUnmounted(() => {
 
 ## Composable — 組合式函數
 
-Composable 將可複用的響應式邏輯抽成獨立函式，供多個元件共享。
+Composable 就是把可複用的響應式邏輯抽成一個獨立函式，讓多個元件共用。
 
 ### 問題：重複邏輯
 
-多個元件需要相同功能（如追蹤滑鼠位置）時，不使用 composable 須在每個元件重複撰寫：
+假設好幾個元件都要追蹤滑鼠位置。沒有 composable 的話，同一段邏輯就得在每個元件各寫一遍：
 
 ```js
 // 元件 A
@@ -274,7 +274,7 @@ const { x, y } = useMouse()
 
 ### 命名慣例
 
-Composable 的命名慣例是 `use` 開頭：`useMouse`、`useFetch`、`useAuth`、`useLocalStorage`... 這不是規定，是社群約定俗成，看到 `use` 開頭就知道是 composable。
+Composable 慣例用 `use` 開頭命名：`useMouse`、`useFetch`、`useAuth`、`useLocalStorage`... 這不是硬性規定，是社群約定俗成——看到 `use` 開頭就知道是 composable。
 
 ### 實戰範例：useFetch
 
