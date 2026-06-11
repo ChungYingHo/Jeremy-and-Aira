@@ -98,8 +98,7 @@ function sortMenuTree(menuItems: MenuItem[]): void {
     if (a.type === 'group' && b.type === 'group') {
       const getWeight = (title: string) => {
         const t = title.toLowerCase()
-        if (t === 'notes') return 1
-        if (t === 'languages') return 2
+        if (t === 'languages') return 1
         if (t === 'data structure') return 3
         if (t === 'algorithm') return 4
         if (t === 'leetcode') return 5
@@ -170,8 +169,7 @@ export async function useMenu() {
   validCollectionMenus.sort((a, b) => {
     const getWeight = (title: string) => {
       const t = title.toLowerCase()
-      if (t === 'notes') return 1
-      if (t === 'languages') return 2
+      if (t === 'codex') return 1
       if (t === 'blog') return 999
       return 50
     }

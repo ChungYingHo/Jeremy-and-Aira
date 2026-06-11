@@ -13,12 +13,7 @@ const commonSchema = z.object({
 })
 
 // 定義各個 Collection
-const notesCollection = defineCollection({
-  type: 'content',
-  schema: commonSchema,
-})
-
-const seriesCollection = defineCollection({
+const codexCollection = defineCollection({
   type: 'content',
   schema: commonSchema,
 })
@@ -35,8 +30,7 @@ const releaseNotesCollection = defineCollection({
 
 // 匯出 Collections
 export const collections = {
-  'notes': notesCollection,
-  'series': seriesCollection,
+  'codex': codexCollection,
   'blog': blogCollection,
   'release-notes': releaseNotesCollection,
 }

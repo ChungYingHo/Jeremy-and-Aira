@@ -1,4 +1,4 @@
-export type CollectionType = 'notes' | 'series' | 'blog' | 'release-notes';
+export type CollectionType = 'codex' | 'blog' | 'release-notes';
 
 export type MenuItem = MenuPage | MenuGroup;
 
@@ -24,7 +24,6 @@ export type MenuCollectionConfig = {
 
 export const MENU_COLLECTIONS: MenuCollectionConfig[] = [
   { collectionName: 'blog', title: 'Blog', baseUrl: '/blog' },
-  { collectionName: 'notes', title: 'Notes', baseUrl: '/notes' },
-  { collectionName: 'series', title: 'Series', baseUrl: '/series' },
+  { collectionName: 'codex', title: 'Codex', baseUrl: '/codex' },
   { collectionName: 'release-notes', title: 'Aira', baseUrl: '/release-notes' },
 ]
