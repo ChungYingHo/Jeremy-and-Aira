@@ -128,9 +128,9 @@ document.addEventListener('DOMContentLoaded', initCursor)
     margin-top: -16px;
     
     /* 空心圓 */
-    border: 1px solid rgba(244, 114, 182, 0.4);
-    background: radial-gradient(circle, rgba(244, 114, 182, 0.1) 0%, transparent 70%);
-    box-shadow: 0 0 10px rgba(244, 114, 182, 0.2);
+    border: 1px solid rgba(95, 115, 85, 0.5);
+    background: radial-gradient(circle, rgba(95, 115, 85, 0.08) 0%, transparent 70%);
+    box-shadow: 0 0 10px rgba(95, 115, 85, 0.15);
     
     /* 初始縮小且透明，等待喚醒 */
     opacity: 0;
@@ -143,11 +143,10 @@ document.addEventListener('DOMContentLoaded', initCursor)
   .cursor-dot {
     width: 8px;
     height: 8px;
-    background-color: white;
+    background-color: #2d2a25;
     border-radius: 50%;
     margin-left: -4px;
     margin-top: -4px;
-    mix-blend-mode: exclusion;
     opacity: 0;
     transition: opacity 0.3s, width 0.15s, height 0.15s, border-radius 0.15s, margin 0.15s;
   }
@@ -190,10 +189,10 @@ document.addEventListener('DOMContentLoaded', initCursor)
     height: 48px;
     margin-left: -24px;
     margin-top: -24px;
-    background: rgba(244, 114, 182, 0.15);
-    border-color: rgba(244, 114, 182, 0.8);
-    box-shadow: 0 0 15px rgba(192, 132, 252, 0.4);
-    animation: none; 
+    background: rgba(95, 115, 85, 0.12);
+    border-color: rgba(95, 115, 85, 0.7);
+    box-shadow: 0 0 15px rgba(95, 115, 85, 0.25);
+    animation: none;
   }
 
   /* === 文字模式 (Text Mode) === */
@@ -204,8 +203,8 @@ document.addEventListener('DOMContentLoaded', initCursor)
     margin-left: -12px;
     margin-top: -12px;
     border-color: transparent;
-    background: rgba(244, 114, 182, 0.25);
-    box-shadow: 0 0 15px rgba(244, 114, 182, 0.3);
+    background: rgba(139, 160, 126, 0.25);
+    box-shadow: 0 0 15px rgba(139, 160, 126, 0.25);
     animation: none;
   }
 
@@ -224,7 +223,7 @@ document.addEventListener('DOMContentLoaded', initCursor)
     height: 20px;
     margin-left: -10px;
     margin-top: -10px;
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(58, 53, 44, 0.25);
     border-color: transparent;
   }
 
@@ -232,6 +231,6 @@ document.addEventListener('DOMContentLoaded', initCursor)
   .cursor-ring.selecting {
     opacity: 0 !important;
     transform: scale(0.5);
-    background: rgba(244, 114, 182, 0.1);
+    background: rgba(139, 160, 126, 0.1);
   }
 </style>

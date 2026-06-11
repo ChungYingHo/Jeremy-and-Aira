@@ -25,20 +25,20 @@ const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
 ---
 
 <!doctype html>
-<html lang="zh-TW" class="dark scroll-smooth overflow-x-hidden">
+<html lang="zh-TW" class="scroll-smooth overflow-x-hidden">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
-    
+
     <title>{pageTitle}</title>
     <link rel="icon" href="/favicon.ico" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Serif+TC:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
   </head>
@@ -48,20 +48,18 @@ const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
       min-h-screen
       flex
       flex-col
-      text-slate-300
-      bg-[#0e0c12]
+      text-ink
+      bg-paper
       antialiased
       overflow-x-hidden
-      selection:bg-indigo-500/30
-      selection:text-indigo-200
+      selection:bg-moss/20
+      selection:text-ink
       relative
     "
   >
     <div class="fixed inset-0 z-[-1] w-full h-full pointer-events-none">
-      <div class="absolute inset-0 bg-grid-pattern opacity-[0.03]"></div>
-
-      <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/25 blur-[120px] rounded-full mix-blend-screen animate-pulse-slow"></div>
-      <div class="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-purple-600/15 blur-[120px] rounded-full mix-blend-screen"></div>
+      <div class="absolute top-[-12%] left-[-8%] w-[500px] h-[500px] bg-moss-soft/10 blur-[120px] rounded-full"></div>
+      <div class="absolute bottom-[-12%] right-[-6%] w-[600px] h-[600px] bg-clay/5 blur-[130px] rounded-full"></div>
     </div>
 
     <Menu client:load rootItems={menu} currentPath={currentPath} />
@@ -74,26 +72,12 @@ const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
 
     <style is:global>
       :root {
-        color-scheme: dark;
+        color-scheme: light;
       }
 
       html {
         font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
         scroll-behavior: smooth;
-      }
-
-      .bg-grid-pattern {
-        background-size: 40px 40px;
-        background-image: linear-gradient(to right, #ffffff 1px, transparent 1px),
-          linear-gradient(to bottom, #ffffff 1px, transparent 1px);
-      }
-
-      @keyframes pulse-slow {
-        0%, 100% { opacity: 0.4; transform: scale(1); }
-        50% { opacity: 0.7; transform: scale(1.1); }
-      }
-      .animate-pulse-slow {
-        animation: pulse-slow 8s ease-in-out infinite;
       }
 
       ::-webkit-scrollbar {
@@ -106,13 +90,12 @@ const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
       }
 
       ::-webkit-scrollbar-thumb {
-        background: #262626;
+        background: #d2cfc6;
         border-radius: 4px;
-        border: 1px solid #0e0c12;
       }
 
       ::-webkit-scrollbar-thumb:hover {
-        background: #404040;
+        background: #b7b3a8;
       }
 
       @media (min-width: 1280px) {

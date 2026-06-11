@@ -58,6 +58,9 @@ export default defineConfig({
   // 明確指定 static，確保 pagefind 搜尋功能正常運作
   output: 'static',
 
+  // Honor PORT from the environment so preview tooling can assign a free port
+  server: { port: Number(process.env.PORT) || 4321 },
+
   integrations: [
     svelte(),
     mdx(),
@@ -75,7 +78,7 @@ export default defineConfig({
 
   markdown: {
     shikiConfig: {
-      theme: 'dracula',
+      theme: 'vitesse-light',
       wrap: true,
     },
     remarkPlugins: [

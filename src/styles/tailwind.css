@@ -1,2 +1,18 @@
 @import "tailwindcss";
-@plugin "daisyui";
+@plugin "daisyui" {
+  themes: light --default;
+}
+
+@theme {
+  --color-paper: #f6f4f0;
+  --color-cream: #fcfbf8;
+  --color-ink: #2d2a25;
+  --color-ink-soft: #5d574d;
+  --color-ink-faint: #8f8a80;
+  --color-moss: #5f7355;
+  --color-moss-soft: #8ba07e;
+  --color-clay: #b3674a;
+  --color-line: #e4e1da;
+
+  --font-serif: 'Lora', 'Noto Serif TC', 'Georgia', serif;
+}
