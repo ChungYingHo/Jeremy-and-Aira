@@ -55,15 +55,15 @@
 
     vertexDisplay = vertices.map(v => ({
       ...v,
-      fill:   v.id === cur      ? '#4c1d95'
-            : visited.has(v.id) ? '#1e3a5f'
-            :                     '#0f172a',
-      stroke: v.id === cur      ? '#a78bfa'
-            : visited.has(v.id) ? '#3b82f6'
-            :                     '#334155',
-      text:   v.id === cur      ? '#ede9fe'
-            : visited.has(v.id) ? '#93c5fd'
-            :                     '#475569',
+      fill:   v.id === cur      ? '#f3e3dc'
+            : visited.has(v.id) ? '#e2eaf0'
+            :                     '#f0eee8',
+      stroke: v.id === cur      ? '#b3674a'
+            : visited.has(v.id) ? '#6e94b5'
+            :                     '#d6d1c5',
+      text:   v.id === cur      ? '#8a4a32'
+            : visited.has(v.id) ? '#3f5f7a'
+            :                     '#5d574d',
     }))
 
     edgeDisplay = rawEdges.map(([a, b]) => {
@@ -71,7 +71,7 @@
       return {
         x1: vertexMap[a].x, y1: vertexMap[a].y,
         x2: vertexMap[b].x, y2: vertexMap[b].y,
-        color: treeEdgeSet.has(key) ? '#2563eb' : '#1e293b',
+        color: treeEdgeSet.has(key) ? '#6e94b5' : '#d6d1c5',
         width: treeEdgeSet.has(key) ? 2.5 : 1.5,
       }
     })
@@ -110,9 +110,9 @@
   }
 </script>
 
-<div class="w-full max-w-3xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
+<div class="w-full max-w-3xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
   <div class="px-4 pt-4 pb-1">
-    <p class="text-center text-xs text-slate-500 mb-3 font-mono">
+    <p class="text-center text-xs text-ink-faint mb-3 font-mono">
       無向圖：5 個頂點，邊為 0–1, 0–3, 1–2, 2–4, 3–4
     </p>
     <div class="flex flex-wrap gap-2 justify-center">
@@ -121,8 +121,8 @@
           on:click={() => selectMode(key)}
           class="px-3 py-1 rounded-lg text-xs font-medium transition-colors border
             {activeMode === key
-              ? 'bg-violet-900/60 text-violet-200 border-violet-600'
-              : 'bg-slate-800/60 text-slate-400 border-slate-700 hover:text-slate-200 hover:border-slate-500'}"
+              ? 'bg-moss/10 text-moss border-moss/40'
+              : 'bg-paper text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5'}"
         >
           {m.label}
         </button>
@@ -166,29 +166,29 @@
       <button
         on:click={togglePlay}
         class="px-4 py-1.5 rounded-lg text-sm font-medium border transition-colors
-          bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:border-slate-500"
+          bg-paper text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5"
       >
         {playLabel}
       </button>
       <button
         on:click={reset}
         class="px-4 py-1.5 rounded-lg text-sm font-medium border transition-colors
-          bg-slate-800 text-slate-400 border-slate-700 hover:text-white hover:border-slate-500"
+          bg-paper text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5"
       >
         重置
       </button>
     </div>
 
     <div class="flex flex-wrap gap-1.5 justify-center items-center min-h-[2rem]">
-      <span class="text-slate-500 text-xs mr-1">走訪順序：</span>
+      <span class="text-ink-faint text-xs mr-1">走訪順序：</span>
       {#each order as id, i}
         <span
           class="w-7 h-7 flex items-center justify-center rounded text-xs font-bold font-mono border transition-all
             {i === step
-              ? 'bg-violet-900/70 text-violet-200 border-violet-500'
+              ? 'bg-[#f3e3dc] text-[#8a4a32] border-[#b3674a]'
               : i < step
-              ? 'bg-blue-900/40 text-blue-300 border-blue-800/60'
-              : 'bg-slate-800/60 text-slate-600 border-slate-700/50'}"
+              ? 'bg-[#e2eaf0] text-[#3f5f7a] border-[#6e94b5]'
+              : 'bg-[#f0eee8] text-[#5d574d] border-[#d6d1c5]'}"
         >
           {id}
         </span>

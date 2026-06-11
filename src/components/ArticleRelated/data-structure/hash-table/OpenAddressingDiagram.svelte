@@ -101,9 +101,9 @@
   }
 </script>
 
-<div class="w-full max-w-2xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
+<div class="w-full max-w-2xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
   <div class="px-4 pt-4 pb-2">
-    <p class="text-center text-xs text-slate-500 font-mono mb-3">
+    <p class="text-center text-xs text-ink-faint font-mono mb-3">
       開放定址法 · 表大小 m = {M} · 依序插入 [{KEYS.join(', ')}]（全部 hash 到 slot 1）
     </p>
     <div class="flex flex-wrap gap-2 justify-center">
@@ -112,14 +112,14 @@
           on:click={() => selectMode(key)}
           class="px-3 py-1 rounded-lg text-xs font-medium transition-colors border
             {activeMode === key
-              ? 'bg-violet-900/60 text-violet-200 border-violet-600'
-              : 'bg-slate-800/60 text-slate-400 border-slate-700 hover:text-slate-200 hover:border-slate-500'}"
+              ? 'bg-moss/10 text-moss border-moss/40'
+              : 'bg-paper text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5'}"
         >
           {m.label}
         </button>
       {/each}
     </div>
-    <p class="text-center text-[11px] text-slate-600 font-mono mt-2">{mode.formula}</p>
+    <p class="text-center text-[11px] text-ink-faint font-mono mt-2">{mode.formula}</p>
   </div>
 
   <div class="px-4 py-4">
@@ -129,20 +129,20 @@
         {@const isPlaced = highlights.placed === i}
         {@const probeOrder = highlights.tried.indexOf(i)}
         <div class="flex flex-col items-center gap-1">
-          <span class="text-[10px] text-slate-600 font-mono">[{i}]</span>
+          <span class="text-[10px] text-ink-faint font-mono">[{i}]</span>
           <div
             class="relative w-12 h-12 flex items-center justify-center rounded border text-sm font-bold font-mono transition-all
               {isPlaced
-                ? 'bg-violet-900/60 border-violet-500 text-violet-200'
+                ? 'bg-[#e6ece2] border-[#5f7355] text-[#3f5239]'
                 : isTried
-                ? 'bg-amber-900/40 border-amber-700 text-amber-300'
+                ? 'bg-[#f4ecd4] border-[#c9a64e] text-[#8a6d23]'
                 : val !== null
-                ? 'bg-[#1e3a5f] border-slate-600 text-blue-200'
-                : 'bg-slate-900/50 border-slate-800 text-slate-700'}"
+                ? 'bg-[#e2eaf0] border-[#6e94b5] text-[#3f5f7a]'
+                : 'bg-[#f0eee8] border-[#d6d1c5] text-[#5d574d]'}"
           >
             {val !== null ? val : '—'}
             {#if isTried && !isPlaced}
-              <span class="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-amber-700 text-[9px] text-amber-100 flex items-center justify-center">
+              <span class="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-[#c9a64e] text-[9px] text-[#f4ecd4] flex items-center justify-center">
                 {probeOrder + 1}
               </span>
             {/if}
@@ -152,7 +152,7 @@
     </div>
 
     <p class="text-center text-xs font-mono mt-4 min-h-[2rem]
-      {currentPath?.failed ? 'text-red-400' : currentKey !== null ? 'text-violet-300' : 'text-slate-500'}">
+      {currentPath?.failed ? 'text-[#9c4a3d]' : currentKey !== null ? 'text-moss' : 'text-ink-faint'}">
       {message}
     </p>
   </div>
@@ -163,48 +163,50 @@
         on:click={prev}
         disabled={step === 0}
         class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors
+          bg-paper
           {step === 0
-            ? 'bg-slate-900 text-slate-700 border-slate-800 cursor-not-allowed'
-            : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:border-slate-500'}"
+            ? 'text-ink-faint/50 border-line cursor-not-allowed'
+            : 'text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5'}"
       >上一步</button>
       <button
         on:click={next}
         disabled={step === maxStep}
         class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors
+          bg-paper
           {step === maxStep
-            ? 'bg-slate-900 text-slate-700 border-slate-800 cursor-not-allowed'
-            : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:border-blue-600'}"
+            ? 'text-ink-faint/50 border-line cursor-not-allowed'
+            : 'text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5'}"
       >下一步</button>
       <button
         on:click={reset}
         class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors
-          bg-slate-800 text-slate-400 border-slate-700 hover:text-white hover:border-slate-500"
+          bg-paper text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5"
       >重置</button>
     </div>
 
     <div class="flex items-center justify-center gap-2 mt-3">
-      <span class="text-slate-500 text-xs">進度：</span>
+      <span class="text-ink-faint text-xs">進度：</span>
       {#each KEYS as k, i}
         <span
           class="w-7 h-7 flex items-center justify-center rounded text-xs font-bold font-mono border transition-all
             {i === step - 1
-              ? (mode.paths[i].failed ? 'bg-red-900/60 text-red-200 border-red-600' : 'bg-violet-900/70 text-violet-200 border-violet-500')
+              ? (mode.paths[i].failed ? 'bg-[#f3ddd8] text-[#9c4a3d] border-[#c46a5c]' : 'bg-[#e6ece2] text-[#3f5239] border-[#5f7355]')
               : i < step
-              ? 'bg-blue-900/40 text-blue-300 border-blue-800/60'
-              : 'bg-slate-800/60 text-slate-600 border-slate-700/50'}"
+              ? 'bg-[#e2eaf0] text-[#3f5f7a] border-[#6e94b5]'
+              : 'bg-[#f0eee8] text-[#5d574d] border-[#d6d1c5]'}"
         >{k}</span>
       {/each}
     </div>
 
-    <div class="flex items-center justify-center gap-3 mt-3 text-[10px] text-slate-500 font-mono">
+    <div class="flex items-center justify-center gap-3 mt-3 text-[10px] text-ink-faint font-mono">
       <span class="flex items-center gap-1">
-        <span class="w-3 h-3 rounded bg-amber-900/40 border border-amber-700"></span>探測過
+        <span class="w-3 h-3 rounded bg-[#f4ecd4] border border-[#c9a64e]"></span>探測過
       </span>
       <span class="flex items-center gap-1">
-        <span class="w-3 h-3 rounded bg-violet-900/60 border border-violet-500"></span>本次放入
+        <span class="w-3 h-3 rounded bg-[#e6ece2] border border-[#5f7355]"></span>本次放入
       </span>
       <span class="flex items-center gap-1">
-        <span class="w-3 h-3 rounded bg-[#1e3a5f] border border-slate-600"></span>已占用
+        <span class="w-3 h-3 rounded bg-[#e2eaf0] border border-[#6e94b5]"></span>已占用
       </span>
     </div>
   </div>

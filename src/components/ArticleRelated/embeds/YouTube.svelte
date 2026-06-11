@@ -41,11 +41,12 @@
     position: relative;
     width: 100%;
     /* 現代 CSS 直接用 aspect-ratio 處理 16:9，不用再寫 padding-bottom hack */
-    aspect-ratio: 16 / 9; 
-    background-color: #000;
+    aspect-ratio: 16 / 9;
+    background-color: var(--color-cream);
+    border: 1px solid var(--color-line);
     border-radius: 12px; /* 圓角更美觀 */
     overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 2px rgba(45, 42, 37, 0.06);
   }
 
   .poster {

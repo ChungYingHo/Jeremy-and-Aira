@@ -30,17 +30,17 @@
   ]
 </script>
 
-<div class="w-full max-w-2xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
+<div class="w-full max-w-2xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
   <div class="px-4 pt-4 pb-1">
-    <p class="text-center text-xs text-slate-500 mb-3 font-mono">雲端服務模型：誰管哪一層？</p>
+    <p class="text-center text-xs text-ink-faint mb-3 font-mono">雲端服務模型：誰管哪一層？</p>
     <div class="flex flex-wrap justify-center gap-x-5 gap-y-1.5 text-xs mb-1">
       <span class="flex items-center gap-1.5">
-        <span class="w-3 h-3 rounded-sm inline-block" style="background:#78350f;border:1px solid #d97706"></span>
-        <span class="text-slate-400">你管</span>
+        <span class="w-3 h-3 rounded-sm inline-block" style="background:#f3e3dc;border:1px solid #b3674a"></span>
+        <span class="text-ink-soft">你管</span>
       </span>
       <span class="flex items-center gap-1.5">
-        <span class="w-3 h-3 rounded-sm inline-block" style="background:#1e3a5f;border:1px solid #3b82f6"></span>
-        <span class="text-slate-400">平台管</span>
+        <span class="w-3 h-3 rounded-sm inline-block" style="background:#e2eaf0;border:1px solid #6e94b5"></span>
+        <span class="text-ink-soft">平台管</span>
       </span>
     </div>
   </div>
@@ -59,7 +59,7 @@
         font-size="13"
         font-weight="bold"
         font-family="'JetBrains Mono', monospace"
-        fill="#94a3b8"
+        fill="#5d574d"
       >{model.label}</text>
     {/each}
 
@@ -71,7 +71,7 @@
         text-anchor="end"
         font-size="11"
         font-family="ui-sans-serif, system-ui, sans-serif"
-        fill="#64748b"
+        fill="#8f8a80"
       >{layer}</text>
 
       {#each models as model, ci}
@@ -82,8 +82,8 @@
           y={y + 2}
           width={COL_W - PAD * 2}
           height={ROW_H - 4}
-          fill={isUser ? '#78350f' : '#1e3a5f'}
-          stroke={isUser ? '#d97706' : '#3b82f6'}
+          fill={isUser ? '#f3e3dc' : '#e2eaf0'}
+          stroke={isUser ? '#b3674a' : '#6e94b5'}
           stroke-width="1"
           rx="4"
         />
@@ -93,16 +93,16 @@
           text-anchor="middle"
           font-size="10"
           font-family="ui-sans-serif, system-ui, sans-serif"
-          fill={isUser ? '#fde68a' : '#93c5fd'}
+          fill={isUser ? '#8a4a32' : '#3f5f7a'}
         >{isUser ? '你' : '平台'}</text>
       {/each}
     {/each}
 
     {#each models as model, ci}
       {@const cx = LABEL_W + ci * COL_W + PAD + (COL_W - PAD * 2) / 2}
-      <text x={cx} y={FOOTER_Y} text-anchor="middle" font-size="11" font-weight="bold" font-family="'JetBrains Mono', monospace" fill="#94a3b8">{model.label}</text>
+      <text x={cx} y={FOOTER_Y} text-anchor="middle" font-size="11" font-weight="bold" font-family="'JetBrains Mono', monospace" fill="#5d574d">{model.label}</text>
       {#each examples[ci] as ex, ei}
-        <text x={cx} y={FOOTER_Y + 13 + ei * 13} text-anchor="middle" font-size="9.5" font-family="'JetBrains Mono', monospace" fill="#475569">{ex}</text>
+        <text x={cx} y={FOOTER_Y + 13 + ei * 13} text-anchor="middle" font-size="9.5" font-family="'JetBrains Mono', monospace" fill="#8f8a80">{ex}</text>
       {/each}
     {/each}
   </svg>

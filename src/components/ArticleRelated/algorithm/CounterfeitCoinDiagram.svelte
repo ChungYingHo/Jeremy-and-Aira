@@ -49,54 +49,54 @@
   }
 </script>
 
-<div class="w-full max-w-2xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
+<div class="w-full max-w-2xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
   <div class="flex justify-center gap-2 pt-4 px-4">
     {#each steps as _, i}
       <button
         on:click={() => (stepIdx = i)}
         class="px-3 py-1.5 text-xs rounded-lg border transition-all {stepIdx === i
-          ? 'border-amber-500 bg-amber-500/10 text-amber-400'
-          : 'border-slate-700 text-slate-400 hover:border-slate-500'}"
+          ? 'border-moss/40 bg-moss/10 text-moss'
+          : 'bg-paper border-line text-ink-soft hover:text-ink hover:border-moss/50 hover:bg-moss/5'}"
       >Step {i + 1}</button>
     {/each}
   </div>
 
   <svg viewBox="0 0 {W} {H}" class="w-full" font-family="sans-serif">
-    <text x={cx} y="22" fill="#e2e8f0" font-size="11" font-weight="bold" text-anchor="middle">{step.label}</text>
+    <text x={cx} y="22" fill="#2d2a25" font-size="11" font-weight="bold" text-anchor="middle">{step.label}</text>
 
     {#if step.left.length > 0 || step.right.length > 0}
       {@const a = tiltAngle(step.tilt)}
-      <line x1={cx} y1={beamY + 60} x2={cx} y2={beamY} stroke="#64748b" stroke-width="2" />
-      <polygon points="{cx - 10},{beamY + 60} {cx + 10},{beamY + 60} {cx},{beamY + 75}" fill="#475569" />
+      <line x1={cx} y1={beamY + 60} x2={cx} y2={beamY} stroke="#8f8a80" stroke-width="2" />
+      <polygon points="{cx - 10},{beamY + 60} {cx + 10},{beamY + 60} {cx},{beamY + 75}" fill="#d6d1c5" />
 
       <g transform="rotate({a} {cx} {beamY})">
-        <line x1={cx - beamLen / 2} y1={beamY} x2={cx + beamLen / 2} y2={beamY} stroke="#94a3b8" stroke-width="3" stroke-linecap="round" />
+        <line x1={cx - beamLen / 2} y1={beamY} x2={cx + beamLen / 2} y2={beamY} stroke="#8f8a80" stroke-width="3" stroke-linecap="round" />
 
-        <line x1={cx - beamLen / 2} y1={beamY} x2={cx - beamLen / 2} y2={beamY + 25} stroke="#64748b" stroke-width="1.5" />
-        <rect x={cx - beamLen / 2 - panW / 2} y={beamY + 25} width={panW} height={panH} rx="2" fill="#334155" stroke="#64748b" stroke-width="1" />
+        <line x1={cx - beamLen / 2} y1={beamY} x2={cx - beamLen / 2} y2={beamY + 25} stroke="#8f8a80" stroke-width="1.5" />
+        <rect x={cx - beamLen / 2 - panW / 2} y={beamY + 25} width={panW} height={panH} rx="2" fill="#f0eee8" stroke="#d6d1c5" stroke-width="1" />
         {#each step.left as c, j}
           {@const lx = cx - beamLen / 2 - panW / 2 + 16 + j * 20}
-          <circle cx={lx} cy={beamY + 25 - coinR - 1} r={coinR} fill={isFake(c) ? '#f59e0b' : '#cbd5e1'} stroke={isFake(c) ? '#d97706' : '#94a3b8'} stroke-width="1" />
-          <text x={lx} y={beamY + 25 - coinR + 1} fill={isFake(c) ? '#0a0a0a' : '#1e293b'} font-size="8" text-anchor="middle" font-weight="bold">{c}</text>
+          <circle cx={lx} cy={beamY + 25 - coinR - 1} r={coinR} fill={isFake(c) ? '#f4ecd4' : '#f0eee8'} stroke={isFake(c) ? '#c9a64e' : '#d6d1c5'} stroke-width="1" />
+          <text x={lx} y={beamY + 25 - coinR + 1} fill={isFake(c) ? '#8a6d23' : '#5d574d'} font-size="8" text-anchor="middle" font-weight="bold">{c}</text>
         {/each}
 
-        <line x1={cx + beamLen / 2} y1={beamY} x2={cx + beamLen / 2} y2={beamY + 25} stroke="#64748b" stroke-width="1.5" />
-        <rect x={cx + beamLen / 2 - panW / 2} y={beamY + 25} width={panW} height={panH} rx="2" fill="#334155" stroke="#64748b" stroke-width="1" />
+        <line x1={cx + beamLen / 2} y1={beamY} x2={cx + beamLen / 2} y2={beamY + 25} stroke="#8f8a80" stroke-width="1.5" />
+        <rect x={cx + beamLen / 2 - panW / 2} y={beamY + 25} width={panW} height={panH} rx="2" fill="#f0eee8" stroke="#d6d1c5" stroke-width="1" />
         {#each step.right as c, j}
           {@const rx = cx + beamLen / 2 - panW / 2 + 16 + j * 20}
-          <circle cx={rx} cy={beamY + 25 - coinR - 1} r={coinR} fill={isFake(c) ? '#f59e0b' : '#cbd5e1'} stroke={isFake(c) ? '#d97706' : '#94a3b8'} stroke-width="1" />
-          <text x={rx} y={beamY + 25 - coinR + 1} fill={isFake(c) ? '#0a0a0a' : '#1e293b'} font-size="8" text-anchor="middle" font-weight="bold">{c}</text>
+          <circle cx={rx} cy={beamY + 25 - coinR - 1} r={coinR} fill={isFake(c) ? '#f4ecd4' : '#f0eee8'} stroke={isFake(c) ? '#c9a64e' : '#d6d1c5'} stroke-width="1" />
+          <text x={rx} y={beamY + 25 - coinR + 1} fill={isFake(c) ? '#8a6d23' : '#5d574d'} font-size="8" text-anchor="middle" font-weight="bold">{c}</text>
         {/each}
       </g>
     {/if}
 
-    <text x={cx} y={H - 50} fill="#94a3b8" font-size="9" text-anchor="middle">未上秤：</text>
+    <text x={cx} y={H - 50} fill="#5d574d" font-size="9" text-anchor="middle">未上秤：</text>
     {#each step.pool as c, j}
       {@const px = cx - (step.pool.length * 20) / 2 + j * 20 + 10}
-      <circle cx={px} cy={H - 35} r={coinR} fill={isFake(c) ? '#f59e0b' : '#cbd5e1'} stroke={isFake(c) ? '#d97706' : '#94a3b8'} stroke-width="1" />
-      <text x={px} y={H - 32} fill={isFake(c) ? '#0a0a0a' : '#1e293b'} font-size="8" text-anchor="middle" font-weight="bold">{c}</text>
+      <circle cx={px} cy={H - 35} r={coinR} fill={isFake(c) ? '#f4ecd4' : '#f0eee8'} stroke={isFake(c) ? '#c9a64e' : '#d6d1c5'} stroke-width="1" />
+      <text x={px} y={H - 32} fill={isFake(c) ? '#8a6d23' : '#5d574d'} font-size="8" text-anchor="middle" font-weight="bold">{c}</text>
     {/each}
 
-    <text x={cx} y={H - 10} fill="#22c55e" font-size="10" text-anchor="middle">{step.result}</text>
+    <text x={cx} y={H - 10} fill="#3f5239" font-size="10" text-anchor="middle">{step.result}</text>
   </svg>
 </div>

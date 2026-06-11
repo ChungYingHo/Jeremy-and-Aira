@@ -46,9 +46,9 @@
   function reset() { step = 0 }
 </script>
 
-<div class="w-full max-w-2xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
+<div class="w-full max-w-2xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
   <div class="px-4 pt-4 pb-2">
-    <p class="text-center text-xs text-slate-500 font-mono">
+    <p class="text-center text-xs text-ink-faint font-mono">
       Max-heap Extract（sift-down）· 初始 [_, 6, 5, 4, 1, 2, 3]
     </p>
   </div>
@@ -58,7 +58,7 @@
       <line
         x1={POS[a].x} y1={POS[a].y}
         x2={POS[b].x} y2={POS[b].y}
-        stroke="#1e293b"
+        stroke="#d6d1c5"
         stroke-width="2"
         stroke-linecap="round"
       />
@@ -68,8 +68,8 @@
       {@const isRoot = i === 1}
       <circle
         cx={POS[i].x} cy={POS[i].y} r="22"
-        fill={isRoot ? '#4c1d95' : '#0f172a'}
-        stroke={isRoot ? '#a78bfa' : '#334155'}
+        fill={isRoot ? '#f3e3dc' : '#f0eee8'}
+        stroke={isRoot ? '#b3674a' : '#d6d1c5'}
         stroke-width="2"
         style="transition: fill 0.3s, stroke 0.3s"
       />
@@ -79,7 +79,7 @@
         font-size="15"
         font-weight="bold"
         font-family="'JetBrains Mono', monospace"
-        fill={isRoot ? '#ede9fe' : '#94a3b8'}
+        fill={isRoot ? '#8a4a32' : '#5d574d'}
         style="user-select: none; pointer-events: none"
       >{val}</text>
       <text
@@ -87,7 +87,7 @@
         text-anchor="middle"
         font-size="10"
         font-family="'JetBrains Mono', monospace"
-        fill="#475569"
+        fill="#8f8a80"
         style="user-select: none; pointer-events: none"
       >idx {i}</text>
     {/each}
@@ -97,22 +97,22 @@
         text-anchor="middle"
         font-size="14"
         font-family="'JetBrains Mono', monospace"
-        fill="#475569"
+        fill="#8f8a80"
       >（空 heap）</text>
     {/if}
   </svg>
 
   <div class="px-4 pb-2">
-    <p class="text-center text-[11px] text-slate-600 font-mono mb-2">陣列表示</p>
+    <p class="text-center text-[11px] text-ink-faint font-mono mb-2">陣列表示</p>
     <div class="flex justify-center gap-0 flex-wrap">
       {#each heap as val, i}
         <div
           class="w-10 h-10 flex flex-col items-center justify-center border-r last:border-r-0 first:rounded-l last:rounded-r transition-colors
             {i === 1 && val !== null && val !== undefined
-              ? 'bg-violet-900/60 border-violet-500 text-violet-200'
+              ? 'bg-[#f3e3dc] border-[#b3674a] text-[#8a4a32]'
               : i === 0
-              ? 'bg-slate-900 border-slate-800 text-slate-700'
-              : 'bg-slate-800/40 border-slate-700 text-slate-400'}"
+              ? 'bg-[#f0eee8] border-[#d6d1c5] text-ink-faint'
+              : 'bg-[#f0eee8] border-[#d6d1c5] text-[#5d574d]'}"
         >
           <span class="text-[9px] opacity-60">[{i}]</span>
           <span class="text-xs font-bold font-mono">{val ?? '—'}</span>
@@ -123,16 +123,16 @@
 
   <div class="px-4 pt-3 pb-2">
     <div class="flex items-center justify-center gap-1.5 flex-wrap min-h-[2rem]">
-      <span class="text-slate-500 text-xs mr-1">已取出：</span>
+      <span class="text-ink-faint text-xs mr-1">已取出：</span>
       {#if frame.extracted.length === 0}
-        <span class="text-slate-700 text-xs italic">（還沒取出任何元素）</span>
+        <span class="text-ink-faint text-xs italic">（還沒取出任何元素）</span>
       {:else}
         {#each frame.extracted as val, i}
           <span
             class="inline-flex items-center justify-center min-w-[2rem] h-7 px-2 rounded border text-xs font-bold font-mono transition-all
               {val === frame.justExtracted
-                ? 'bg-amber-900/50 border-amber-600 text-amber-200'
-                : 'bg-blue-900/40 border-blue-800/60 text-blue-300'}"
+                ? 'bg-[#e6ece2] border-[#5f7355] text-[#3f5239]'
+                : 'bg-[#e2eaf0] border-[#6e94b5] text-[#3f5f7a]'}"
           >{val}</span>
         {/each}
       {/if}
@@ -141,7 +141,7 @@
 
   <div class="px-4 pt-1 pb-4">
     <p class="text-center text-xs font-mono min-h-[2rem] mb-3
-      {step === 0 ? 'text-slate-500' : 'text-violet-300'}">
+      {step === 0 ? 'text-ink-faint' : 'text-clay'}">
       {frame.message}
     </p>
 
@@ -150,22 +150,24 @@
         on:click={prev}
         disabled={step === 0}
         class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors
+          bg-paper
           {step === 0
-            ? 'bg-slate-900 text-slate-700 border-slate-800 cursor-not-allowed'
-            : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:border-slate-500'}"
+            ? 'text-ink-faint/50 border-line cursor-not-allowed'
+            : 'text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5'}"
       >上一步</button>
       <button
         on:click={next}
         disabled={step === FRAMES.length - 1}
         class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors
+          bg-paper
           {step === FRAMES.length - 1
-            ? 'bg-slate-900 text-slate-700 border-slate-800 cursor-not-allowed'
-            : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:border-blue-600'}"
+            ? 'text-ink-faint/50 border-line cursor-not-allowed'
+            : 'text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5'}"
       >下一步</button>
       <button
         on:click={reset}
         class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors
-          bg-slate-800 text-slate-400 border-slate-700 hover:text-white hover:border-slate-500"
+          bg-paper text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5"
       >重置</button>
     </div>
   </div>

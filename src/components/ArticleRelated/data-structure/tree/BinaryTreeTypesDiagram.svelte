@@ -4,9 +4,9 @@
 -->
 
 <script>
-  const EDGE_COLOR  = '#334155'
-  const NODE_FILL   = '#0f172a'
-  const NODE_STROKE = '#334155'
+  const EDGE_COLOR  = '#d6d1c5'
+  const NODE_FILL   = '#f0eee8'
+  const NODE_STROKE = '#d6d1c5'
   const r = 13
 
   function node(x, y) { return { x, y } }
@@ -35,15 +35,15 @@
   ]
 </script>
 
-<div class="w-full max-w-3xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
+<div class="w-full max-w-3xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
   <div class="grid grid-cols-1 sm:grid-cols-2">
     {#each panels as panel, i}
-      <div class="p-4 flex flex-col items-center gap-2 border-slate-800
+      <div class="p-4 flex flex-col items-center gap-2 border-line
         {i < 3 ? 'border-b' : ''}
         {i === 2 ? 'sm:border-b-0' : ''}
         {i % 2 === 0 ? 'sm:border-r' : ''}">
-        <p class="text-xs font-bold text-slate-300 font-mono text-center leading-snug">{panel.title}</p>
-        <p class="text-xs text-slate-500 text-center leading-relaxed">{panel.desc}</p>
+        <p class="text-xs font-bold text-ink font-mono text-center leading-snug">{panel.title}</p>
+        <p class="text-xs text-ink-faint text-center leading-relaxed">{panel.desc}</p>
         <svg viewBox="0 0 150 125" class="w-full max-w-[140px]" xmlns="http://www.w3.org/2000/svg">
           {#each panel.edges as e}
             <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}

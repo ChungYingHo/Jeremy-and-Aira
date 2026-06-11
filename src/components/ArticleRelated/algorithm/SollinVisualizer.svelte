@@ -50,14 +50,14 @@
 
   $: step = steps[stepIdx]
 
-  const componentColors = ['#22c55e', '#f59e0b', '#3b82f6', '#ef4444', '#a855f7', '#ec4899']
+  const componentColors = ['#5f7355', '#c9a64e', '#6e94b5', '#c46a5c', '#9181a8', '#b3674a']
 
   function getNodeColor(id) {
     const comps = step.components
     for (let i = 0; i < comps.length; i++) {
       if (comps[i].includes(id)) return componentColors[i % componentColors.length]
     }
-    return '#475569'
+    return '#d6d1c5'
   }
 
   let edgeStates = []
@@ -66,8 +66,8 @@
     edgeStates = ALL_EDGES.map(([u, v, w]) => {
       const isMst = s.mstEdges.some(([a, b]) => (a === u && b === v) || (a === v && b === u))
       const isRound = s.roundEdges.some(([a, b]) => (a === u && b === v) || (a === v && b === u))
-      const stroke = isMst ? '#3b82f6' : isRound ? '#f59e0b' : '#1e293b'
-      const labelFill = isMst ? '#93c5fd' : isRound ? '#fcd34d' : '#334155'
+      const stroke = isMst ? '#5f7355' : isRound ? '#b3674a' : '#d6d1c5'
+      const labelFill = isMst ? '#3f5239' : isRound ? '#8a4a32' : '#5d574d'
       const strokeW = isMst || isRound ? 2.5 : 1.5
       const dash = isMst || isRound ? 'none' : '4,3'
       const mx = (NODES[u].x + NODES[v].x) / 2
@@ -84,9 +84,9 @@
   const R = 14
 </script>
 
-<div class="w-full max-w-2xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
+<div class="w-full max-w-2xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
   <svg viewBox="0 0 420 295" class="w-full" font-family="sans-serif">
-    <text x="210" y="17" fill="#94a3b8" font-size="10" text-anchor="middle">Sollin 演算法 — 每輪每個分量各選最小邊</text>
+    <text x="210" y="17" fill="#8f8a80" font-size="10" text-anchor="middle">Sollin 演算法 — 每輪每個分量各選最小邊</text>
 
     {#each edgeStates as e}
       <line
@@ -100,7 +100,7 @@
     {#each Object.entries(NODES) as [id, pos]}
       {@const color = getNodeColor(id)}
       <circle cx={pos.x} cy={pos.y} r={R}
-        fill="#0f172a"
+        fill="#f0eee8"
         stroke={color}
         stroke-width="2"
       />
@@ -109,32 +109,34 @@
     {/each}
 
     <!-- legend -->
-    <line x1="14" y1="235" x2="32" y2="235" stroke="#3b82f6" stroke-width="2.5"/>
-    <text x="36" y="239" fill="#94a3b8" font-size="9">MST 邊</text>
-    <line x1="78" y1="235" x2="96" y2="235" stroke="#f59e0b" stroke-width="2.5"/>
-    <text x="100" y="239" fill="#94a3b8" font-size="9">本輪選中</text>
-    <circle cx="158" cy="235" r="5" fill="#0f172a" stroke="#22c55e" stroke-width="2"/>
-    <text x="168" y="239" fill="#94a3b8" font-size="9">同色 = 同分量</text>
+    <line x1="14" y1="235" x2="32" y2="235" stroke="#5f7355" stroke-width="2.5"/>
+    <text x="36" y="239" fill="#5d574d" font-size="9">MST 邊</text>
+    <line x1="78" y1="235" x2="96" y2="235" stroke="#b3674a" stroke-width="2.5"/>
+    <text x="100" y="239" fill="#5d574d" font-size="9">本輪選中</text>
+    <circle cx="158" cy="235" r="5" fill="#f0eee8" stroke="#5f7355" stroke-width="2"/>
+    <text x="168" y="239" fill="#5d574d" font-size="9">同色 = 同分量</text>
 
     <!-- step desc -->
-    <text x="210" y="260" fill="#e2e8f0" font-size="10.5" text-anchor="middle">{step.desc}</text>
-    <text x="210" y="278" fill="#475569" font-size="9.5" text-anchor="middle">步驟 {stepIdx + 1} / {steps.length}</text>
+    <text x="210" y="260" fill="#5d574d" font-size="10.5" text-anchor="middle">{step.desc}</text>
+    <text x="210" y="278" fill="#8f8a80" font-size="9.5" text-anchor="middle">步驟 {stepIdx + 1} / {steps.length}</text>
   </svg>
 
   <div class="flex justify-center gap-3 pb-4 px-4">
     <button
       on:click={() => { if (stepIdx > 0) stepIdx-- }}
       disabled={stepIdx === 0}
-      class="px-4 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-300 hover:border-slate-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+      class="px-4 py-1.5 text-xs rounded-lg border transition-colors bg-paper
+        {stepIdx === 0 ? 'text-ink-faint/50 border-line cursor-not-allowed' : 'text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5'}"
     >上一步</button>
     <button
       on:click={() => { if (stepIdx < steps.length - 1) stepIdx++ }}
       disabled={stepIdx === steps.length - 1}
-      class="px-4 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-300 hover:border-slate-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+      class="px-4 py-1.5 text-xs rounded-lg border transition-colors bg-paper
+        {stepIdx === steps.length - 1 ? 'text-ink-faint/50 border-line cursor-not-allowed' : 'text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5'}"
     >下一步</button>
     <button
       on:click={() => stepIdx = 0}
-      class="px-4 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-300 hover:border-slate-500 transition-all"
+      class="px-4 py-1.5 text-xs rounded-lg border transition-colors bg-paper text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5"
     >重置</button>
   </div>
 </div>

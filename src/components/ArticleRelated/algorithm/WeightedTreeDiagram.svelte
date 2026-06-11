@@ -36,11 +36,11 @@
   }
 </script>
 
-<div class="w-full max-w-3xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
+<div class="w-full max-w-3xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
   <svg viewBox="0 0 440 275" class="w-full px-2 pt-2 pb-1" font-family="sans-serif">
 
     <!-- title -->
-    <text x="220" y="18" fill="#94a3b8" font-size="10" text-anchor="middle">加權樹：任意兩節點間的路徑唯一</text>
+    <text x="220" y="18" fill="#5d574d" font-size="10" text-anchor="middle">加權樹：任意兩節點間的路徑唯一</text>
 
     <!-- edges -->
     {#each edges as e}
@@ -48,19 +48,19 @@
       {@const lp = midLabel(e.u, e.v)}
       <line
         x1={ln.x1} y1={ln.y1} x2={ln.x2} y2={ln.y2}
-        stroke={e.path ? '#3b82f6' : '#475569'}
+        stroke={e.path ? '#6e94b5' : '#d6d1c5'}
         stroke-width={e.path ? 2.5 : 1.5}
       />
-      <text x={lp.x} y={lp.y} fill={e.path ? '#93c5fd' : '#64748b'} font-size="10" text-anchor="middle" dominant-baseline="middle">{e.w}</text>
+      <text x={lp.x} y={lp.y} fill={e.path ? '#3f5f7a' : '#8a8475'} font-size="10" text-anchor="middle" dominant-baseline="middle">{e.w}</text>
     {/each}
 
     <!-- nodes -->
     {#each Object.entries(nodes) as [label, n]}
-      <circle cx={n.x} cy={n.y} r={R} fill="#0f172a" stroke="#475569" stroke-width="1.5" />
-      <text x={n.x} y={n.y} fill="#e2e8f0" font-size="12" font-weight="bold" text-anchor="middle" dominant-baseline="middle">{label}</text>
+      <circle cx={n.x} cy={n.y} r={R} fill="#f0eee8" stroke="#d6d1c5" stroke-width="1.5" />
+      <text x={n.x} y={n.y} fill="#3f3a31" font-size="12" font-weight="bold" text-anchor="middle" dominant-baseline="middle">{label}</text>
     {/each}
 
     <!-- path annotation -->
-    <text x="220" y="258" fill="#475569" font-size="9" text-anchor="middle">A → B → D 是 A 到 D 的唯一路徑，距離 = 3 + 2 = 5　｜　A → C 是 A 到 C 的唯一路徑，距離 = 5</text>
+    <text x="220" y="258" fill="#8a8475" font-size="9" text-anchor="middle">A → B → D 是 A 到 D 的唯一路徑，距離 = 3 + 2 = 5　｜　A → C 是 A 到 C 的唯一路徑，距離 = 5</text>
   </svg>
 </div>

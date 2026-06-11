@@ -35,19 +35,19 @@
   }
 
   function edgeColor(u, v) {
-    return (hovered !== null && (u === hovered || v === hovered)) ? '#2563eb' : '#1e293b'
+    return (hovered !== null && (u === hovered || v === hovered)) ? '#6e94b5' : '#d6d1c5'
   }
 
-  function vertFill(id)   { return id === hovered ? '#1e3a5f' : '#0f172a' }
-  function vertStroke(id) { return id === hovered ? '#3b82f6' : '#334155' }
-  function vertText(id)   { return id === hovered ? '#93c5fd' : '#475569' }
+  function vertFill(id)   { return id === hovered ? '#e2eaf0' : '#f0eee8' }
+  function vertStroke(id) { return id === hovered ? '#6e94b5' : '#d6d1c5' }
+  function vertText(id)   { return id === hovered ? '#3f5f7a' : '#5d574d' }
 </script>
 
-<div class="w-full max-w-3xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
+<div class="w-full max-w-3xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
 
   <!-- Header: description + mode toggle -->
   <div class="px-4 pt-4 pb-3 flex flex-col items-center gap-3">
-    <p class="text-xs text-slate-500 font-mono text-center">
+    <p class="text-xs text-ink-faint font-mono text-center">
       無向圖：5 個頂點，邊為 0–1, 0–3, 1–2, 2–4, 3–4
       <span class="hidden sm:inline">— 滑鼠移過頂點查看關聯</span>
     </p>
@@ -57,8 +57,8 @@
           on:click={() => mode = key}
           class="px-3 py-1 rounded-lg text-xs font-medium border transition-colors
             {mode === key
-              ? 'bg-violet-900/60 text-violet-200 border-violet-600'
-              : 'bg-slate-800/60 text-slate-400 border-slate-700 hover:text-slate-200 hover:border-slate-500'}"
+              ? 'bg-moss/10 text-moss border-moss/40'
+              : 'bg-paper text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5'}"
         >{label}</button>
       {/each}
     </div>
@@ -106,24 +106,24 @@
           <table class="border-collapse font-mono text-xs mx-auto">
             <thead>
               <tr>
-                <th class="w-8 h-8 text-slate-600"></th>
+                <th class="w-8 h-8 text-ink-faint"></th>
                 {#each Array.from({length: n}, (_, i) => i) as c}
-                  <th class="w-8 h-8 text-center text-slate-500 font-normal">{c}</th>
+                  <th class="w-8 h-8 text-center text-ink-faint font-normal">{c}</th>
                 {/each}
               </tr>
             </thead>
             <tbody>
               {#each matrix as row, r}
                 <tr>
-                  <td class="w-8 h-8 text-center text-slate-500 pr-1">{r}</td>
+                  <td class="w-8 h-8 text-center text-ink-faint pr-1">{r}</td>
                   {#each row as val, c}
                     <td
                       class="w-8 h-8 text-center border font-bold transition-all
                         {isActive(r, c)
-                          ? 'bg-blue-900/50 border-blue-700 text-blue-200'
+                          ? 'bg-[#e2eaf0] border-[#6e94b5] text-[#3f5f7a]'
                           : isHighlighted(r, c)
-                          ? 'bg-slate-800/60 border-slate-600 text-slate-400'
-                          : 'bg-[#0f172a] border-slate-800 text-slate-600'}"
+                          ? 'bg-paper border-line text-ink-soft'
+                          : 'bg-[#f0eee8] border-line text-ink-faint'}"
                       on:mouseenter={() => hovered = r}
                       on:mouseleave={() => hovered = null}
                       on:focus={() => hovered = r}
@@ -135,7 +135,7 @@
             </tbody>
           </table>
         </div>
-        <p class="text-xs text-slate-600 font-mono mt-3 text-center">matrix[i][j] = 1 表示 i 與 j 之間有邊</p>
+        <p class="text-xs text-ink-faint font-mono mt-3 text-center">matrix[i][j] = 1 表示 i 與 j 之間有邊</p>
 
       {:else}
         <div class="flex flex-col gap-1.5">
@@ -144,20 +144,20 @@
               role="button"
               tabindex="0"
               class="flex items-center gap-2 px-3 py-2 rounded border transition-all font-mono text-xs
-                {hovered === v ? 'bg-slate-800/80 border-blue-800/60' : 'bg-[#0f172a] border-slate-800'}"
+                {hovered === v ? 'bg-[#e2eaf0] border-[#6e94b5]' : 'bg-[#f0eee8] border-line'}"
               on:mouseenter={() => hovered = v}
               on:mouseleave={() => hovered = null}
               on:focus={() => hovered = v}
               on:blur={() => hovered = null}
             >
-              <span class="font-bold w-4 {hovered === v ? 'text-blue-300' : 'text-slate-400'}">{v}</span>
-              <span class="text-slate-700 mx-1">→</span>
+              <span class="font-bold w-4 {hovered === v ? 'text-[#3f5f7a]' : 'text-ink-soft'}">{v}</span>
+              <span class="text-ink-faint mx-1">→</span>
               <span class="flex flex-wrap gap-1.5">
                 {#each neighbors as nb}
                   <span class="px-1.5 py-0.5 rounded border
                     {hovered === v
-                      ? 'bg-blue-900/40 border-blue-700/60 text-blue-300'
-                      : 'bg-slate-800 border-slate-700 text-slate-500'}">
+                      ? 'bg-[#e2eaf0] border-[#6e94b5] text-[#3f5f7a]'
+                      : 'bg-paper border-line text-ink-soft'}">
                     {nb}
                   </span>
                 {/each}
@@ -165,7 +165,7 @@
             </div>
           {/each}
         </div>
-        <p class="text-xs text-slate-600 font-mono mt-3 text-center">每個頂點列出其所有相鄰頂點</p>
+        <p class="text-xs text-ink-faint font-mono mt-3 text-center">每個頂點列出其所有相鄰頂點</p>
       {/if}
     </div>
 

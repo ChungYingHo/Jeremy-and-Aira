@@ -100,15 +100,15 @@
     : ''
 </script>
 
-<div class="w-full max-w-2xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
+<div class="w-full max-w-2xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
   <svg viewBox="0 0 {W} {H}" class="w-full" font-family="sans-serif">
-    <text x={W / 2} y="17" fill="#94a3b8" font-size="10" text-anchor="middle">凸包（Convex Hull）— 包住所有點的最小凸多邊形</text>
+    <text x={W / 2} y="17" fill="#8f8a80" font-size="10" text-anchor="middle">凸包（Convex Hull）— 包住所有點的最小凸多邊形</text>
 
     <!-- hull polygon fill -->
     {#if step.hull.length === hullIndices.length}
       <polygon
         points={hullIndices.map(i => `${points[i].x},${points[i].y}`).join(' ')}
-        fill="rgba(59, 130, 246, 0.08)"
+        fill="rgba(110, 148, 181, 0.12)"
         stroke="none"
       />
     {/if}
@@ -118,7 +118,7 @@
       <polyline
         points={hullPath}
         fill="none"
-        stroke="#3b82f6"
+        stroke="#6e94b5"
         stroke-width="2"
       />
     {/if}
@@ -128,40 +128,40 @@
       {@const isHull = hullSet.has(i)}
       {@const isCurrent = currentIdx === i}
       <circle cx={pt.x} cy={pt.y} r={isCurrent ? 7 : 5}
-        fill={isCurrent ? '#f59e0b' : isHull ? '#166534' : '#1e293b'}
-        stroke={isCurrent ? '#fcd34d' : isHull ? '#4ade80' : '#475569'}
+        fill={isCurrent ? '#f3e3dc' : isHull ? '#e6ece2' : '#f0eee8'}
+        stroke={isCurrent ? '#b3674a' : isHull ? '#5f7355' : '#d6d1c5'}
         stroke-width="1.5"
       />
-      <text x={pt.x} y={pt.y - 10} fill={isCurrent ? '#fcd34d' : isHull ? '#4ade80' : '#64748b'}
+      <text x={pt.x} y={pt.y - 10} fill={isCurrent ? '#8a4a32' : isHull ? '#3f5239' : '#5d574d'}
         font-size="8.5" text-anchor="middle">{pt.id}</text>
     {/each}
 
     <!-- legend -->
-    <circle cx="20" cy="270" r="4" fill="#166534" stroke="#4ade80" stroke-width="1.5"/>
-    <text x="28" y="273" fill="#94a3b8" font-size="8.5">凸包頂點</text>
-    <circle cx="88" cy="270" r="4" fill="#f59e0b" stroke="#fcd34d" stroke-width="1.5"/>
-    <text x="96" y="273" fill="#94a3b8" font-size="8.5">目前掃描</text>
-    <circle cx="156" cy="270" r="4" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
-    <text x="164" y="273" fill="#94a3b8" font-size="8.5">內部點</text>
+    <circle cx="20" cy="270" r="4" fill="#e6ece2" stroke="#5f7355" stroke-width="1.5"/>
+    <text x="28" y="273" fill="#5d574d" font-size="8.5">凸包頂點</text>
+    <circle cx="88" cy="270" r="4" fill="#f3e3dc" stroke="#b3674a" stroke-width="1.5"/>
+    <text x="96" y="273" fill="#5d574d" font-size="8.5">目前掃描</text>
+    <circle cx="156" cy="270" r="4" fill="#f0eee8" stroke="#d6d1c5" stroke-width="1.5"/>
+    <text x="164" y="273" fill="#5d574d" font-size="8.5">內部點</text>
 
     <!-- step desc -->
-    <text x={W / 2} y="288" fill="#e2e8f0" font-size="10.5" text-anchor="middle">{step.desc}</text>
+    <text x={W / 2} y="288" fill="#2d2a25" font-size="10.5" text-anchor="middle">{step.desc}</text>
   </svg>
 
   <div class="flex justify-center gap-3 pb-4 px-4">
     <button
       on:click={() => { if (stepIdx > 0) stepIdx-- }}
       disabled={stepIdx === 0}
-      class="px-4 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-300 hover:border-slate-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+      class="px-4 py-1.5 text-xs rounded-lg bg-paper text-ink-soft border border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5 disabled:text-ink-faint/50 disabled:border-line disabled:cursor-not-allowed transition-all"
     >上一步</button>
     <button
       on:click={() => { if (stepIdx < steps.length - 1) stepIdx++ }}
       disabled={stepIdx === steps.length - 1}
-      class="px-4 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-300 hover:border-slate-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+      class="px-4 py-1.5 text-xs rounded-lg bg-paper text-ink-soft border border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5 disabled:text-ink-faint/50 disabled:border-line disabled:cursor-not-allowed transition-all"
     >下一步</button>
     <button
       on:click={() => stepIdx = 0}
-      class="px-4 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-300 hover:border-slate-500 transition-all"
+      class="px-4 py-1.5 text-xs rounded-lg bg-paper text-ink-soft border border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5 transition-all"
     >重置</button>
   </div>
 </div>

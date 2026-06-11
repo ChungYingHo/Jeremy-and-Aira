@@ -23,31 +23,31 @@
   }
 </script>
 
-<div class="w-full max-w-sm mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
+<div class="w-full max-w-sm mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
   <div class="p-4 flex flex-col gap-3">
     <div>
-      <p class="text-center text-xs font-bold text-slate-300 font-mono">Stack</p>
-      <p class="text-center text-xs text-slate-500">後進先出 (LIFO)</p>
+      <p class="text-center text-xs font-bold text-ink-soft font-mono">Stack</p>
+      <p class="text-center text-xs text-ink-faint">後進先出 (LIFO)</p>
     </div>
 
     <div class="flex flex-col items-center gap-1 h-[240px] justify-end relative overflow-hidden">
       {#if !stack.length}
-        <p class="text-slate-700 text-xs absolute inset-0 flex items-center justify-center">（空）</p>
+        <p class="text-ink-faint text-xs absolute inset-0 flex items-center justify-center">（空）</p>
       {/if}
       {#each displayStack as item, i}
         <div class="relative w-14 h-9 flex items-center justify-center rounded
-          bg-[#1e3a5f] border text-sm font-bold font-mono
-          {i === 0 ? 'border-blue-400 text-blue-200' : 'border-slate-600 text-slate-400'}">
+          border text-sm font-bold font-mono
+          {i === 0 ? 'bg-[#f3e3dc] border-[#b3674a] text-[#8a4a32]' : 'bg-[#e2eaf0] border-[#6e94b5] text-[#3f5f7a]'}">
           {item}
           {#if i === 0}
-            <span class="absolute -right-10 text-xs text-blue-500 font-normal font-sans">← top</span>
+            <span class="absolute -right-10 text-xs text-clay font-normal font-sans">← top</span>
           {/if}
         </div>
       {/each}
     </div>
 
     <p class="text-center text-xs font-mono min-h-[1rem]
-      {stackMsg.startsWith('Pop') ? 'text-violet-300' : stackMsg.startsWith('Push') ? 'text-blue-300' : 'text-slate-500'}">
+      {stackMsg.startsWith('Pop') ? 'text-clay' : stackMsg.startsWith('Push') ? 'text-[#3f5f7a]' : 'text-ink-faint'}">
       {stackMsg || ''}
     </p>
 
@@ -55,12 +55,12 @@
       <button
         on:click={push}
         class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors
-          bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:border-blue-600"
+          bg-paper text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5"
       >Push {nextPush}</button>
       <button
         on:click={pop}
         class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors
-          bg-slate-800 text-slate-400 border-slate-700 hover:text-white hover:border-violet-600"
+          bg-paper text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5"
       >Pop</button>
     </div>
   </div>

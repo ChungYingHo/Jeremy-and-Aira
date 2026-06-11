@@ -1,6 +1,6 @@
 <script>
   const items = [0.2, 0.5, 0.4, 0.7, 0.1, 0.3, 0.8]
-  const itemColors = ['#3b82f6', '#f59e0b', '#22c55e', '#ef4444', '#a855f7', '#ec4899', '#06b6d4']
+  const itemColors = ['#6e94b5', '#c9a64e', '#5f7355', '#c46a5c', '#9181a8', '#b3674a', '#3f5f7a']
 
   const strategies = {
     'Next Fit': computeNextFit(),
@@ -79,24 +79,24 @@
   const gap = 12
 </script>
 
-<div class="w-full max-w-2xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
+<div class="w-full max-w-2xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
   <div class="flex justify-center gap-2 pt-4 px-4">
     {#each strategyNames as name, i}
       <button
         on:click={() => activeIdx = i}
         class="px-3 py-1.5 text-xs rounded-lg border transition-all {activeIdx === i
-          ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-          : 'border-slate-700 text-slate-400 hover:border-slate-500'}"
+          ? 'border-moss/40 bg-moss/10 text-moss'
+          : 'bg-paper border-line text-ink-soft hover:text-ink hover:border-moss/50 hover:bg-moss/5'}"
       >{name}</button>
     {/each}
   </div>
 
   <svg viewBox="0 0 420 230" class="w-full" font-family="sans-serif">
-    <text x="210" y="17" fill="#94a3b8" font-size="10" text-anchor="middle">
+    <text x="210" y="17" fill="#8f8a80" font-size="10" text-anchor="middle">
       物品：{items.map((v, i) => `${v}`).join(', ')}（箱子容量 = 1.0）
     </text>
 
-    <text x="210" y="32" fill="#e2e8f0" font-size="11" font-weight="bold" text-anchor="middle">
+    <text x="210" y="32" fill="#2d2a25" font-size="11" font-weight="bold" text-anchor="middle">
       {activeName}：{bins.length} 個箱子
     </text>
 
@@ -104,11 +104,11 @@
       {@const bx = padL + b * (binW + gap)}
       <!-- bin outline -->
       <rect x={bx} y={padT} width={binW} height={binH} rx="3"
-        fill="#0f172a" stroke="#334155" stroke-width="1"/>
+        fill="#f0eee8" stroke="#d6d1c5" stroke-width="1"/>
       <!-- capacity line at top -->
-      <line x1={bx} y1={padT} x2={bx + binW} y2={padT} stroke="#475569" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1={bx} y1={padT} x2={bx + binW} y2={padT} stroke="#8f8a80" stroke-width="1" stroke-dasharray="3,2"/>
       <!-- bin label -->
-      <text x={bx + binW / 2} y={padT + binH + 14} fill="#64748b" font-size="8.5" text-anchor="middle">Bin {b + 1}</text>
+      <text x={bx + binW / 2} y={padT + binH + 14} fill="#8f8a80" font-size="8.5" text-anchor="middle">Bin {b + 1}</text>
 
       <!-- items stacked from bottom -->
       {#each bin as itemIdx, stackPos}
@@ -123,7 +123,7 @@
     {/each}
 
     <!-- item legend -->
-    <text x="210" y="210" fill="#475569" font-size="8.5" text-anchor="middle">
+    <text x="210" y="210" fill="#8f8a80" font-size="8.5" text-anchor="middle">
       每個色塊代表一個物品，高度 = 物品大小佔箱子容量的比例
     </text>
   </svg>

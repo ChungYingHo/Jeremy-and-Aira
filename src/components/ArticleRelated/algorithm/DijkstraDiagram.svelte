@@ -43,19 +43,19 @@
   }
 </script>
 
-<div class="w-full max-w-3xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
+<div class="w-full max-w-3xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
   <svg viewBox="0 0 460 250" class="w-full px-2 pt-2 pb-1" font-family="sans-serif">
     <defs>
       <marker id="dijk-arrow-spt" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
-        <path d="M0,0 L0,6 L7,3 z" fill="#3b82f6" />
+        <path d="M0,0 L0,6 L7,3 z" fill="#6e94b5" />
       </marker>
       <marker id="dijk-arrow-other" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto">
-        <path d="M0,0 L0,6 L7,3 z" fill="#475569" />
+        <path d="M0,0 L0,6 L7,3 z" fill="#d6d1c5" />
       </marker>
     </defs>
 
     <!-- title -->
-    <text x="230" y="18" fill="#94a3b8" font-size="10" text-anchor="middle">Dijkstra 最短路徑（從 A 出發，括號內為最短距離）</text>
+    <text x="230" y="18" fill="#8f8a80" font-size="10" text-anchor="middle">Dijkstra 最短路徑（從 A 出發，括號內為最短距離）</text>
 
     <!-- edges -->
     {#each edges as e}
@@ -63,27 +63,27 @@
       {@const lp = midLabel(e.u, e.v)}
       <line
         x1={al.sx} y1={al.sy} x2={al.tx} y2={al.ty}
-        stroke={e.spt ? '#3b82f6' : '#475569'}
+        stroke={e.spt ? '#6e94b5' : '#d6d1c5'}
         stroke-width={e.spt ? 2 : 1.5}
         stroke-dasharray={e.spt ? 'none' : '5,3'}
         marker-end={e.spt ? 'url(#dijk-arrow-spt)' : 'url(#dijk-arrow-other)'}
       />
-      <text x={lp.x} y={lp.y} fill={e.spt ? '#93c5fd' : '#64748b'} font-size="9.5" text-anchor="middle" dominant-baseline="middle">{e.w}</text>
+      <text x={lp.x} y={lp.y} fill={e.spt ? '#3f5f7a' : '#8f8a80'} font-size="9.5" text-anchor="middle" dominant-baseline="middle">{e.w}</text>
     {/each}
 
     <!-- nodes -->
     {#each Object.entries(nodes) as [label, n]}
-      <circle cx={n.x} cy={n.y} r={R} fill={label === 'A' ? '#1e3a5f' : '#0f172a'} stroke={label === 'A' ? '#3b82f6' : '#475569'} stroke-width="1.5" />
-      <text x={n.x} y={n.y - 2} fill="#e2e8f0" font-size="11" font-weight="bold" text-anchor="middle" dominant-baseline="middle">{label}</text>
+      <circle cx={n.x} cy={n.y} r={R} fill={label === 'A' ? '#f3e3dc' : '#f0eee8'} stroke={label === 'A' ? '#b3674a' : '#d6d1c5'} stroke-width="1.5" />
+      <text x={n.x} y={n.y - 2} fill="#2d2a25" font-size="11" font-weight="bold" text-anchor="middle" dominant-baseline="middle">{label}</text>
       <!-- distance badge -->
-      <text x={n.x} y={n.y + R + 11} fill="#22c55e" font-size="9" text-anchor="middle">({n.dist})</text>
+      <text x={n.x} y={n.y + R + 11} fill="#3f5239" font-size="9" text-anchor="middle">({n.dist})</text>
     {/each}
 
     <!-- legend -->
-    <line x1="24" y1="236" x2="44" y2="236" stroke="#3b82f6" stroke-width="2" marker-end="url(#dijk-arrow-spt)" />
-    <text x="48" y="240" fill="#94a3b8" font-size="9">最短路徑樹邊</text>
-    <line x1="138" y1="236" x2="158" y2="236" stroke="#475569" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#dijk-arrow-other)" />
-    <text x="162" y="240" fill="#94a3b8" font-size="9">其他邊</text>
-    <text x="230" y="240" fill="#22c55e" font-size="9" text-anchor="middle">括號 = 從 A 出發的最短距離</text>
+    <line x1="24" y1="236" x2="44" y2="236" stroke="#6e94b5" stroke-width="2" marker-end="url(#dijk-arrow-spt)" />
+    <text x="48" y="240" fill="#5d574d" font-size="9">最短路徑樹邊</text>
+    <line x1="138" y1="236" x2="158" y2="236" stroke="#d6d1c5" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#dijk-arrow-other)" />
+    <text x="162" y="240" fill="#5d574d" font-size="9">其他邊</text>
+    <text x="230" y="240" fill="#3f5239" font-size="9" text-anchor="middle">括號 = 從 A 出發的最短距離</text>
   </svg>
 </div>

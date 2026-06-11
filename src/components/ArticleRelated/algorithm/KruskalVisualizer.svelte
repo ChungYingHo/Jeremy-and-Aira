@@ -78,8 +78,8 @@
       const isCurrent = s.current
         ? ((s.current[0] === u && s.current[1] === v) || (s.current[0] === v && s.current[1] === u))
         : false
-      const stroke = isMst ? '#3b82f6' : isCurrent ? '#f59e0b' : isSkipped ? '#ef4444' : '#1e293b'
-      const labelFill = isMst ? '#93c5fd' : isCurrent ? '#fcd34d' : isSkipped ? '#fca5a5' : '#334155'
+      const stroke = isMst ? '#5f7355' : isCurrent ? '#b3674a' : isSkipped ? '#c46a5c' : '#d6d1c5'
+      const labelFill = isMst ? '#3f5239' : isCurrent ? '#8a4a32' : isSkipped ? '#9c4a3d' : '#5d574d'
       const strokeW = isMst || isCurrent || isSkipped ? 2.5 : 1.5
       const dash = isMst || isCurrent || isSkipped ? 'none' : '4,3'
       const mx = (NODES[u].x + NODES[v].x) / 2
@@ -103,9 +103,9 @@
       const isCur = s.current
         ? ((s.current[0] === u && s.current[1] === v) || (s.current[0] === v && s.current[1] === u))
         : false
-      const bg = isMst ? '#1d3a6e' : isSkip ? '#3b1010' : isCur ? '#3b2a00' : '#0f172a'
-      const border = isMst ? '#3b82f6' : isSkip ? '#ef4444' : isCur ? '#f59e0b' : '#1e293b'
-      const fill = isMst ? '#93c5fd' : isSkip ? '#fca5a5' : isCur ? '#fcd34d' : '#475569'
+      const bg = isMst ? '#e6ece2' : isSkip ? '#f3ddd8' : isCur ? '#f3e3dc' : '#f0eee8'
+      const border = isMst ? '#5f7355' : isSkip ? '#c46a5c' : isCur ? '#b3674a' : '#d6d1c5'
+      const fill = isMst ? '#3f5239' : isSkip ? '#9c4a3d' : isCur ? '#8a4a32' : '#5d574d'
       return { u, v, w, bg, border, fill }
     })
   }
@@ -113,9 +113,9 @@
   const R = 14
 </script>
 
-<div class="w-full max-w-2xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
+<div class="w-full max-w-2xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
   <svg viewBox="0 0 420 315" class="w-full" font-family="sans-serif">
-    <text x="210" y="17" fill="#94a3b8" font-size="10" text-anchor="middle">Kruskal 演算法 — 從最小邊開始挑</text>
+    <text x="210" y="17" fill="#8f8a80" font-size="10" text-anchor="middle">Kruskal 演算法 — 從最小邊開始挑</text>
 
     {#each edgeStates as e}
       <line
@@ -127,17 +127,17 @@
     {/each}
 
     {#each Object.entries(NODES) as [id, pos]}
-      <circle cx={pos.x} cy={pos.y} r={R} fill="#0f172a" stroke="#475569" stroke-width="1.5"/>
-      <text x={pos.x} y={pos.y} fill="#94a3b8" font-size="11" font-weight="bold" text-anchor="middle" dominant-baseline="middle">{id}</text>
+      <circle cx={pos.x} cy={pos.y} r={R} fill="#f0eee8" stroke="#d6d1c5" stroke-width="1.5"/>
+      <text x={pos.x} y={pos.y} fill="#5d574d" font-size="11" font-weight="bold" text-anchor="middle" dominant-baseline="middle">{id}</text>
     {/each}
 
     <!-- legend -->
-    <line x1="14" y1="235" x2="32" y2="235" stroke="#3b82f6" stroke-width="2.5"/>
-    <text x="36" y="239" fill="#94a3b8" font-size="9">MST 邊</text>
-    <line x1="78" y1="235" x2="96" y2="235" stroke="#f59e0b" stroke-width="2.5"/>
-    <text x="100" y="239" fill="#94a3b8" font-size="9">考慮中</text>
-    <line x1="142" y1="235" x2="160" y2="235" stroke="#ef4444" stroke-width="2.5"/>
-    <text x="164" y="239" fill="#94a3b8" font-size="9">跳過（成環）</text>
+    <line x1="14" y1="235" x2="32" y2="235" stroke="#5f7355" stroke-width="2.5"/>
+    <text x="36" y="239" fill="#5d574d" font-size="9">MST 邊</text>
+    <line x1="78" y1="235" x2="96" y2="235" stroke="#b3674a" stroke-width="2.5"/>
+    <text x="100" y="239" fill="#5d574d" font-size="9">考慮中</text>
+    <line x1="142" y1="235" x2="160" y2="235" stroke="#c46a5c" stroke-width="2.5"/>
+    <text x="164" y="239" fill="#5d574d" font-size="9">跳過（成環）</text>
 
     <!-- sorted edge list -->
     {#each sortedStates as e, i}
@@ -146,24 +146,26 @@
     {/each}
 
     <!-- step desc -->
-    <text x="210" y="289" fill="#e2e8f0" font-size="10.5" text-anchor="middle">{step.desc}</text>
-    <text x="210" y="307" fill="#475569" font-size="9.5" text-anchor="middle">步驟 {stepIdx + 1} / {steps.length}</text>
+    <text x="210" y="289" fill="#5d574d" font-size="10.5" text-anchor="middle">{step.desc}</text>
+    <text x="210" y="307" fill="#8f8a80" font-size="9.5" text-anchor="middle">步驟 {stepIdx + 1} / {steps.length}</text>
   </svg>
 
   <div class="flex justify-center gap-3 pb-4 px-4">
     <button
       on:click={() => { if (stepIdx > 0) stepIdx-- }}
       disabled={stepIdx === 0}
-      class="px-4 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-300 hover:border-slate-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+      class="px-4 py-1.5 text-xs rounded-lg border transition-colors bg-paper
+        {stepIdx === 0 ? 'text-ink-faint/50 border-line cursor-not-allowed' : 'text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5'}"
     >上一步</button>
     <button
       on:click={() => { if (stepIdx < steps.length - 1) stepIdx++ }}
       disabled={stepIdx === steps.length - 1}
-      class="px-4 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-300 hover:border-slate-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+      class="px-4 py-1.5 text-xs rounded-lg border transition-colors bg-paper
+        {stepIdx === steps.length - 1 ? 'text-ink-faint/50 border-line cursor-not-allowed' : 'text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5'}"
     >下一步</button>
     <button
       on:click={() => stepIdx = 0}
-      class="px-4 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-300 hover:border-slate-500 transition-all"
+      class="px-4 py-1.5 text-xs rounded-lg border transition-colors bg-paper text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5"
     >重置</button>
   </div>
 </div>

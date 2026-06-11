@@ -99,15 +99,15 @@
   const R = 16
 </script>
 
-<div class="w-full max-w-2xl mx-auto my-8 bg-[#0a0a0a] rounded-xl border border-slate-800/50 shadow-xl overflow-hidden">
+<div class="w-full max-w-2xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
   <svg viewBox="0 0 440 295" class="w-full" font-family="sans-serif">
-    <text x="220" y="14" fill="#94a3b8" font-size="10" text-anchor="middle">Huffman 編碼 — 每次合併頻率最小的兩棵樹</text>
+    <text x="220" y="14" fill="#5d574d" font-size="10" text-anchor="middle">Huffman 編碼 — 每次合併頻率最小的兩棵樹</text>
 
     {#each step.edges as [parentId, childId, label]}
       {@const p = findNode(parentId)}
       {@const c = findNode(childId)}
       {#if p && c}
-        <line x1={p.x} y1={p.y} x2={c.x} y2={c.y} stroke="#3b82f6" stroke-width="1.5"/>
+        <line x1={p.x} y1={p.y} x2={c.x} y2={c.y} stroke="#6e94b5" stroke-width="1.5"/>
         {@const mx = (p.x + c.x) / 2}
         {@const my = (p.y + c.y) / 2}
         {@const dx = c.x - p.x}
@@ -115,44 +115,44 @@
         {@const len = Math.sqrt(dx * dx + dy * dy)}
         {@const ox = (-dy / len) * 9}
         {@const oy = (dx / len) * 9}
-        <text x={mx + ox} y={my + oy} fill="#fcd34d" font-size="9" font-weight="bold" text-anchor="middle" dominant-baseline="middle">{label}</text>
+        <text x={mx + ox} y={my + oy} fill="#8a6d23" font-size="9" font-weight="bold" text-anchor="middle" dominant-baseline="middle">{label}</text>
       {/if}
     {/each}
 
     {#each step.nodes as node}
       {@const isLeaf = !node.internal}
       <circle cx={node.x} cy={node.y} r={R}
-        fill={isLeaf ? '#166534' : '#1e293b'}
-        stroke={isLeaf ? '#4ade80' : '#475569'}
+        fill={isLeaf ? '#e6ece2' : '#f0eee8'}
+        stroke={isLeaf ? '#5f7355' : '#d6d1c5'}
         stroke-width="1.5"
       />
       {#if isLeaf}
-        <text x={node.x} y={node.y - 3} fill="#4ade80" font-size="10" font-weight="bold" text-anchor="middle" dominant-baseline="middle">{node.id}</text>
-        <text x={node.x} y={node.y + 8} fill="#86efac" font-size="7" text-anchor="middle" dominant-baseline="middle">{node.freq}</text>
+        <text x={node.x} y={node.y - 3} fill="#3f5239" font-size="10" font-weight="bold" text-anchor="middle" dominant-baseline="middle">{node.id}</text>
+        <text x={node.x} y={node.y + 8} fill="#5f7355" font-size="7" text-anchor="middle" dominant-baseline="middle">{node.freq}</text>
       {:else}
-        <text x={node.x} y={node.y + 1} fill="#94a3b8" font-size="9" font-weight="bold" text-anchor="middle" dominant-baseline="middle">{node.freq}</text>
+        <text x={node.x} y={node.y + 1} fill="#5d574d" font-size="9" font-weight="bold" text-anchor="middle" dominant-baseline="middle">{node.freq}</text>
       {/if}
     {/each}
 
     <!-- step desc -->
-    <text x="220" y="277" fill="#e2e8f0" font-size="10.5" text-anchor="middle">{step.desc}</text>
-    <text x="220" y="291" fill="#475569" font-size="9.5" text-anchor="middle">步驟 {stepIdx + 1} / {steps.length}</text>
+    <text x="220" y="277" fill="#3f3a31" font-size="10.5" text-anchor="middle">{step.desc}</text>
+    <text x="220" y="291" fill="#8a8475" font-size="9.5" text-anchor="middle">步驟 {stepIdx + 1} / {steps.length}</text>
   </svg>
 
   <div class="flex justify-center gap-3 pb-4 px-4">
     <button
       on:click={() => { if (stepIdx > 0) stepIdx-- }}
       disabled={stepIdx === 0}
-      class="px-4 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-300 hover:border-slate-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+      class="px-4 py-1.5 text-xs rounded-lg bg-paper text-ink-soft border border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5 disabled:text-ink-faint/50 disabled:border-line disabled:cursor-not-allowed transition-all"
     >上一步</button>
     <button
       on:click={() => { if (stepIdx < steps.length - 1) stepIdx++ }}
       disabled={stepIdx === steps.length - 1}
-      class="px-4 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-300 hover:border-slate-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+      class="px-4 py-1.5 text-xs rounded-lg bg-paper text-ink-soft border border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5 disabled:text-ink-faint/50 disabled:border-line disabled:cursor-not-allowed transition-all"
     >下一步</button>
     <button
       on:click={() => stepIdx = 0}
-      class="px-4 py-1.5 text-xs rounded-lg border border-slate-700 text-slate-300 hover:border-slate-500 transition-all"
+      class="px-4 py-1.5 text-xs rounded-lg bg-paper text-ink-soft border border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5 transition-all"
     >重置</button>
   </div>
 </div>
