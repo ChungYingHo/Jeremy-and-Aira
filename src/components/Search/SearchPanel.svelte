@@ -84,23 +84,23 @@
   }
 </script>
 
-<div class="flex flex-col h-full text-left relative bg-[#161213]">
-  <div class="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-white/5 bg-[#161213] shrink-0">
-    <div class="flex items-center gap-2 md:gap-3 text-white/60">
+<div class="flex flex-col h-full text-left relative bg-cream">
+  <div class="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-line bg-cream shrink-0">
+    <div class="flex items-center gap-2 md:gap-3 text-ink-soft">
       <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
       <span class="text-xs font-mono font-bold uppercase tracking-[0.15em]">Global Search</span>
     </div>
     <div class="flex items-center gap-2">
-       <span class="text-[10px] font-mono text-white/20 hidden md:inline-block">ESC to close</span>
-       <button on:click={onClose} class="md:hidden text-white/40 p-1 min-w-[32px] min-h-[32px] flex items-center justify-center">✕</button>
+       <span class="text-[10px] font-mono text-ink-faint hidden md:inline-block">ESC to close</span>
+       <button on:click={onClose} class="md:hidden text-ink-faint p-1 min-w-[32px] min-h-[32px] flex items-center justify-center">✕</button>
     </div>
   </div>
 
   <div class="p-4 md:p-6 overflow-y-auto custom-scrollbar flex-1 relative z-10">
     {#if errorMsg}
-        <div class="text-red-400 text-xs text-center mt-10 p-4 border border-red-500/20 rounded bg-red-500/5">
+        <div class="text-clay text-xs text-center mt-10 p-4 border border-clay/30 rounded bg-clay/5">
           {errorMsg}
         </div>
     {/if}
@@ -112,11 +112,11 @@
 <style>
   :global(:root) {
     --pagefind-ui-scale: 0.85;
-    --pagefind-ui-primary: #f472b6; 
-    --pagefind-ui-text: #cbd5e1;
-    --pagefind-ui-background: #161213;
-    --pagefind-ui-border: #334155;
-    --pagefind-ui-tag: #f472b6;
+    --pagefind-ui-primary: #5f7355;
+    --pagefind-ui-text: #3b3833;
+    --pagefind-ui-background: #fcfbf8;
+    --pagefind-ui-border: #e4e1da;
+    --pagefind-ui-tag: #5f7355;
     --pagefind-ui-border-width: 1px;
     --pagefind-ui-border-radius: 8px;
     --pagefind-ui-font: 'Inter', system-ui, sans-serif;
@@ -139,9 +139,9 @@
   /* 2. 輸入框設定 */
   :global(.pagefind-ui__search-input) {
     width: 100% !important;
-    background-color: rgba(255,255,255,0.03) !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
-    color: white !important;
+    background-color: rgba(45, 42, 37, 0.03) !important;
+    border: 1px solid #e4e1da !important;
+    color: #2d2a25 !important;
     
     /* 預留右側空間給按鈕 */
     padding: 14px 16px !important;
@@ -168,10 +168,10 @@
   }
 
   :global(.pagefind-ui__search-input:focus) {
-    background-color: rgba(255,255,255,0.06) !important;
+    background-color: #fff !important;
     border-color: var(--pagefind-ui-primary) !important;
     outline: none;
-    box-shadow: 0 0 0 1px rgba(244, 114, 182, 0.4), 0 0 20px rgba(244, 114, 182, 0.15) !important;
+    box-shadow: 0 0 0 1px rgba(95, 115, 85, 0.35) !important;
   }
 
   /* 3. 清除按鈕定位 [關鍵修正]：
@@ -188,7 +188,7 @@
     transform: translateY(-50%) !important;
     
     background: transparent !important;
-    color: #64748b !important;
+    color: #8f8a80 !important;
     padding: 4px 8px !important;
     margin: 0 !important;
     
@@ -209,8 +209,8 @@
   }
   
   :global(.pagefind-ui__search-clear:hover) {
-    color: #f472b6 !important;
-    background: rgba(255,255,255,0.05) !important;
+    color: #5f7355 !important;
+    background: rgba(45, 42, 37, 0.05) !important;
   }
 
   /* 4. 結果列表 */
@@ -236,14 +236,14 @@
   }
 
   :global(.pagefind-ui__result:hover) {
-    background-color: rgba(255,255,255,0.03) !important;
-    border-color: rgba(255,255,255,0.05) !important;
+    background-color: rgba(45, 42, 37, 0.04) !important;
+    border-color: #e4e1da !important;
   }
 
   :global(.pagefind-ui__result-thumb) { display: none; }
 
   :global(.pagefind-ui__result-link) {
-    color: #f472b6 !important;
+    color: #5f7355 !important;
     font-weight: 600 !important;
     font-size: 1rem !important;
     text-decoration: none !important;
@@ -262,7 +262,7 @@
   
   /* 5. 摘要與 line-clamp */
   :global(.pagefind-ui__result-excerpt) {
-    color: #94a3b8 !important;
+    color: #5d574d !important;
     font-size: 0.85rem !important;
     line-height: 1.5 !important;
     font-weight: 400 !important;
@@ -285,15 +285,15 @@
   }
   
   :global(.pagefind-ui__result-excerpt mark) {
-    background: rgba(244, 114, 182, 0.15) !important;
-    color: #fce7f3 !important;
+    background: rgba(95, 115, 85, 0.18) !important;
+    color: #3f5239 !important;
     font-weight: 600 !important;
     padding: 0 3px;
     border-radius: 3px;
   }
 
   :global(.pagefind-ui__message) {
-      color: #64748b !important;
+      color: #8f8a80 !important;
       padding: 10px 4px !important;
       font-size: 0.9rem !important;
   }

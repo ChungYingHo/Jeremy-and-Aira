@@ -140,9 +140,9 @@
 >
   <div 
     class="
-      pointer-events-auto mx-auto w-fit flex justify-center items-center px-3 py-2 lg:pl-3 lg:pr-4 relative 
-      border border-white/10 rounded-full transition-all duration-500
-      {scrollY > 50 ? 'bg-[#161213] shadow-2xl shadow-black/80' : 'bg-[#161213]/80 backdrop-blur-lg shadow-xl'}
+      pointer-events-auto mx-auto w-fit flex justify-center items-center px-3 py-2 lg:pl-3 lg:pr-4 relative
+      border border-line rounded-full transition-all duration-500
+      {scrollY > 50 ? 'bg-cream shadow-xl shadow-ink/10' : 'bg-cream/85 backdrop-blur-lg shadow-lg shadow-ink/5'}
     "
   >
 
@@ -151,20 +151,18 @@
         href="/" 
         on:click={handleLogoClick}
         class="
-          group relative flex items-center justify-center h-10 px-6 lg:px-8 rounded-full 
-          bg-white/5 
-          border border-white/10 
-          hover:border-pink-300/30 hover:bg-white/10
+          group relative flex items-center justify-center h-10 px-6 lg:px-8 rounded-full
+          bg-paper
+          border border-line
+          hover:border-moss/40 hover:bg-moss/10
           transition-all duration-300 ease-out
           active:scale-[0.98]
           z-20
         "
       >
         <span class="
-          text-xs md:text-sm font-bold tracking-[0.15em] lg:tracking-[0.2em] whitespace-nowrap
-          text-transparent bg-clip-text bg-gradient-to-r from-pink-200 via-purple-200 to-indigo-200
-          drop-shadow-[0_0_10px_rgba(255,192,203,0.3)]
-          group-hover:drop-shadow-[0_0_15px_rgba(255,192,203,0.6)]
+          font-serif text-xs md:text-sm font-semibold tracking-[0.15em] lg:tracking-[0.2em] whitespace-nowrap
+          text-ink group-hover:text-moss
           transition-all duration-300
         ">
           JEREMY &times; AIRA
@@ -178,9 +176,9 @@
               <button 
                 class="
                   h-10 px-5 rounded-full text-base font-medium tracking-wide transition-all duration-300 
-                  {isActive(menuItem) 
-                    ? 'bg-pink-500/10 backdrop-blur-md text-pink-100 shadow-[inset_0_1px_0_0_rgba(255,192,203,0.2)] border border-pink-500/20' 
-                    : 'text-white/90 hover:text-pink-100 hover:bg-white/5'}
+                  {isActive(menuItem)
+                    ? 'bg-moss/10 text-moss border border-moss/25'
+                    : 'text-ink-soft hover:text-ink hover:bg-ink/5'}
                 "
                 on:click={(event) => openDesktopGroup(menuItem, event)}
               >
@@ -193,9 +191,9 @@
                 href={menuItem.href}
                 class="
                   h-10 px-5 rounded-full text-base font-medium tracking-wide transition-all duration-300 flex items-center 
-                  {isActive(menuItem) 
-                    ? 'bg-pink-500/10 text-pink-100 border border-pink-500/20' 
-                    : 'text-white/90 hover:text-pink-100 hover:bg-white/5'}
+                  {isActive(menuItem)
+                    ? 'bg-moss/10 text-moss border border-moss/25'
+                    : 'text-ink-soft hover:text-ink hover:bg-ink/5'}
                 "
               >
                 {menuItem.title}
@@ -206,7 +204,7 @@
       </ul>
 
       <div class="flex items-center gap-1 lg:gap-3 lg:pl-1">
-        <div class="hidden lg:block w-px h-5 bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
+        <div class="hidden lg:block w-px h-5 bg-gradient-to-b from-transparent via-line to-transparent"></div>
         <SearchBtn onClick={toggleSearch} />
       </div>
     </div>
@@ -224,19 +222,19 @@
       >
         <div
           class="
-            bg-[#161213] border border-white/10 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)] rounded-2xl
+            bg-cream border border-line shadow-[0_10px_40px_-10px_rgba(58,53,44,0.25)] rounded-2xl
             p-2.5 lg:p-2 text-xs
             max-h-[60vh] lg:max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar
           "
           transition:slide={{ duration: 250, axis: "y" }}
         >
-          <div class="flex items-center justify-between mb-1 px-2 pt-1 pb-1.5 border-b border-white/5 sticky top-0 bg-[#161213] z-10">
+          <div class="flex items-center justify-between mb-1 px-2 pt-1 pb-1.5 border-b border-line sticky top-0 bg-cream z-10">
              {#key desktopTitle}
-              <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-pink-200/50 ml-1" in:fade={{ duration: 150 }}>
+              <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-moss/70 ml-1" in:fade={{ duration: 150 }}>
                 {desktopTitle}
               </div>
              {/key}
-            <button class="btn btn-ghost btn-xs btn-circle w-5 h-5 min-h-0 text-white/40 hover:text-white hover:bg-white/10 transition-colors" on:click={closeAll}>✕</button>
+            <button class="btn btn-ghost btn-xs btn-circle w-5 h-5 min-h-0 text-ink-faint hover:text-ink hover:bg-ink/10 transition-colors" on:click={closeAll}>✕</button>
           </div>
 
           {#if innerWidth < 1024}
@@ -246,11 +244,11 @@
                 on:click={closeAll}
                 class="
                   flex items-center gap-3 px-3 py-3 rounded-lg w-full
-                  text-white/90 font-bold tracking-widest uppercase
-                  hover:bg-white/5 hover:text-pink-100 transition-all duration-200
+                  text-ink font-bold tracking-widest uppercase
+                  hover:bg-ink/5 hover:text-moss transition-all duration-200
                 "
               >
-                <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-pink-200">
+                <div class="w-8 h-8 rounded-full bg-ink/5 flex items-center justify-center text-moss">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/> 
                     <polyline points="9 22 9 12 15 12 15 22"/>
@@ -258,7 +256,7 @@
                 </div>
                 <span>HOME</span>
               </a>
-              <div class="h-px bg-white/5 mx-2 mt-1"></div>
+              <div class="h-px bg-line mx-2 mt-1"></div>
             </div>
           {/if}
 
@@ -280,13 +278,13 @@
           {/key}
 
           {#if innerWidth < 1024}
-            <div class="mt-2 pt-2 border-t border-white/5">
-              <button 
+            <div class="mt-2 pt-2 border-t border-line">
+              <button
                 on:click={scrollToTop}
                 class="
                   flex items-center justify-center gap-2 px-3 py-3 rounded-lg w-full
-                  text-white/50 font-bold tracking-widest uppercase text-[10px]
-                  hover:bg-white/5 hover:text-pink-200 transition-all duration-200
+                  text-ink-faint font-bold tracking-widest uppercase text-[10px]
+                  hover:bg-ink/5 hover:text-moss transition-all duration-200
                 "
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -313,7 +311,7 @@
       >
         <div
           class="
-            bg-[#161213] border border-white/10 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)] rounded-2xl
+            bg-cream border border-line shadow-[0_10px_40px_-10px_rgba(58,53,44,0.25)] rounded-2xl
             p-2.5 lg:p-0 text-xs
             max-h-[60vh] lg:max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar
           "
@@ -343,10 +341,10 @@
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 192, 203, 0.15);
+    background: rgba(95, 115, 85, 0.25);
     border-radius: 4px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 192, 203, 0.3);
+    background: rgba(95, 115, 85, 0.45);
   }
 </style>

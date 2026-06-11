@@ -116,9 +116,9 @@
 
 <div class="relative w-full">
   {#if stack.length > 0}
-    <div class="flex items-center gap-1 mb-2 pb-2 border-b border-white/5">
+    <div class="flex items-center gap-1 mb-2 pb-2 border-b border-line">
       <button
-        class="flex flex-1 items-center gap-3 px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-white/40 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-300 group"
+        class="flex flex-1 items-center gap-3 px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-ink-faint hover:text-ink hover:bg-ink/5 rounded-xl transition-all duration-300 group"
         on:click={back}
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-1">
@@ -127,7 +127,7 @@
         Back
       </button>
       <button
-        class="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-[0.15em] text-white/25 hover:text-white/70 hover:bg-white/5 rounded-xl transition-all duration-300 group shrink-0"
+        class="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-[0.15em] text-ink-faint/70 hover:text-ink-soft hover:bg-ink/5 rounded-xl transition-all duration-300 group shrink-0"
         title="Back to top"
         on:click={backToRoot}
       >
@@ -150,11 +150,11 @@
         <li>
           {#if isGroup(item)}
             <button
-              class="group flex justify-between items-center w-full px-4 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 active:scale-[0.98] transition-all duration-200"
+              class="group flex justify-between items-center w-full px-4 py-3 rounded-xl text-ink-soft hover:text-ink hover:bg-ink/5 active:scale-[0.98] transition-all duration-200"
               on:click={() => enterGroup(item)}
             >
               <span class="text-base font-medium tracking-wide">{item.title}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 text-white/20 transition-all duration-300 group-hover:text-white group-hover:translate-x-1">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 text-ink-faint/60 transition-all duration-300 group-hover:text-moss group-hover:translate-x-1">
                 <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
               </svg>
             </button>
@@ -162,7 +162,7 @@
             <a
               href={item.href}
               use:scrollToActive={normalizePath(item.href) === normalizedCurrentPath}
-              class="group flex justify-between items-center w-full px-4 py-3 rounded-xl transition-all duration-200 {normalizePath(item.href) === normalizedCurrentPath ? 'bg-white/20 text-white font-bold' : 'text-slate-300 hover:text-white hover:bg-white/10'}"
+              class="group flex justify-between items-center w-full px-4 py-3 rounded-xl transition-all duration-200 {normalizePath(item.href) === normalizedCurrentPath ? 'bg-moss/15 text-moss font-bold' : 'text-ink-soft hover:text-ink hover:bg-ink/5'}"
               on:click={onClose} 
             >
               <span class="text-base tracking-wide">{item.title}</span>
