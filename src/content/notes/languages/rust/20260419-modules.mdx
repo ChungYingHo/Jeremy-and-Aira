@@ -3,11 +3,11 @@ title: "[Rust] 模組系統"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["Rust", "module", "crate", "package", "use", "pub"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 7
 ---
 
-到目前為止程式碼都擠在 `src/main.rs`，真實專案不會這樣寫。這篇把 Rust 怎麼把程式切成多檔案、怎麼控制可見性、怎麼引用第三方 crate 一次串完。掌握這些，下一篇 trait 加上來時整套組織 Rust 程式的工具就齊了。
+到目前為止程式碼都擠在 `src/main.rs`，真實專案不會這樣寫。這篇把 Rust 怎麼切多檔案、怎麼控制可見性、怎麼引用第三方 crate 一次串完。掌握這些，下一篇再加上 trait，組織 Rust 程式的整套工具就齊了。
 
 ## 名詞先釐清
 
@@ -42,13 +42,13 @@ Workspace
 
 ## mod：宣告模組
 
-模組是 crate 內的命名空間。在 `src/main.rs` 或 `src/lib.rs` 用 `mod foo;` 宣告，編譯器會去找：
+模組是 crate 內的命名空間。在 `src/main.rs` 或 `src/lib.rs` 寫 `mod foo;`，編譯器會去找：
 
 1. `src/foo.rs`（單一檔）
 2. `src/foo/mod.rs`（資料夾風格，舊式）
-3. `src/foo/` 配 `src/foo.rs`（新式 inline，2018 edition 之後）
+3. `src/foo.rs` 配 `src/foo/` 子資料夾（新式，2018 edition 之後）
 
-Rust 2018 edition 起**優先用 `src/foo.rs`**（平行檔案）；`src/foo/mod.rs` 是舊式寫法（子模組多時目錄結構清楚，但檔名全叫 `mod.rs` 容易在編輯器混淆），新程式碼建議避免。
+Rust 2018 edition 起**優先用 `src/foo.rs`**（平行檔案）。`src/foo/mod.rs` 是舊式寫法——子模組多時目錄結構清楚，但檔名全叫 `mod.rs`，在編輯器分頁裡容易混淆，新程式碼建議避免。
 
 範例專案結構：
 
@@ -95,7 +95,7 @@ mod garden {
 
 ## pub：可見性
 
-預設**所有東西都是私有的**，包括模組、函式、struct、struct 欄位、enum 變體。
+預設**所有東西都是私有的**——模組、函式、struct、struct 欄位、enum 變體通通是。
 
 ```rust
 mod kitchen {
@@ -112,7 +112,7 @@ fn main() {
 }
 ```
 
-`pub` 的細粒度控制：
+`pub` 還有更細的控制：
 
 ```rust
 pub fn foo() {}              // 對所有人公開
@@ -123,7 +123,7 @@ pub(in crate::path) fn x() {} // 限定路徑可見
 
 ### struct 與 enum 的 pub 差異
 
-struct：把 struct 標 `pub` 不會自動把欄位變 pub。
+struct：把 struct 標 `pub` 不會自動把欄位變 pub，欄位要一個一個標。
 
 ```rust
 mod food {
@@ -146,9 +146,9 @@ fn main() {
 }
 ```
 
-enum：標 `pub` 後**所有變體自動 pub**（因為大家用 enum 通常是要 match 所有 case）。
+enum：標 `pub` 後**所有變體自動 pub**，因為大家用 enum 通常是要 match 所有 case。
 
-設計理由：enum 的 `match` 必須窮舉所有變體；若某變體對外隱藏，使用方永遠寫不出完整 `match`（除非用 `_`，但失去型別安全的好處）。struct 欄位可獨立隱藏，enum 變體不行。
+設計理由：`match` 一個 enum 必須窮舉所有變體。如果某個變體對外隱藏，使用方永遠寫不出完整的 `match`——除非用 `_` 兜底，但那就失去型別安全的好處了。所以 struct 欄位可以各自隱藏，enum 變體不行。
 
 ```rust
 mod color {
@@ -210,7 +210,7 @@ pub fn eat_at_restaurant() {
 }
 ```
 
-慣例：`use` 到模組那層停（`use ...::hosting`），呼叫時帶模組名（`hosting::add_to_waitlist`），這樣讀程式時看得出來函式來源。
+慣例：函式的 `use` 到模組那層就停（`use ...::hosting`），呼叫時帶模組名（`hosting::add_to_waitlist`），讀程式時才看得出函式來源。
 
 例外：型別、struct、enum、trait 慣例 `use` 到本身：
 
@@ -244,7 +244,7 @@ pub use inner::helper;
 // 外面可以直接呼叫 crate::helper()，不用知道它住在 inner
 ```
 
-很多 library 用這招把 API 都集中在 `lib.rs` 暴露出來。
+很多 library 用這招把 API 集中在 `lib.rs` 暴露出來。
 
 ### 多重 import
 
@@ -290,7 +290,7 @@ fn main() {
 
 ## std 與 prelude
 
-`std` 是標準庫。常用的東西（`Option`、`Result`、`Vec`、`String`、`println!`、`Box`、`Some`、`None`、`Ok`、`Err`...）放在 **prelude**，自動 import 到每個檔案，不用 `use`。
+`std` 是標準庫。最常用的那批東西（`Option`、`Result`、`Vec`、`String`、`println!`、`Box`、`Some`、`None`、`Ok`、`Err`...）放在 **prelude**，自動 import 到每個檔案，不用 `use`。
 
 prelude 之外的就要手動 use：
 

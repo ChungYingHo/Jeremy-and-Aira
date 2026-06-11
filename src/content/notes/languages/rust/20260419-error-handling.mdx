@@ -3,11 +3,11 @@ title: "[Rust] 錯誤處理"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["Rust", "Result", "Option", "error", "panic"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 5
 ---
 
-上一篇看到 `Option<T>` 用 enum 表達「可能沒值」。這一篇主角 `Result<T, E>` 用一樣的 enum 設計表達「可能失敗」。Rust 沒有 try / catch，錯誤就是普通的回傳值，配 `?` 運算子讓錯誤傳遞變得乾淨——這篇要把整套錯誤處理觀念講清楚。
+上一篇看到 `Option<T>` 用 enum 表達「可能沒值」。這一篇的主角 `Result<T, E>` 用同一套 enum 設計表達「可能失敗」。Rust 沒有 try / catch，錯誤就是普通的回傳值，再配上 `?` 運算子讓錯誤傳遞變得乾淨——這篇要把整套錯誤處理觀念講清楚。
 
 ## Rust 的錯誤分類
 
@@ -22,7 +22,7 @@ Rust 把錯誤分成兩類：
 
 ## panic!
 
-不可恢復的崩潰，預設會印出錯誤訊息、展開 stack、終止程式（或執行緒）。
+`panic!` 是不可恢復的崩潰：預設會印出錯誤訊息、展開 stack、終止程式（或執行緒）。
 
 ```rust
 fn main() {
@@ -76,7 +76,7 @@ fn main() {
 }
 ```
 
-按錯誤種類分流：
+也可以按錯誤種類分流：
 
 ```rust
 use std::fs::File;
@@ -99,7 +99,7 @@ let f = match f {
 
 ## unwrap、expect、unwrap_or 系列
 
-開發 / 原型階段常用的快捷方法：
+開發、原型階段常用的快捷方法：
 
 ```rust
 let f = File::open("a.txt").unwrap();
@@ -118,7 +118,7 @@ let n: i32 = "abc".parse().unwrap_or_default();
 // 用該型別的 Default::default()
 ```
 
-正式程式碼避免亂 `unwrap`。每個 `unwrap` 都是「我跟編譯器保證這裡一定不會錯，否則就讓它崩」。
+正式程式碼避免亂 `unwrap`。每個 `unwrap` 都是在說「我跟編譯器保證這裡一定不會錯，否則就讓它崩」。
 
 ## ? 運算子：拍平錯誤傳遞
 
@@ -185,11 +185,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
-修法 2：在外層包一層自訂 `Result` 函式呼叫，`main` 只負責 unwrap。
+修法 2：把邏輯抽到一個回傳 `Result` 的函式，`main` 只負責呼叫它然後 unwrap。
 
 ## 自訂錯誤型別
 
-實務上，函式可能會遇到多種錯誤。可以定義 enum 包起來：
+實務上一個函式常會遇到不只一種錯誤，可以定義一個 enum 把它們包起來：
 
 ```rust
 use std::io;
@@ -219,7 +219,7 @@ fn read_number() -> Result<i32, AppError> {
 }
 ```
 
-`?` 的完整行為其實是：失敗時取 `Err(e)`，把 `e` 透過 `From` 轉成函式回傳型別需要的錯誤，再 return。
+`?` 的完整行為其實是：失敗時取出 `Err(e)`，把 `e` 用 `From` 轉成函式回傳型別需要的錯誤，再 return。
 
 :::tip
 真的在寫應用程式，不用每次都自己刻 `From`。社群有兩個常用 crate：
@@ -257,7 +257,7 @@ let opt: Option<i32> = res.ok();
 
 ## 何時 panic vs 何時 Result
 
-判準：
+判準很簡單：
 
 - **panic**：bug、不變式被破壞、不該到達的狀態（用 `unreachable!()`、`unimplemented!()`、`todo!()`、`assert!`）
 - **Result**：可預期的失敗（IO、parse、網路、使用者輸入）
@@ -277,4 +277,4 @@ fn first_element<T>(v: &[T]) -> &T {
 }
 ```
 
-`Result` + `?` 串完，下一篇進集合（`Vec`、`HashMap`、`String` 操作），後面那些方法多半是回傳 `Option` 或 `Result`，又會用到這篇的工具。
+`Result` + `?` 串完，下一篇進集合（`Vec`、`HashMap`、`String` 操作）。那些方法多半回傳 `Option` 或 `Result`，會一直用到這篇的工具。

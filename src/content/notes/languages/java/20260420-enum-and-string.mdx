@@ -3,11 +3,11 @@ title: "[Java] 列舉與字串"
 author: "Jeremy & Claude"
 date: "2026-04-20"
 tags: ["Java", "enum", "String", "StringBuilder", "text block"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 5
 ---
 
-兩個常用但容易被忽略的型別放一起講：`enum` 不是 int 別名，本身就是 class，能帶欄位、帶方法、能當策略物件用；`String` 是 immutable，所有 `replace` / `toUpperCase` 都產生新物件——理解這點才知道為什麼要 `StringBuilder`。
+兩個常用但容易被小看的型別，放一起講。`enum` 不是 int 的別名，它本身就是 class——能帶欄位、帶方法，甚至能當策略物件用。`String` 則是 immutable，所有 `replace` / `toUpperCase` 都會產生新物件；先理解這點，才知道 `StringBuilder` 是來幹嘛的。
 
 ## enum 基本
 
@@ -34,13 +34,13 @@ switch (status) {
 }
 ```
 
-不需 `Status.PENDING`，case 內可直接用 enum 常數名。
+case 裡直接寫常數名就好，不用加 `Status.` 前綴。
 
-Java 21+ 可在 switch 用 pattern matching，更窮舉清楚。
+Java 21+ 的 switch 還支援 pattern matching，窮舉檢查也更明確——少寫一個 case 編譯器會直接告訴你。
 
 ## enum 帶屬性與方法
 
-enum 可以有欄位、建構子、方法，每個常數可帶不同參數：
+enum 可以有欄位、建構子、方法，每個常數還能帶不同參數：
 
 ```java
 enum HttpStatus {
@@ -63,7 +63,7 @@ enum HttpStatus {
 HttpStatus.NOT_FOUND.code();      // 404
 ```
 
-每個常數還能各自覆寫方法：
+更進一步，每個常數可以各自覆寫方法：
 
 ```java
 enum Op {
@@ -76,7 +76,7 @@ enum Op {
 Op.ADD.apply(2, 3);      // 5
 ```
 
-實作機制：每個常數背後是一個匿名 subclass（anonymous subclass of enum），大括號 `{ ... }` 裡的方法覆寫了 enum 層級宣告的同名抽象 / 具象 method。所以 `Op.ADD.apply(1, 2)` 其實是走 ADD 這個 anonymous subclass 的實作。
+背後的機制：每個帶大括號的常數其實是 enum 的一個匿名 subclass，`{ ... }` 裡的方法覆寫了 enum 層級宣告的抽象（或具象）method。所以 `Op.ADD.apply(1, 2)` 走的是 ADD 這個 anonymous subclass 自己的實作。
 
 ## enum 內建方法
 
@@ -89,7 +89,7 @@ s.ordinal()              // 在宣告中的索引（少用，重排會壞）
 
 ## EnumSet / EnumMap
 
-針對 enum 特化的集合，比 HashSet/HashMap 快很多：
+針對 enum 特化的集合，比 HashSet / HashMap 快很多：
 
 ```java
 EnumSet<Status> active = EnumSet.of(Status.PENDING, Status.RUNNING);
@@ -99,7 +99,7 @@ EnumMap<Status, String> labels = new EnumMap<>(Status.class);
 labels.put(Status.DONE, "完成");
 ```
 
-key 是 enum 一律用這兩個。
+只要 key 是 enum，一律用這兩個。
 
 ## String 是不可變的
 
@@ -109,7 +109,7 @@ s.toUpperCase();         // 回傳新字串，s 本身沒變
 s = s.toUpperCase();     // 想改要重新賦值
 ```
 
-每個 String 操作都產生新物件。重複拼接要用 `StringBuilder`（後面）。
+每個 String 操作都產生新物件。所以重複拼接會很傷，要改用 `StringBuilder`（後面會講）。
 
 ## String pool
 
@@ -127,7 +127,7 @@ a.equals(c);             // true（內容比較）
 
 **字串比較永遠用 `.equals()`，不要用 `==`。**
 
-`s.intern()` 會把字串放回池中並回傳池中那個。少用，現在 JVM 自動處理。
+`s.intern()` 會把字串放回池中並回傳池中那個。少用，現在 JVM 自動處理得很好。
 
 ## 常用 String 方法
 
@@ -155,7 +155,7 @@ Integer.parseInt("123");      // 123
 
 ## StringBuilder：可變字串
 
-頻繁拼接、迴圈內組字串一律用 `StringBuilder`，避免每次都產生新 String：
+頻繁拼接、迴圈裡組字串，一律用 `StringBuilder`，省掉每次都生一個新 String 的成本：
 
 ```java
 StringBuilder sb = new StringBuilder();
@@ -165,7 +165,7 @@ for (int i = 0; i < 1000; i++) {
 String result = sb.toString();
 ```
 
-API：
+常用 API：
 
 ```java
 sb.append("x");
@@ -176,7 +176,7 @@ sb.setLength(0);              // 清空
 sb.length();
 ```
 
-`StringBuffer` 是 `StringBuilder` 的執行緒安全版本，幾乎用不到（單執行緒場景 StringBuilder 就好；多執行緒下你大概也不會這樣拼字串）。
+`StringBuffer` 是 `StringBuilder` 的執行緒安全版，但幾乎用不到——單執行緒場景 StringBuilder 就夠；多執行緒下你大概也不會這樣拼字串。
 
 ## 字串格式化
 
@@ -199,7 +199,7 @@ System.out.printf("name=%s, age=%d%n", "Jeremy", 30);
 | `%05d` | 寬度 5 補 0 |
 | `%x` / `%o` | 16 / 8 進位 |
 
-Java 15+ 推薦用 `String.formatted`：
+Java 15+ 推薦用 `String.formatted`，讀起來更順：
 
 ```java
 "name=%s, age=%d".formatted("Jeremy", 30);
@@ -218,7 +218,7 @@ String json = """
     """;
 ```
 
-寫 SQL、JSON、HTML 都好用。內嵌變數要配 `formatted`：
+寫 SQL、JSON、HTML 都好用。要內嵌變數就配 `formatted`：
 
 ```java
 String sql = """
@@ -230,7 +230,7 @@ String sql = """
 
 ## char 與 Unicode 注意
 
-`char` 是 16-bit，存不下所有 Unicode 字元（emoji、部分漢字是 surrogate pair，2 個 char）。
+`char` 是 16-bit，存不下所有 Unicode 字元——emoji 和部分漢字是 surrogate pair，要占 2 個 char。
 
 ```java
 "😀".length();             // 2，不是 1
@@ -243,6 +243,6 @@ String sql = """
 "abc😀".codePoints().forEach(System.out::println);
 ```
 
-一般場景不會遇到，做文字處理（截斷、計數）才要小心。
+一般場景不太會遇到，做文字處理（截斷、計數）才要小心。
 
 下一篇進檔案 IO——舊的 `java.io` 與新的 `java.nio.file`（`Path` / `Files`），以及為什麼新程式碼一律用後者。

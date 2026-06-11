@@ -3,28 +3,28 @@ title: "[TypeScript] 泛型"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["TypeScript", "generic", "keyof", "infer", "conditional type"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 5
 ---
 
-上一篇結尾留下 `identity<T>` 的伏筆。這篇把泛型完整展開——從最基礎的型別參數，一路到 `keyof`、`typeof`、conditional type、`infer`、mapped type、template literal type。下一篇 utility types 與本篇是直接相依，先把這裡的工具吃下去再繼續。
+上一篇結尾留了 `identity<T>` 的伏筆，這篇把泛型完整展開——從最基礎的型別參數，一路講到 `keyof`、`typeof`、conditional type、`infer`、mapped type、template literal type。下一篇 utility types 直接建立在這些工具上，先把這裡吃下去再繼續。
 
 ## 為什麼需要泛型
 
-沒有泛型只能寫死型別：
+沒有泛型，型別只能寫死，每種型別都得複製一份函式：
 
 ```typescript
 function firstString(arr: string[]): string { return arr[0] }
 function firstNumber(arr: number[]): number { return arr[0] }
 ```
 
-或退而求其次用 `any`，喪失型別資訊：
+或者退而求其次用 `any`，但這樣型別資訊就丟光了：
 
 ```typescript
 function first(arr: any[]): any { return arr[0] }
 ```
 
-泛型讓型別本身也成為參數：
+泛型的解法是讓「型別本身」也變成參數：
 
 ```typescript
 function first<T>(arr: T[]): T {
@@ -38,6 +38,8 @@ const c = first<boolean>([true]) // 顯式指定
 
 ## 泛型函式
 
+型別參數可以不只一個：
+
 ```typescript
 function pair<A, B>(a: A, b: B): [A, B] {
   return [a, b]
@@ -47,6 +49,8 @@ const p = pair('hi', 42)   // [string, number]
 ```
 
 ## 泛型介面與型別
+
+interface 和 type alias 也都吃型別參數：
 
 ```typescript
 interface Box<T> {
@@ -59,6 +63,8 @@ type Pair<A, B> = { first: A; second: B }
 ```
 
 ## 泛型類別
+
+class 同理：
 
 ```typescript
 class Stack<T> {
@@ -73,7 +79,7 @@ s.push(1)
 
 ## extends 約束
 
-不約束時，`T` 是「任何型別」，能做的事很少：
+不加約束時，`T` 可以是任何型別，所以函式裡幾乎什麼都不能對它做：
 
 ```typescript
 function len<T>(x: T) {
@@ -81,7 +87,7 @@ function len<T>(x: T) {
 }
 ```
 
-加 `extends` 約束後：
+加上 `extends` 約束，TS 就知道 T 至少長什麼樣：
 
 ```typescript
 function len<T extends { length: number }>(x: T): number {
@@ -94,11 +100,11 @@ len({ length: 5 })   // ✅
 len(42)              // ❌ number 沒 length
 ```
 
-「`extends`」這裡是「**符合這個結構**」，不是「繼承自」。
-
-泛型 constraint 的 `extends` **不是 class 繼承**，而是「結構相容」檢查：T 必須至少具備 `length: number` 這個欄位。傳 `string`、`number[]`、`{ length: number }` 都 OK，因為它們都有 `length: number`。
+注意這裡的 `extends` 不是 class 繼承，而是「**結構相容**」檢查：T 必須至少具備 `length: number` 這個欄位。`string`、`number[]`、`{ length: number }` 都過得了，因為它們都有 `length: number`。
 
 ## 預設型別參數
+
+型別參數也能給預設值，不指定時就用它：
 
 ```typescript
 interface ApiResponse<T = unknown> {
@@ -112,13 +118,15 @@ const r2: ApiResponse<{ id: number }> = { ok: true, data: { id: 1 } }
 
 ## keyof：取出物件型別的所有 key
 
+`keyof` 把一個物件型別的所有 key 變成字面值 union：
+
 ```typescript
 type User = { id: number; name: string; age: number }
 
 type UserKeys = keyof User    // 'id' | 'name' | 'age'
 ```
 
-配泛型用，做型別安全的屬性存取：
+配泛型用，就能做出型別安全的屬性存取：
 
 ```typescript
 function getProp<T, K extends keyof T>(obj: T, key: K): T[K] {
@@ -131,9 +139,11 @@ const name = getProp(user, 'name')  // string
 const x = getProp(user, 'foo')      // ❌ 'foo' 不是 keyof user
 ```
 
-`T[K]` 叫做 **indexed access type**，根據 K 拿出對應屬性的型別。
+`T[K]` 叫做 **indexed access type**，意思是「根據 K 拿出對應屬性的型別」。
 
 ## typeof：從值推回型別
+
+有時候值已經寫好了，型別不想再手抄一遍，`typeof` 可以直接從值推回型別：
 
 ```typescript
 const config = {
@@ -149,11 +159,11 @@ type Status = typeof status[number]
 // 'idle' | 'loading' | 'done'
 ```
 
-`typeof status[number]` 表示「拿陣列任意 index 對應的元素型別」。
-
-索引型別 `Arr[number]` 讀的是「陣列型別在任一數字索引位置的元素型別」。例如 `const status = ['ok', 'fail'] as const`，`typeof status` 是 `readonly ['ok', 'fail']`，`typeof status[number]` 就是 `'ok' | 'fail'`。
+第二個例子的 `[number]` 是 indexed access：`Arr[number]` 讀的是「陣列型別在任一數字索引位置的元素型別」。`status` 加了 `as const`，所以 `typeof status` 是 `readonly ['idle', 'loading', 'done']`，再取 `[number]` 就得到 `'idle' | 'loading' | 'done'`。
 
 ## conditional type：型別層級的三元運算
+
+型別也能寫條件判斷，語法長得跟三元運算子一樣：
 
 ```typescript
 type IsString<T> = T extends string ? true : false
@@ -162,7 +172,7 @@ type A = IsString<'hi'>    // true
 type B = IsString<42>      // false
 ```
 
-可巢狀：
+而且可以巢狀串接：
 
 ```typescript
 type TypeName<T> =
@@ -175,7 +185,7 @@ type TypeName<T> =
 
 ## distributive conditional：union 上的分配律
 
-當 conditional type 的左邊是裸的型別參數，且傳入 union 時，會「逐個成員分配」：
+conditional type 遇到 union 有個特別行為：
 
 ```typescript
 type ToArray<T> = T extends any ? T[] : never
@@ -185,9 +195,9 @@ type R = ToArray<string | number>
 // 而不是 (string | number)[]
 ```
 
-為何 `ToArray<string | number>` 變成 `string[] | number[]`？因為 conditional type `T extends U ? X : Y` 中，若 `T` 是**裸**型別參數（沒包在 tuple 或其他結構裡）且傳入 union，TS 會逐個成員套用條件再 union 起來，稱為 distributive。想關掉這行為，把 `T` 包起來：`[T] extends [U] ? X : Y`。
+為什麼結果是 `string[] | number[]`？因為在 `T extends U ? X : Y` 裡，若 `T` 是**裸**的型別參數（沒被包在 tuple 或其他結構裡）且傳入 union，TS 會把 union 的成員逐個套用條件、再把結果 union 起來——這就是 distributive。
 
-要禁止分配，把 T 包進 tuple：
+不想要這個行為，把 T 包進 tuple 就能關掉：
 
 ```typescript
 type ToArrayNoDistribute<T> = [T] extends [any] ? T[] : never
@@ -197,7 +207,7 @@ type R2 = ToArrayNoDistribute<string | number>   // (string | number)[]
 
 ## infer：從型別中抽取部分
 
-`infer` 在 conditional type 內宣告一個「待推導的型別變數」：
+`infer` 在 conditional type 裡宣告一個「待推導的型別變數」，讓 TS 幫你把型別的某一部分抓出來。最經典的是抽函式回傳型別：
 
 ```typescript
 type ReturnTypeOf<T> = T extends (...args: any[]) => infer R ? R : never
@@ -206,7 +216,7 @@ type R1 = ReturnTypeOf<() => string>             // string
 type R2 = ReturnTypeOf<(x: number) => boolean>   // boolean
 ```
 
-抽取陣列元素型別：
+抽陣列的元素型別：
 
 ```typescript
 type ElementType<T> = T extends (infer U)[] ? U : never
@@ -214,7 +224,7 @@ type ElementType<T> = T extends (infer U)[] ? U : never
 type E = ElementType<number[]>   // number
 ```
 
-抽取 Promise 內部型別：
+抽 Promise 包的內部型別：
 
 ```typescript
 type Awaited2<T> = T extends Promise<infer U> ? U : T
@@ -223,9 +233,11 @@ type A = Awaited2<Promise<string>>   // string
 type B = Awaited2<number>            // number
 ```
 
-（標準庫已有 `Awaited<T>`。）
+（標準庫已有 `Awaited<T>`，這裡只是示範原理。）
 
 ## mapped type：把已有型別逐欄變換
+
+mapped type 用 `[K in keyof T]` 遍歷一個型別的所有 key，逐欄做變換：
 
 ```typescript
 type ReadonlyAll<T> = {
@@ -241,7 +253,7 @@ type R = ReadonlyAll<User>   // { readonly id: number; readonly name: string }
 type O = Optional<User>      // { id?: number; name?: string }
 ```
 
-加上修飾符與 `as` 重新命名（key remapping）：
+還能用 `as` 在遍歷時重新命名 key（key remapping）：
 
 ```typescript
 type Getters<T> = {
@@ -254,7 +266,7 @@ type UserGetters = Getters<User>
 
 ## template literal type
 
-字串字面值組合：
+字串字面值也能在型別層組合，union 會自動展開所有排列：
 
 ```typescript
 type Lang = 'zh' | 'en'
@@ -264,11 +276,11 @@ type Path = `/${Lang}/${Page}`
 // '/zh/home' | '/zh/about' | '/en/home' | '/en/about'
 ```
 
-配 mapped type 與 `Capitalize` / `Uppercase` / `Lowercase` / `Uncapitalize` 內建工具非常強。
+搭配 mapped type 與內建的 `Capitalize` / `Uppercase` / `Lowercase` / `Uncapitalize`，威力很大。
 
 ## 一個實際組合範例
 
-把所有方法名加 `async` 前綴並回傳 Promise：
+把前面的工具全部串起來：幫所有方法名加 `Async` 後綴，回傳值包成 Promise：
 
 ```typescript
 type Asyncify<T> = {
@@ -289,15 +301,15 @@ type AsyncAPI = Asyncify<Sync>
 // }
 ```
 
-mapped type + template literal + conditional type + infer 一次到位。
+mapped type + template literal + conditional type + infer，一次到位。
 
 ## 寫泛型的順序建議
 
-1. 先寫死型別讓邏輯跑起來
+1. 先寫死型別，讓邏輯跑起來
 2. 把固定型別改成型別參數
-3. 加 `extends` 約束來縮小範圍
-4. 用 `keyof` / `T[K]` / `infer` / mapped 慢慢精確化
+3. 加 `extends` 約束縮小範圍
+4. 用 `keyof`、`T[K]`、`infer`、mapped type 慢慢精確化
 
-不要一開始就追求最通用，否則會卡在型別系統而忘了實作目標。
+不要一開始就追求最通用的寫法，否則容易卡在型別系統裡，忘了原本要實作什麼。
 
-下一篇看標準庫已經把這些泛型工具包成的 utility types（`Partial`、`Pick`、`Omit`、`Record`...），多數時候不必自己寫 mapped type，直接組合就有。
+下一篇看標準庫把這些泛型工具包好的 utility types（`Partial`、`Pick`、`Omit`、`Record`⋯⋯）。多數時候不必自己寫 mapped type，直接組合現成的就夠。

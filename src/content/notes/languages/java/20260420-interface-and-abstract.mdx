@@ -3,7 +3,7 @@ title: "[Java] 介面與抽象類別"
 author: "Jeremy & Claude"
 date: "2026-04-20"
 tags: ["Java", "interface", "abstract", "default method"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 1
 ---
 
@@ -82,7 +82,7 @@ new User().greet();    // "Hi, Jeremy"
 
 主要用途：替既有介面加新方法又不破壞所有 implementor。
 
-兩個介面同名 default method 會怎樣？class 同時 implement 兩個會編譯錯誤（diamond problem）。解法：實作 class 覆寫該方法並用 `Interface.super.method()` 明確指定要用哪個，例如 `Walker.super.move()`。
+如果兩個介面有同名的 default method，一個 class 同時 implement 兩者會編譯錯誤（diamond problem）。解法是自己覆寫該方法，用 `Interface.super.method()` 指明要哪一個，例如 `Walker.super.move()`。
 
 ## static method 與 private method（Java 9+）
 

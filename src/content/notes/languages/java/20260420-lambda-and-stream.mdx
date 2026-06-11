@@ -3,15 +3,15 @@ title: "[Java] Lambda 與 Stream"
 author: "Jeremy & Claude"
 date: "2026-04-20"
 tags: ["Java", "lambda", "stream", "functional", "Optional"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 7
 ---
 
-Java 8（2014）是分水嶺：lambda、Stream API、`Optional` 一次到位，整個語言的寫法跟著變。前面集合、IO、`Comparator` 看到的 `->` 與 `Stream<T>`，這篇正式展開。重點不是「會寫 lambda」，是把 functional interface、method reference、stream pipeline 串成一套思路。
+Java 8（2014）是分水嶺：lambda、Stream API、`Optional` 一次到位，整個語言的寫法跟著變。前面集合、IO、`Comparator` 看到的 `->` 與 `Stream<T>`，這篇正式展開。重點不是「會寫 lambda」，而是把 functional interface、method reference、stream pipeline 串成一套思路。
 
 ## Lambda 語法
 
-Java 8+，把「行為」當參數傳。
+Java 8+ 的核心想法：把「行為」當參數傳。
 
 ```java
 // 完整型
@@ -30,11 +30,11 @@ x -> x * 2
 () -> System.out.println("hi")
 ```
 
-Lambda 只能賦值給 **functional interface**（只有一個抽象方法的介面）。
+Lambda 只能賦值給 **functional interface**——只有一個抽象方法的介面。
 
 ## 內建 functional interface
 
-`java.util.function` 提供常用組合：
+常用的組合 `java.util.function` 都幫你定義好了：
 
 | 介面 | 方法 | 範例 |
 | :--- | :--- | :--- |
@@ -58,7 +58,7 @@ isEmpty.test("");        // true
 
 ## method reference
 
-四種：
+共四種：
 
 ```java
 String::length            // instance method on type      → x -> x.length()
@@ -67,11 +67,11 @@ Integer::parseInt         // static method                → s -> Integer.parse
 ArrayList::new            // constructor                  → () -> new ArrayList<>()
 ```
 
-只要 lambda 只是「呼叫一個既有方法」就用 method reference，更短更乾淨。
+只要 lambda 的內容只是「呼叫一個既有方法」，就改寫成 method reference——更短更乾淨。
 
 ## Stream 是什麼
 
-「集合的處理管線」，**不是**新的資料結構。從來源（集合 / 陣列 / IO）出發，串接中間操作（lazy），最後一個終端操作觸發實際計算。
+Stream 是「集合的處理管線」，**不是**新的資料結構。從來源（集合 / 陣列 / IO）出發，串接中間操作（lazy），最後由一個終端操作觸發實際計算。
 
 ```java
 List<String> names = List.of("Jeremy", "Aira", "Tom");
@@ -82,13 +82,13 @@ long count = names.stream()
     .count();
 ```
 
-特性：
+三個特性：
 
 - **lazy**：中間操作不會實際跑，等終端操作才走一遍
 - **single-use**：跑完一個終端操作就用完了，不能重複
 - **不修改來源**：原 collection 不變
 
-lazy 的意思：`map`、`filter` 這類**中間操作**只是把動作登記下來、不真的跑；直到**終端操作**（`collect`、`forEach`、`count` 等）被呼叫才一次串起來執行。終端操作完 stream 就「耗盡」了，再呼叫會丟 `IllegalStateException`——stream 不能重用，要重跑就從 source 再開一條。
+展開來說，lazy 是指 `map`、`filter` 這類**中間操作**只是把動作登記下來，不真的執行；直到呼叫**終端操作**（`collect`、`forEach`、`count` 等）才一次串起來跑完。終端操作跑完，stream 就「耗盡」了，再呼叫會丟 `IllegalStateException`——stream 不能重用，要重跑就從 source 再開一條。
 
 ## 建立 Stream
 
@@ -193,7 +193,7 @@ Map<Boolean, List<Person>> adultOrNot = people.stream()
 
 ## 數值 stream：IntStream / LongStream / DoubleStream
 
-避免裝箱拆箱開銷：
+數值專用的 stream，省掉裝箱拆箱的開銷：
 
 ```java
 int sum = IntStream.rangeClosed(1, 100).sum();        // 5050
@@ -214,13 +214,11 @@ long count = list.parallelStream()
     .count();
 ```
 
-走 ForkJoinPool。**只有大資料量、純運算、無共享狀態**才會比較快，否則反而慢。日常 99% 用 sequential。
-
-parallelStream 適合「純 CPU 運算、無共享可變狀態、資料量 $> 10^4$ 量級」才划算。I/O 密集（DB、網路）會阻塞 ForkJoinPool 的 worker；小資料或 `forEach` 帶 side effect 都會被同步/fork 的開銷吃掉好處，反而更慢。
+底層走 ForkJoinPool。要划算，得同時滿足三個條件：純 CPU 運算、無共享可變狀態、資料量大（$> 10^4$ 量級）。I/O 密集（DB、網路）會阻塞 ForkJoinPool 的 worker；資料量小或 `forEach` 帶 side effect，好處都會被同步與 fork 的開銷吃掉，反而更慢。日常 99% 用 sequential 就好。
 
 ## Optional：替代 null
 
-包裝「可能有值、可能沒有」：
+`Optional` 把「可能有值、可能沒有」包成一個型別：
 
 ```java
 Optional<User> u = repo.findById(1);
@@ -238,13 +236,13 @@ u.map(User::name).orElse("anon");
 u.filter(user -> user.isActive());
 ```
 
-慣例：
+使用慣例：
 
-- 回傳值「可能不存在」用 `Optional<T>`
+- 回傳值「可能不存在」時用 `Optional<T>`
 - **欄位、參數、集合元素不要用 Optional**（過度包裝）
 - 不要回傳 `null Optional`（永遠 `Optional.empty()`）
 
-為什麼欄位/參數/集合元素不要用 Optional？（1）`Optional` 本身可能是 `null`（`Optional<T> x = null`），反而多一層 `NullPointerException` 風險；（2）序列化框架（Jackson、JPA）處理 `Optional` 欄位一向麻煩；（3）`List<Optional<T>>` 比 `List<T>` 又過濾 `null` 語意更清楚。Optional 的定位是回傳型別標示「可能沒有」。
+為什麼欄位、參數、集合元素不要用 Optional？首先 `Optional` 變數本身也可能是 `null`（`Optional<T> x = null`），反而多一層 `NullPointerException` 風險；再來序列化框架（Jackson、JPA）處理 `Optional` 欄位一向麻煩；最後，與其寫 `List<Optional<T>>`，不如直接用 `List<T>` 並過濾掉 null，語意更清楚。Optional 的定位就是當回傳型別，標示「可能沒有」。
 
 ## 常見組合範例
 
@@ -280,8 +278,8 @@ Map<V, K> inverted = m.entrySet().stream()
 
 ## 寫 stream 的取捨
 
-- 鏈式可讀就用 stream，多重巢狀邏輯就回 for
-- side effect（修改外部變數）放 `forEach` 而不是 `peek`
+- 鏈式讀得順就用 stream，邏輯一旦多重巢狀就回頭寫 for
+- side effect（修改外部變數）放 `forEach`，不要塞進 `peek`
 - 別追求「全 stream」，可讀性優先
 
 下一篇是 Java 系列收尾——建置工具與測試：Maven vs Gradle、JUnit 5 寫法、Mockito 基礎。一個專案能不能交出去，靠這層支撐。

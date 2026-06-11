@@ -3,7 +3,7 @@ title: "[Python] 模組與套件"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["Python", "module", "package", "import", "pip"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 5
 ---
 
@@ -126,7 +126,7 @@ if __name__ == '__main__':
 | 直接 `python greet.py` | `'__main__'` |
 | 被 `import greet` | `'greet'` |
 
-實作 CLI 工具與 library 兩用時的標準做法。
+想讓同一個檔案既能直接執行、又能被別人 import，這就是標準做法。
 
 ## 套件結構：兩種風格
 
@@ -222,7 +222,7 @@ def _internal(): ...
 
 ## namespace package（Python 3.3+）
 
-沒有 `__init__.py` 也能成 package，且能跨多個目錄合成單一 namespace。多用於大型框架（plugin 系統）。一般專案都加 `__init__.py` 比較穩。
+資料夾沒有 `__init__.py` 也能被當成 package，而且能跨多個目錄合成同一個 namespace。這多半用在大型框架的 plugin 系統；一般專案還是都加 `__init__.py` 比較穩。
 
 ## importlib：動態 import
 
@@ -254,6 +254,6 @@ python -m pytest               # 跑安裝的 pytest CLI
 python -m http.server 8000     # 內建簡易 HTTP server
 ```
 
-`-m` 是 Python 跑「以模組方式」執行，能正確處理相對 import。
+`-m` 的意思是「以模組身分執行」，`__package__` 會被正確設定，相對 import 才能正常運作。
 
 下一篇進檔案 IO 與例外處理，前面 `with` context manager 跟 `try / except` 會在那裡正式展開。

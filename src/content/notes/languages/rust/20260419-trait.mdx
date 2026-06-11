@@ -3,11 +3,11 @@ title: "[Rust] Trait"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["Rust", "trait", "generic", "polymorphism", "dyn"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 8
 ---
 
-Rust 系列最後一篇。前面把資料（型別、struct、enum、集合）跟組織（模組、可見性）都鋪好了，這一篇加最後一塊——「行為」抽象。Trait 是 Rust 的多型機制，兼任 interface、type class 與泛型約束三種角色，連同 `Display`/`Debug` 這類常用 trait 都會在這篇收尾。
+Rust 系列最後一篇。前面把資料（型別、struct、enum、集合）跟組織（模組、可見性）都鋪好了，這一篇補上最後一塊——「行為」的抽象。Trait 是 Rust 的多型機制，一個人兼任 interface、type class 與泛型約束三種角色；`Display`、`Debug` 這類常用 trait 也會在這篇收尾。
 
 ## Trait 是什麼
 
@@ -48,7 +48,7 @@ fn main() {
 
 ## 預設方法
 
-trait 可以給方法寫預設實作，實作方可以用、也可以覆寫：
+trait 可以給方法寫預設實作，實作方可以直接用、也可以覆寫：
 
 ```rust
 trait Animal {
@@ -77,7 +77,7 @@ impl Animal for Cat {
 }
 ```
 
-預設實作可以呼叫 trait 內其他方法（無論該方法有沒有預設）。
+預設實作可以呼叫 trait 內的其他方法，不管那個方法有沒有預設。
 
 ## Trait bound：把 trait 當泛型約束
 
@@ -116,7 +116,7 @@ where
 - `<T: Summary>`：呼叫方可以指定型別 `notify::<Article>(&a)`
 - `impl Summary`：不能在呼叫端指定型別，較不靈活但語法乾淨
 
-兩個參數都用 `impl` 與都用 `T` 的差別：
+另一個差別：兩個參數都用 `impl` 跟都用 `T` 不一樣——
 
 ```rust
 // 兩個參數可以不同型別（只要都實作 Summary）
@@ -128,7 +128,7 @@ fn g<T: Summary>(a: &T, b: &T) {}
 
 ## 回傳 impl Trait
 
-當回傳值的具體型別寫起來太麻煩（特別是 closure、iterator）：
+回傳值的具體型別寫起來太麻煩時（特別是 closure、iterator），用 `impl Trait` 省事：
 
 ```rust
 fn make_adder(x: i32) -> impl Fn(i32) -> i32 {
@@ -152,13 +152,13 @@ fn pick(flag: bool) -> impl Greet {
 }
 ```
 
-要解決這種「執行期才知道是哪個型別」的情況，需要 trait object。
+要處理這種「執行期才知道是哪個型別」的情況，就要靠 trait object。
 
 ## Trait object：dyn Trait（動態派發）
 
-`dyn Trait` 表示「某個實作了 Trait 的型別，但具體是哪個要執行期才知道」。需要透過指標包裝（`&dyn`、`Box<dyn>`、`Rc<dyn>`...），因為大小編譯期未知。
+`dyn Trait` 表示「某個實作了 Trait 的型別，但具體是哪個要執行期才知道」。它必須包在指標後面（`&dyn`、`Box<dyn>`、`Rc<dyn>`...），因為大小在編譯期未知。
 
-為什麼 `&dyn Trait` 或 `Box<dyn Trait>`？因為 trait object 的具體型別到執行期才確定（可能是 5 byte 的某 struct、也可能是 200 byte 的另一個），編譯期無法得知 stack 上要預留多大空間。包裝成指標（指標大小固定）後，編譯期就知道大小了。
+為什麼一定要指標？因為 trait object 的具體型別到執行期才確定——可能是 5 byte 的某個 struct，也可能是 200 byte 的另一個——編譯期不知道 stack 上要預留多大空間。包成指標之後，指標本身大小固定，編譯期就有答案了。
 
 ```rust
 fn pick(flag: bool) -> Box<dyn Greet> {
@@ -188,7 +188,7 @@ for g in &greeters {
 }
 ```
 
-如果型別在編譯期就知道，用泛型；要在執行期才決定具體型別、或要把不同型別放在同一個容器，用 trait object。
+怎麼選：型別在編譯期就知道，用泛型；要在執行期才決定具體型別、或要把不同型別放進同一個容器，用 trait object。
 
 | | 泛型 + trait bound | trait object（dyn） |
 | :--- | :--- | :--- |
@@ -205,7 +205,7 @@ for g in &greeters {
 - 方法不能回傳 `Self`
 - 不能有 associated function（沒 `&self`）
 
-動態派發透過 vtable（函式指標表）呼叫方法；vtable 每個欄位都是單一函式指標，但泛型方法會依 `T` 實體化成多個版本，一張 vtable 放不下；回傳 `Self` 則因不同實作的 `Self` 大小不同，caller 無法預知 stack 佈局。
+原因出在 vtable（函式指標表）：動態派發靠它找方法，每個欄位只能放一個函式指標。泛型方法會依 `T` 實體化成多個版本，一張 vtable 放不下；回傳 `Self` 也不行，因為不同實作的 `Self` 大小不同，caller 無法預知 stack 佈局。
 
 ```rust
 trait Bad {
@@ -217,7 +217,7 @@ trait Good {
 }
 ```
 
-編譯器訊息會明確指出。
+違反時編譯器訊息會明確指出原因。
 
 ## 常用標準 trait
 
@@ -257,7 +257,7 @@ let b = a;          // Copy：a 還能用
 let c = a.clone();
 ```
 
-`Copy` 是 `Clone` 的子 trait，只能用在「按位元複製就夠」的型別（不能含 `String`、`Vec` 等）。
+`Copy` 是 `Clone` 的子 trait，只能用在「按位元複製就夠」的型別——含 `String`、`Vec` 等的就不行。
 
 ### PartialEq、Eq
 
@@ -272,7 +272,7 @@ let b = Id(1);
 assert!(a == b);
 ```
 
-`Eq` 表示「自反、對稱、傳遞」都成立（如 `f64` 不算，因為 `NaN != NaN`）。
+`Eq` 表示「自反、對稱、傳遞」都成立。`f64` 就不算，因為 `NaN != NaN`。
 
 ### PartialOrd、Ord
 
@@ -301,7 +301,7 @@ let c = Config { retries: 3, ..Default::default() };
 
 ### From、Into
 
-型別轉換。慣例只實作 `From`，`Into` 自動有。
+型別轉換。慣例只實作 `From`，`Into` 自動就有。
 
 ```rust
 struct Celsius(f64);
@@ -319,7 +319,7 @@ let f = Fahrenheit::from(Celsius(100.0));
 
 ### Iterator
 
-實作 `next` 就獲得 `.map`、`.filter`、`.collect` 等一大串方法。
+只要實作 `next`，就免費獲得 `.map`、`.filter`、`.collect` 等一大串方法。
 
 ```rust
 struct Counter { n: u32 }
@@ -341,13 +341,13 @@ fn main() {
 }
 ```
 
-`type Item = u32;` 是 **associated type**，trait 內定義一個型別槽，由實作方填具體型別。
+`type Item = u32;` 是 **associated type**：trait 內定義一個型別槽，由實作方填上具體型別。
 
-associated type 是 trait 的「內建型別槽」，每個 `impl` 只能填一個值（例如 `Iterator for MyIter` 只能有一種 `Item`）；相比之下泛型 `Iterator<T>` 允許同一個型別對不同 `T` 各實作一次，更彈性但 API 也更囉嗦。Rust 選 associated type 因為大多數情況只需要一種對應關係。
+associated type 每個 `impl` 只能填一個值——`Iterator for MyIter` 只能有一種 `Item`。如果改成泛型 `Iterator<T>`，同一個型別就可以對不同 `T` 各實作一次，更彈性，但 API 也更囉嗦。Rust 選 associated type，因為大多數情況只需要一種對應關係。
 
 ## 孤兒規則（orphan rule）
 
-要實作 `impl Trait for Type`，**Trait 或 Type 至少有一個必須在你自己的 crate 內定義**。
+要寫 `impl Trait for Type`，**Trait 或 Type 至少有一個必須定義在你自己的 crate 內**。
 
 ```rust
 // ✅ 自家 trait 給標準型別
@@ -362,7 +362,7 @@ impl std::fmt::Display for Vec<i32> {}
 
 這個規則防止兩個 crate 同時對 `Vec<i32>` 實作 `Display` 而起衝突。
 
-繞過方法：用 newtype 包一層。
+要繞過就用 newtype 包一層：
 
 ```rust
 struct Wrapper(Vec<i32>);
@@ -426,7 +426,7 @@ fn print_all(sources: &[Box<dyn DataSource>], id: u32) {
 
 ## Trait 思考順序
 
-設計 API 時的判斷：
+設計 API 時可以照這個順序判斷：
 
 1. **不需要多型** → 直接寫具體型別
 2. **編譯期能確定型別** → 泛型 + trait bound（`fn f<T: Trait>` / `impl Trait`）

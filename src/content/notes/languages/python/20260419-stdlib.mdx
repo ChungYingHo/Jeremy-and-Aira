@@ -3,13 +3,11 @@ title: "[Python] 常用標準庫"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["Python", "stdlib", "json", "re", "datetime", "collections"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 7
 ---
 
-Python 賣點之一是「battery included」——標準庫覆蓋極廣，多數場景連 `pip install` 都不用。這篇挑日常每個 Python 程式幾乎都會用到的：`os` / `sys` / `json` / `re` / `datetime` / `collections` / `itertools` / `functools` / `subprocess` / `logging` / `argparse`，整理成一份能當速查的筆記。
-
-Python 「battery included」哲學，標準庫覆蓋極廣。這篇挑日常最常用的整理。
+Python 的賣點之一是「batteries included」——標準庫覆蓋極廣，多數場景連 `pip install` 都不用。這篇挑出幾乎每個 Python 程式都會用到的模組：`os` / `sys` / `json` / `re` / `datetime` / `collections` / `itertools` / `functools` / `subprocess` / `logging` / `argparse`，整理成一份能當速查表的筆記。
 
 ## os / pathlib：作業系統與路徑
 
@@ -61,7 +59,7 @@ with open('out.json', 'w', encoding='utf-8') as f:
     json.dump(data, f, indent=2, ensure_ascii=False)
 ```
 
-`ensure_ascii=False` 中文字才不會被轉成 `\uXXXX`。
+記得加 `ensure_ascii=False`，中文才不會被轉成 `\uXXXX`。
 
 ## re：正則表達式
 
@@ -137,7 +135,7 @@ diff.total_seconds()
 ```
 
 :::warning
-跨時區一律用「aware datetime」（帶 `tzinfo`）。「naive datetime」（不帶時區）只有在你確定整個系統都是同一時區時才用。混用兩者會 raise。
+跨時區一律用「aware datetime」（帶 `tzinfo`）。「naive datetime」（不帶時區）只有在你確定整個系統都是同一時區時才用。把兩者拿來比較或相減會直接 raise。
 :::
 
 更現代的選擇：第三方 `arrow` 或 `pendulum`。
@@ -231,7 +229,7 @@ for key, group in groupby(data, key=lambda x: x[0]):
     print(key, list(group))
 ```
 
-注意：`groupby` **只把相鄰的相同 key 歸為一組**，不會做整體去重或全域 group。所以幾乎一定要先 `sorted(data, key=...)` 再 `groupby(sorted_data, key=...)`，兩者 key 要一致。否則結果會被打散成多個小組。
+注意：`groupby` **只把相鄰的相同 key 歸成一組**，不是全域分組。所以幾乎一定要先 `sorted(data, key=...)` 再餵給 `groupby`，而且兩邊的 key 函式要一致——沒先排序的話，同一組會被打散成好幾段。
 
 ## functools：函式工具
 
@@ -312,6 +310,6 @@ args = parser.parse_args()
 print(args.input, args.output, args.verbose, args.n)
 ```
 
-需要更現代化、語法更簡潔可看 `typer`（基於 type hints）或 `click`。
+想要更簡潔的寫法，可以看第三方的 `typer`（基於 type hints）或 `click`。
 
 下一篇是 Python 系列最後一篇——把前面四處出現的「型別提示」收尾：完整 `typing` 用法、`mypy` 檢查、`Protocol` 結構性子型別。

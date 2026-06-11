@@ -3,7 +3,7 @@ title: "[Python] 流程控制與函式"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["Python", "if", "for", "function", "lambda", "args"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 3
 ---
 
@@ -46,7 +46,7 @@ def describe(x):
             return 'other'
 ```
 
-不只是值的比對，還能解構 list / dict、用型別、加 guard。
+不只能比對值，還能解構 list / dict、判斷型別、加 guard 條件。
 
 ## for 與 while
 
@@ -190,7 +190,7 @@ f(a=1, b=2, c=3, d=4, e=5, f=6)    # ❌ a, b 不能具名
 f(1, 2, 3, 4, 5, 6)                # ❌ e, f 不能位置傳
 ```
 
-對外 API 設計時很有用：把易混淆的參數鎖成只能具名傳。
+設計對外 API 時很有用：把容易搞混的參數鎖成只能具名傳。
 
 ## return
 
@@ -285,7 +285,7 @@ if __name__ == '__main__':
     main()
 ```
 
-意義：當這個 `.py` 被 **直接執行** 時 `__name__` 等於 `'__main__'`；被 **import** 時 `__name__` 等於模組名。所以這段程式只在直接執行時才跑，被 import 時不會。
+這個 `.py` 被**直接執行**時，`__name__` 是 `'__main__'`；被 **import** 時則是模組名。所以這段程式只在直接執行時才跑，被 import 時不會。
 
 ## 走 functional 風格
 

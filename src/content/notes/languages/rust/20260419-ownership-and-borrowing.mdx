@@ -3,19 +3,19 @@ title: "[Rust] 所有權與借用"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["Rust", "ownership", "borrowing", "lifetime", "memory"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 3
 ---
 
-上一篇結尾留了一個伏筆：`String` 與 `&str` 為什麼有「擁有」與「借用」之分。這一篇就是 Rust 最招牌、最讓初學者卡住，但也最值得花時間搞懂的一塊——**所有權系統**。把這套規則裝進腦子，後面寫 struct、Vec、字串處理、錯誤處理才會順。
+上一篇結尾留了一個伏筆：`String` 與 `&str` 為什麼有「擁有」與「借用」之分。這一篇就是 Rust 最招牌、最讓初學者卡關，但也最值得花時間搞懂的一塊——**所有權（ownership）系統**。把這套規則裝進腦子，後面寫 struct、Vec、字串處理、錯誤處理才會順。
 
 ## 為什麼需要所有權
 
 記憶體管理三條路：
 
-1. **手動管理**（C / C++）：開發者自己 `malloc` / `free`，效能最好但容易出錯（懸空指標、雙重釋放、記憶體洩漏）
+1. **手動管理**（C / C++）：自己 `malloc` / `free`，效能最好但容易出錯（懸空指標、雙重釋放、記憶體洩漏）
 2. **垃圾回收（GC）**（Java / Go / Python）：runtime 定期掃描並回收，安全但有 runtime 成本與停頓
-3. **所有權系統**（Rust）：編譯期靜態分析，沒有 GC、沒有 runtime 開銷，但需要遵守一套規則
+3. **所有權系統**（Rust）：編譯期靜態分析，沒有 GC、沒有 runtime 開銷，但要遵守一套規則
 
 Rust 選第三條，代價是要把所有權規則放進腦子裡。
 
@@ -35,7 +35,7 @@ Rust 選第三條，代價是要把所有權規則放進腦子裡。
 | 速度 | 快（push / pop） | 較慢（要找空間） |
 | 例子 | `i32`、`bool`、`char`、固定大小 array | `String`、`Vec<T>`、`Box<T>` |
 
-純量型別都在 stack 上，複製成本極低，所以實作了 `Copy` trait —— 賦值會自動複製，不會牽涉所有權移轉。
+純量型別都在 stack 上，複製成本極低，所以實作了 `Copy` trait——賦值就直接複製，不牽涉所有權移轉。
 
 ```rust
 let a = 5;
@@ -43,7 +43,7 @@ let b = a;        // 直接複製 stack 上的 4 byte
 println!("{a} {b}"); // ✅ a 還能用
 ```
 
-`String` 不一樣。它有三個欄位放在 stack：指向 heap 的指標、長度、容量。實際的字元資料在 heap 上：
+`String` 不一樣。它在 stack 上放三個欄位：`ptr`（指向 heap 字元資料的起點）、`len`（目前長度）、`cap`（已配置容量），實際字元資料在 heap 上：
 
 ```
 stack                heap
@@ -54,7 +54,7 @@ stack                heap
 └──────────┘
 ```
 
-`String` 在 stack 上的三個欄位——`ptr`（指向 heap 上的字元序列起址）、`len`（目前使用的長度）、`cap`（已配置的容量）。move 只複製這三個欄位，heap 上的資料不動。
+move 時只複製 stack 上這三個欄位，heap 上的資料本身不動。
 
 ## Move：所有權的轉移
 
@@ -89,18 +89,18 @@ println!("{s1} {s2}"); // ✅ 兩個都能用
 ```
 
 :::tip
-看到 `.clone()` 就要意識到：這裡有個堆積分配發生。對效能敏感的場景要避免亂 clone。
+看到 `.clone()` 就要意識到：這裡有一次堆積分配。對效能敏感的場景別亂 clone。
 :::
 
 ## Copy trait：哪些型別不會 move
 
-實作了 `Copy` trait 的型別，賦值時走的是複製、不是 move：
+實作了 `Copy` trait 的型別，賦值時走複製、不走 move：
 
 - 所有整數、浮點、`bool`、`char`
 - 只包含 `Copy` 型別的 tuple，例如 `(i32, i32)`
 - 固定大小 array，元素是 `Copy`
 
-`String`、`Vec<T>` 等持有 heap 資源的型別**沒有** `Copy`，因為複製它們需要堆積分配，必須讓開發者明確呼叫 `.clone()`。
+`String`、`Vec<T>` 這類持有 heap 資源的型別**沒有** `Copy`——複製它們要做堆積分配，Rust 要求你明確寫出 `.clone()`。
 
 ## 函式呼叫也會 move
 
@@ -116,7 +116,7 @@ fn main() {
 }
 ```
 
-每次呼叫函式都要把所有權交出去，太麻煩。解法是**借用**。
+每次呼叫函式都要把所有權交出去，太麻煩。解法是**借用（borrowing）**。
 
 ## 借用：&T 與 &mut T
 
@@ -134,9 +134,9 @@ fn main() {
 }
 ```
 
-`&s` 建立一個指向 `s` 的不可變參考。函式接收 `&String`。
+`&s` 會建立一個指向 `s` 的不可變參考，函式那端接到的型別就是 `&String`。
 
-要在借用中修改值，就用可變借用 `&mut`：
+要在借用期間修改值，就用可變借用 `&mut`：
 
 ```rust
 fn append(s: &mut String) {
@@ -150,7 +150,7 @@ fn main() {
 }
 ```
 
-注意：要用 `&mut` 借出，原變數必須是 `mut`。
+注意：要用 `&mut` 借出，原變數本身必須是 `mut`。
 
 ## 借用規則：核心限制
 
@@ -189,12 +189,12 @@ b.push(5);
 ```
 
 :::info
-這條規則防止了**資料競爭（data race）**。在編譯期就把多執行緒問題的根源之一擋掉。
+這條規則防的是**資料競爭（data race）**——在編譯期就把多執行緒問題的根源之一擋掉。
 :::
 
 ## NLL：借用何時結束
 
-Rust 用「非詞法生命週期（Non-Lexical Lifetimes, NLL）」判斷借用何時結束 —— 借用的有效範圍是**最後一次使用的那一行**，不是整個 scope。
+Rust 用「非詞法生命週期（Non-Lexical Lifetimes, NLL）」判斷借用何時結束——借用的有效範圍只到**最後一次使用的那一行**，不是整個 scope。
 
 ```rust
 let mut s = String::from("hi");
@@ -209,7 +209,7 @@ r3.push_str("!");
 
 ## 懸空參考：編譯器擋下來
 
-在 C 裡很容易寫出回傳區域變數位址這種 bug。Rust 編譯期就會拒絕：
+在 C 裡很容易寫出回傳區域變數位址這種 bug。Rust 編譯期就直接拒絕：
 
 ```rust
 fn dangle() -> &String {
@@ -218,7 +218,7 @@ fn dangle() -> &String {
 } // ❌ s 在這裡 drop，回傳的參考會變成懸空
 ```
 
-編譯錯誤訊息會建議：要嘛回傳 `String`（移轉所有權），要嘛調整生命週期。
+編譯錯誤訊息會給你兩條路：要嘛回傳 `String`（移轉所有權），要嘛調整生命週期。
 
 ## 切片：&str 與其他切片
 
@@ -233,9 +233,9 @@ let arr = [1, 2, 3, 4, 5];
 let slice: &[i32] = &arr[1..4]; // [2, 3, 4]
 ```
 
-`&str` 其實就是 string slice，所以字串字面值的型別是 `&'static str` —— 一個指向 binary 裡那段唯讀記憶體的切片。
+`&str` 其實就是 string slice，所以字串字面值的型別是 `&'static str`——一個指向 binary 裡那段唯讀記憶體的切片。
 
-慣例：函式參數宣告字串輸入時用 `&str`，比 `&String` 更通用（`&String` 會自動 deref 成 `&str`）：
+慣例：函式參數要吃字串時宣告成 `&str`，比 `&String` 通用（`&String` 會自動 deref 成 `&str`）：
 
 ```rust
 fn first_word(s: &str) -> &str {
@@ -281,7 +281,7 @@ fn to_upper(s: &mut String) {
 }
 ```
 
-`&mut String` 要先解參考 `*s` 才能整個覆寫內容；或用 `s.make_ascii_uppercase()` 就地改、不需重新配置。
+`&mut String` 要先解參考 `*s` 才能整個覆寫內容；或者用 `s.make_ascii_uppercase()` 就地改、不用重新配置。
 
 ## 心智模型總結
 
@@ -293,4 +293,4 @@ fn to_upper(s: &mut String) {
 | 可變借用 | `&mut a` / `f(&mut a)` | a 仍是所有者，期間不能再借任何 |
 | 深拷貝 | `a.clone()` | 在 heap 上複製一份新資料 |
 
-掌握這張表 + 三條核心規則，所有權就走過大半了。下一篇進 `struct` 與 `enum`，那邊會看到所有權怎麼跟自訂型別互動，以及 `enum` 配 `match` 的威力。
+掌握這張表加上三條核心規則，所有權就走過大半了。下一篇進 `struct` 與 `enum`，那邊會看到所有權怎麼跟自訂型別互動，以及 `enum` 配 `match` 的威力。

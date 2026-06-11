@@ -3,11 +3,11 @@ title: "[Java] 檔案 IO"
 author: "Jeremy & Claude"
 date: "2026-04-20"
 tags: ["Java", "IO", "NIO", "Path", "Files"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 6
 ---
 
-Java 的 IO 有點考古意味——`java.io` 是初代、`java.nio.file` 是 Java 7 的重做。新程式碼一律用後者（`Path` + `Files`），但讀舊 codebase 還是會看到 `File` / `FileInputStream`。這篇以 NIO 為主，舊 API 只看「認得就好」的程度。
+Java 的 IO 有點考古意味——`java.io` 是初代、`java.nio.file` 是 Java 7 的重做。新程式碼一律用後者（`Path` + `Files`），但讀舊 codebase 還是會看到 `File` / `FileInputStream`。這篇以 NIO 為主，舊 API 只看到「認得就好」的程度。
 
 ## 三套 API 的關係
 
@@ -37,7 +37,7 @@ p.resolve("backup.json"); // 接子路徑
 p.relativize(otherPath);
 ```
 
-不要再用 `new File("a/b")` + 手拼 `/` 或 `\`，`Path` 全包了。
+不要再用 `new File("a/b")` 加手拼 `/` 或 `\` 了，這些 `Path` 全包。
 
 ## Files：操作檔案系統
 
@@ -82,7 +82,7 @@ Files.write(p, List.of("a", "b", "c"));
 
 ### 大檔案：用 stream 逐行讀
 
-`readAllLines` 會一次載入記憶體，大檔不適合。改用 `Files.lines`（搭配 try-with-resources）：
+`readAllLines` 會把整個檔載進記憶體，大檔不適合。改用 `Files.lines`（搭配 try-with-resources）：
 
 ```java
 try (Stream<String> lines = Files.lines(p)) {
@@ -91,11 +91,11 @@ try (Stream<String> lines = Files.lines(p)) {
 }
 ```
 
-`Files.lines` 回傳的 Stream 持有檔案 handle，**一定要 try-with-resources** 否則洩漏。
+`Files.lines` 回傳的 Stream 持有檔案 handle，**一定要包 try-with-resources**，否則 handle 會洩漏。
 
 ### BufferedReader / BufferedWriter
 
-需要更細控制：
+需要更細的控制時，改拿 buffered reader / writer 自己處理：
 
 ```java
 try (BufferedReader r = Files.newBufferedReader(p)) {
@@ -157,7 +157,7 @@ try (DirectoryStream<Path> ds =
 
 ## try-with-resources 是必須
 
-所有 `Files.lines`、`Files.list`、`Files.walk`、`newBufferedReader/Writer`、`newInputStream/OutputStream` 都實作 `AutoCloseable`，**一律包在 try-with-resources 裡**，否則檔案 handle 會洩漏。
+`Files.lines`、`Files.list`、`Files.walk`、`newBufferedReader/Writer`、`newInputStream/OutputStream` 全都實作 `AutoCloseable`，**一律包在 try-with-resources 裡**，否則檔案 handle 會洩漏。
 
 ## 暫存檔與資料夾
 
@@ -185,9 +185,9 @@ while (true) {
 }
 ```
 
-實務上要有結束條件：捕捉外部 signal（例如 `AtomicBoolean running` + shutdown hook）或計數到達後 `break`。另外 `WatchKey.cancel()` 停止監看特定路徑、`WatchService.close()` 關整個服務。
+範例裡的 `while (true)` 實務上要有結束條件——常見做法是捕捉外部 signal（例如 `AtomicBoolean running` 配 shutdown hook），或計數到達後 `break`。要停掉監看，`WatchKey.cancel()` 取消特定路徑、`WatchService.close()` 關整個服務。
 
-寫熱重載 / 檔案同步工具會用到。
+寫熱重載、檔案同步工具會用到這個。
 
 ## 老 API：`java.io.File`（維護用看得懂就好）
 
@@ -204,7 +204,7 @@ new FileWriter(f);
 
 ## Resource 讀取（jar 內檔案）
 
-不能用 `Path`（jar 內不是檔案系統檔案）：
+jar 裡的資源不是檔案系統上的檔案，不能用 `Path`，要走 classpath：
 
 ```java
 try (InputStream in =
@@ -218,11 +218,11 @@ try (InputStream in =
 
 ## 編碼一律寫 UTF-8
 
-Java 18+ 預設編碼已改成 UTF-8（PEP 686 風格的決策）。但跨版本相容、平台相容，**顯式寫 `StandardCharsets.UTF_8`** 永遠不會錯：
+Java 18+ 的預設編碼已經改成 UTF-8（JEP 400）。但要顧跨版本、跨平台相容，**顯式寫 `StandardCharsets.UTF_8`** 永遠不會錯：
 
 ```java
 Files.readString(p, StandardCharsets.UTF_8);
 Files.newBufferedWriter(p, StandardCharsets.UTF_8);
 ```
 
-`Files.lines` / `Files.walk` 回傳的 `Stream<T>` 不是普通迴圈——下一篇展開 Java 8 的 Lambda 與 Stream API，這些 IO 範例的全貌才會浮出來。
+你可能注意到 `Files.lines` / `Files.walk` 回傳的是 `Stream<T>`，不是普通迴圈能直接吃的東西——下一篇展開 Java 8 的 Lambda 與 Stream API，這些 IO 範例的全貌才會浮出來。

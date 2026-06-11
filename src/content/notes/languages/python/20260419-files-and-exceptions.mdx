@@ -3,7 +3,7 @@ title: "[Python] 檔案處理與例外"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["Python", "file", "exception", "with", "context manager"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 6
 ---
 
@@ -228,9 +228,10 @@ except Exception:
 實作 `__enter__` / `__exit__`：
 
 ```python
+import time
+
 class Timer:
     def __enter__(self):
-        import time
         self.t = time.perf_counter()
         return self
     def __exit__(self, exc_type, exc_value, tb):
@@ -264,7 +265,7 @@ with timer():
 
 `yield` 之前對應 `__enter__`，之後對應 `__exit__`。`try / finally` 確保例外時也會跑釋放邏輯。
 
-執行流程：`with` 進入時執行到 `yield`，`yield` 的值綁給 `as` 變數；`with` 區塊結束（正常或 exception）後，程式從 `yield` 繼續執行到 `try/finally` 結束。若區塊內拋 exception，會在 `yield` 處重新 raise——想壓下例外就用 `try/except` 包住 `yield`。
+執行流程：進入 `with` 時跑到 `yield` 停住，`yield` 的值綁給 `as` 變數；區塊結束（不論正常或拋例外）後，從 `yield` 處繼續往下跑完 `try/finally`。若區塊內拋了 exception，它會在 `yield` 處重新 raise——想壓下例外，就用 `try/except` 包住 `yield`。
 
 ## 常用內建例外
 
@@ -282,6 +283,6 @@ with timer():
 | `KeyboardInterrupt` | Ctrl+C |
 | `SystemExit` | `sys.exit()` 觸發 |
 
-`KeyboardInterrupt` 與 `SystemExit` 是繼承 `BaseException`、不是 `Exception`，所以 `except Exception` 不會抓到（這是好事）。
+`KeyboardInterrupt` 與 `SystemExit` 繼承自 `BaseException` 而非 `Exception`，所以 `except Exception` 不會抓到它們（這是好事——Ctrl+C 不該被你的錯誤處理吞掉）。
 
 下一篇逛標準庫——`json`、`datetime`、`collections`、`itertools`、`functools` 這些每個 Python 程式幾乎都會 import 的東西。

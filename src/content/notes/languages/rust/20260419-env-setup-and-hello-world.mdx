@@ -3,15 +3,15 @@ title: "[Rust] 環境建置"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["Rust", "rustup", "cargo", "Hello World"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 1
 ---
 
-Rust 不像直譯語言能裝個 runtime 就開跑，它是「編譯器 + 套件管理 + 工具鏈」一整套。這篇把 Windows 上的安裝、第一支程式、`cargo` 必懂指令一次串完，後面所有 Rust 篇都會假設環境已經就緒。
+Rust 不像直譯語言裝個 runtime 就能開跑，它是「編譯器 + 套件管理 + 工具鏈」一整套。這篇把 Windows 上的安裝、第一支程式、`cargo` 必懂指令一次串完，後面所有 Rust 篇都假設環境已經就緒。
 
 ## Rust 工具鏈組成
 
-下面這幾個名詞在後面文章會反覆出現，先在這裡把分工釐清：
+下面這幾個名詞後面會反覆出現，先把分工釐清：
 
 | 工具 | 角色 |
 | :--- | :--- |
@@ -21,13 +21,13 @@ Rust 不像直譯語言能裝個 runtime 就開跑，它是「編譯器 + 套件
 | `rustfmt` | 程式碼格式化 |
 | `clippy` | 靜態分析 / lint |
 
-實務上幾乎不會直接呼叫 `rustc`，**所有事情透過 `cargo` 完成**。`cargo` 在背後會自己叫 `rustc`。
+實務上幾乎不會直接呼叫 `rustc`，**所有事情都交給 `cargo`**，它背後會自己叫 `rustc`。
 
 ## 在 Windows 安裝
 
 到 [rustup.rs](https://rustup.rs/) 下載 `rustup-init.exe`，雙擊執行，看到選單時選 **1（預設安裝）**。
 
-安裝過程會提示你裝 **Visual Studio Build Tools**（C++ 工具鏈，連結器要用）。如果還沒裝，照提示走 Visual Studio Installer，勾「使用 C++ 的桌面開發」即可。
+安裝過程會提示你裝 **Visual Studio Build Tools**（C++ 工具鏈，連結器要用）。還沒裝的話照提示走 Visual Studio Installer，勾「使用 C++ 的桌面開發」即可。
 
 裝完關掉舊的 PowerShell / cmd，開新視窗驗證：
 
@@ -108,7 +108,7 @@ cargo run
 2. 執行那支 exe
 3. stdout 看到 `Hello, world!`
 
-如果只想編譯不執行：
+只想編譯不執行：
 
 ```powershell
 cargo build              # debug 版（含偵錯資訊，較大）
@@ -122,14 +122,14 @@ cargo check
 ```
 
 :::info
-日常開發其實 `cargo check` 跑最多——它跳過 LLVM 的程式碼產生階段，比 `cargo build` 快很多。確認程式碼合法，編譯細節留給最後一次 `build`。
+日常開發其實 `cargo check` 跑最多——它跳過 LLVM 的程式碼產生階段，比 `cargo build` 快很多。先確認程式碼合法，編譯細節留給最後一次 `build`。
 :::
 
 ## println! 為什麼有驚嘆號
 
 第一支程式裡的 `println!` 不是函式，是**巨集（macro）**。Rust 規定「以 `!` 結尾的呼叫都是巨集」，看到 `!` 就知道這是編譯期展開的東西，不是普通呼叫。
 
-巨集存在的理由：函式的參數數量、型別在 Rust 裡都必須固定，而 `println!` 要支援任意參數的格式化字串，這只能在編譯期透過巨集展開來做。
+為什麼需要巨集？Rust 的函式參數數量、型別都必須固定，而 `println!` 要吃任意數量參數的格式化字串，只有編譯期展開的巨集做得到。
 
 ```rust
 fn main() {
@@ -147,7 +147,7 @@ fn main() {
 }
 ```
 
-`{:?}` 對應 `Debug` trait，`{}` 對應 `Display` trait——這兩個 trait 後面 trait 篇會細講，現在只要知道「`{}` 印給人看、`{:?}` 印給 debug 用」。
+`{:?}` 對應 `Debug` trait，`{}` 對應 `Display` trait——這兩個 trait 留到 trait 篇細講，現在只要記得「`{}` 印給人看、`{:?}` 印給 debug 用」。
 
 ## 常用 cargo 指令速查
 

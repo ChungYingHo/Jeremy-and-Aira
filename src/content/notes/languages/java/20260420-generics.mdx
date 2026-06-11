@@ -3,11 +3,11 @@ title: "[Java] 泛型"
 author: "Jeremy & Claude"
 date: "2026-04-20"
 tags: ["Java", "generics", "wildcard", "type erasure"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 4
 ---
 
-前一篇集合框架到處看到 `<T>` / `<K, V>`，這篇展開講泛型本身。Java 泛型有個別語言沒有的歷史包袱——「型別擦除」，所以才會出現 `?`、`extends` / `super` 這套設計。理解擦除就能理解大半的泛型「怎麼這樣寫」。
+前一篇集合框架到處看到 `<T>` / `<K, V>`，這篇展開講泛型本身。Java 泛型有個別語言沒有的歷史包袱——「型別擦除」，所以才會出現 `?`、`extends` / `super` 這套設計。理解了擦除，泛型裡大半的「為什麼要這樣寫」就說得通了。
 
 ## 為什麼要泛型
 
@@ -149,7 +149,7 @@ List<? extends Number> xs = ...;
 
 ### 下界 `? super T`
 
-「T 或 T 的父型別」——**消費者 consumer**，可寫不可（具體）讀：
+「T 或 T 的父型別」——**消費者 consumer**，可寫，但讀不回具體型別：
 
 ```java
 void addInts(List<? super Integer> xs) {
@@ -182,7 +182,7 @@ JVM **看不到**泛型，runtime 全被抹成原始型別（`T` → `Object`、
 
 「擦除」發生在**編譯期末段**：.java 編譯到 .class 時，`List<String>` 會被替換為 raw `List`，所有 `T` 變成 `Object`（或 bound 上界）。runtime 看到的是沒有泛型資訊的 class 檔——這就是為什麼 `list instanceof List<String>` 不能寫（語法禁止）。
 
-後果：
+後果是一連串限制：
 
 ### 1. 不能 `new T()`
 
@@ -233,9 +233,9 @@ void f(List<Integer> a) {}     // ❌ 兩者 erasure 都是 List
 
 ## 泛型與繼承的反直覺處
 
-`List<Dog>` **不是** `List<Animal>` 的子型別（不變 invariant）：
+即使 `Dog extends Animal`，`List<Dog>` 也**不是** `List<Animal>` 的子型別——泛型是 invariant（不變）的。
 
-「invariant（不變）」在泛型語境指：即使 `Dog extends Animal`，`List<Dog>` 也**不是** `List<Animal>` 的 subtype。反例想像：如果 `List<Dog>` 能傳給吃 `List<Animal>` 的 method，那個 method 可以 `add(new Cat())` 進去——型別系統破功。陣列則是 covariant（協變）、但代價是 runtime 要 `ArrayStoreException` 補檢查。
+為什麼要這樣設計？想個反例就懂：如果 `List<Dog>` 能傳給吃 `List<Animal>` 的 method，那個 method 就能往裡面 `add(new Cat())`——型別系統破功。
 
 ```java
 List<Dog> dogs = new ArrayList<>();

@@ -3,11 +3,11 @@ title: "[Python] 物件導向"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["Python", "class", "inheritance", "dunder", "dataclass"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 4
 ---
 
-函式建立完，這篇補上「能帶狀態的可呼叫物件」——class。Python 的 OOP 比 Java 自由很多：沒有真正的 private、屬性是動態加上去的、用 duck typing 取代 interface。同時 Python 提供 `@dataclass`、`@property`、dunder 方法等讓樣板碼大幅縮減的工具，這篇全部串完。
+函式講完，這篇補上「帶著狀態的可呼叫物件」——class。Python 的 OOP 比 Java 自由很多：沒有真正的 private、屬性是動態加上去的、用 duck typing 取代 interface。Python 也提供 `@dataclass`、`@property`、dunder 方法這些大幅減少樣板碼的工具，這篇一次串完。
 
 ## 定義 class
 
@@ -88,7 +88,7 @@ p = Pizza.small()
 Pizza.is_valid_size(10)
 ```
 
-`@classmethod` 常用作替代 constructor（多種建立方式）。
+`@classmethod` 常拿來當替代 constructor，提供多種建立方式。
 `@staticmethod` 等同放在 class namespace 下的純函式，少用。
 
 ## 屬性可見性的「君子協定」
@@ -210,7 +210,7 @@ make_speak(Cat())
 
 ## dunder methods（魔術方法）
 
-雙底線開頭結尾的方法定義 class 與運算子、內建函式的互動。
+雙底線開頭結尾的方法，定義 class 怎麼跟運算子、內建函式互動。
 
 | dunder | 觸發場景 |
 | :--- | :--- |
@@ -228,7 +228,7 @@ make_speak(Cat())
 | `__call__` | `x(...)` 把 instance 當 callable |
 | `__enter__`, `__exit__` | `with` 上下文管理器 |
 
-`__enter__` / `__exit__` 是 **context manager 協議**，用來搭配 `with` 語法管理需要成對 open/close 的資源（檔案、網路連線、鎖等）。進入 `with` 區塊呼叫 `__enter__`，離開時（不管正常或 exception）呼叫 `__exit__`。
+`__enter__` / `__exit__` 是 **context manager 協議**，用來搭配 `with` 語法管理需要成對 open/close 的資源（檔案、網路連線、鎖等）。進入 `with` 區塊時呼叫 `__enter__`，離開時（不管是正常結束還是丟 exception）呼叫 `__exit__`。
 
 範例：
 

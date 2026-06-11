@@ -3,7 +3,7 @@ title: "[Java] 例外處理"
 author: "Jeremy & Claude"
 date: "2026-04-20"
 tags: ["Java", "exception", "try-catch", "throws"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 2
 ---
 
@@ -56,7 +56,7 @@ multi-catch 內的 `e` 是「共同父類型」，能呼叫的方法只到那層
 
 ## try-with-resources（Java 7+）
 
-實作 `AutoCloseable` 的資源會自動 close，例外發生也會：
+實作 `AutoCloseable` 的資源會自動 close，就算中途丟例外也會關：
 
 ```java
 try (BufferedReader r = new BufferedReader(new FileReader("a.txt"))) {

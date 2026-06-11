@@ -3,7 +3,7 @@ title: "[Java] 集合框架"
 author: "Jeremy & Claude"
 date: "2026-04-20"
 tags: ["Java", "collection", "List", "Map", "Set"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 3
 ---
 
@@ -79,7 +79,7 @@ s.contains(1);   // true
 
 ### LinkedHashSet
 
-保留**插入順序**。比 HashSet 略慢但可預測。
+保留**插入順序**。比 HashSet 略慢，但走訪順序可預測。
 
 ### TreeSet
 
@@ -94,7 +94,7 @@ t.last();     // 3
 
 ### 自訂物件放 Set 必須實作 `equals` + `hashCode`
 
-否則「相同內容的物件」會被當不同：
+否則兩個內容相同的物件會被當成不同東西：
 
 ```java
 record Point(int x, int y) {}     // record 自動實作 equals/hashCode

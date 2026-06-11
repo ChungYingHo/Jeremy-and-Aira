@@ -3,11 +3,11 @@ title: "[Python] 環境建置"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["Python", "venv", "pip", "uv"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 1
 ---
 
-Python 自帶極簡，但實務上每個專案要獨立的虛擬環境、要鎖定依賴版本、可能還要切換 Python 版本。這篇把 Windows 上從零裝 Python、開虛擬環境、用 `pip` 與更現代的 `uv` 管理依賴一次串完，後面所有 Python 篇都假設這環境已經就位。
+Python 本體裝起來很簡單，但實務上每個專案要獨立的虛擬環境、要鎖定依賴版本、可能還要切換 Python 版本。這篇把 Windows 上從零裝 Python、開虛擬環境、用 `pip` 與更現代的 `uv` 管理依賴一次串完，後面所有 Python 篇都假設這環境已經就位。
 
 ## 在 Windows 安裝 Python
 
@@ -19,7 +19,7 @@ python --version
 ```
 
 :::warning
-Windows 多版本並存時，`python` 命令可能指向錯版本。可以用 `py -3.13` 這種版本選擇器，或乾脆用 `uv` 統一管理（下面講）。
+Windows 上裝了多個版本時，`python` 可能指到錯的那個。可以用 `py -3.13` 這種版本選擇器，或乾脆用 `uv` 統一管理（下面講）。
 :::
 
 ## 多版本管理：uv

@@ -3,17 +3,17 @@ title: "[TypeScript] 型別守衛與窄化"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["TypeScript", "type guard", "narrowing", "discriminated union"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 7
 ---
 
-`union` 與 `unknown` 在 type 系統內好用，但呼叫方法時 TS 會逼你「先確定它是什麼」。這篇收齊讓 TS 在 runtime 分流時自動縮型別的工具——`typeof` / `in` / `instanceof` / 自訂 type guard / `asserts`，以及最該優先用的 discriminated union。
+`union` 與 `unknown` 在型別系統裡好用，但一要呼叫方法，TS 就會逼你「先確定它是什麼」。這篇收齊讓 TS 在 runtime 分流時自動縮型別的工具——`typeof`、`in`、`instanceof`、自訂 type guard、`asserts`，以及最該優先用的 discriminated union。
 
-「窄化（narrowing）」指的是在某段程式碼分支中，TS 把變數的型別從廣的縮小到具體的某一種。
+所謂「窄化（narrowing）」，就是在某個程式分支裡，TS 把變數的型別從廣的縮小到具體的某一種。
 
 ## typeof 守衛
 
-針對原始型別：
+最基本的一招，拿來分原始型別：
 
 ```typescript
 function pad(value: string | number) {
@@ -24,11 +24,13 @@ function pad(value: string | number) {
 }
 ```
 
-`typeof` 可能的回傳值（這是 JS 的）：`'string' | 'number' | 'bigint' | 'boolean' | 'symbol' | 'undefined' | 'object' | 'function'`。
+`typeof` 的可能回傳值是 JS 規定的那幾種：`'string' | 'number' | 'bigint' | 'boolean' | 'symbol' | 'undefined' | 'object' | 'function'`。
 
-注意：陣列、null、物件 typeof 都是 `'object'`，分不清。
+注意陣列、null、物件的 typeof 全是 `'object'`，靠它分不出來。
 
 ## truthiness 守衛
+
+直接拿值當條件，也能窄化：
 
 ```typescript
 function f(v: string | null | undefined) {
@@ -38,13 +40,15 @@ function f(v: string | null | undefined) {
 }
 ```
 
-陷阱：空字串、`0`、`NaN`、`false` 都是 falsy，會一併被排除。要明確判斷 null / undefined 用 `== null` 或 `?? `：
+陷阱在於空字串、`0`、`NaN`、`false` 都是 falsy，會一併被排除。只想擋 null / undefined 的話，改用 `== null` 或 `??`：
 
 ```typescript
 if (v != null) { /* string */ }   // 同時排掉 null 和 undefined
 ```
 
 ## equality 守衛
+
+兩個變數互相比較，TS 會把雙方都窄化到型別的交集：
 
 ```typescript
 function f(a: string | number, b: string | boolean) {
@@ -56,7 +60,7 @@ function f(a: string | number, b: string | boolean) {
 }
 ```
 
-跟字面值比較會窄到該字面值：
+跟字面值比較，就窄到那個字面值：
 
 ```typescript
 function f(s: 'a' | 'b' | 'c') {
@@ -70,7 +74,7 @@ function f(s: 'a' | 'b' | 'c') {
 
 ## in 守衛
 
-判斷物件有沒有某個屬性：
+用「有沒有某個屬性」來分物件：
 
 ```typescript
 type Fish = { swim: () => void }
@@ -97,11 +101,11 @@ function logDate(x: Date | string) {
 }
 ```
 
-只能用在有 constructor 的型別（class、Error、Date 等）。
+只能用在有 constructor 的型別（class、Error、Date 等）；純物件字面量沾不上邊。
 
 ## discriminated union（標籤聯合）
 
-最強大、最該優先用的窄化模式。每個成員帶一個共同的「辨識欄位」（discriminator）：
+最強大、也最該優先用的窄化模式：讓每個成員帶一個共同的「辨識欄位」（discriminator）：
 
 ```typescript
 type Shape =
@@ -118,7 +122,7 @@ function area(s: Shape): number {
 }
 ```
 
-`s.kind` 是字面值 union，TS 在每個 case 自動把 s 窄化到對應分支。
+`s.kind` 是字面值 union，TS 在每個 case 裡自動把 s 窄化到對應的分支，連自訂守衛都不用寫。
 
 ### 加上 never 做窮舉檢查
 
@@ -135,11 +139,11 @@ function area(s: Shape): number {
 }
 ```
 
-新增一個 Shape 變體後忘記更新 `area`，TS 就會在 default 分支報錯。
+好處很實際：之後新增一個 Shape 變體卻忘了更新 `area`，TS 會直接在 default 分支報錯提醒你。
 
 ## user-defined type guard：is 語法
 
-當內建守衛不夠用時自訂一個：
+內建守衛不夠用時，自己寫一個：
 
 ```typescript
 interface Cat { meow: () => void }
@@ -158,15 +162,13 @@ function play(animal: Cat | Dog) {
 }
 ```
 
-`x is Cat` 是 type predicate，告訴 TS：「這個函式回 true 時，請把 x 當 Cat」。
+`x is Cat` 叫做 type predicate（型別謂詞），是 TS 獨有的語法，意思是「這個函式回 true 時，請把 x 當 Cat」。它只在型別檢查層有意義，編譯到 JS 後整個消失，剩下的就是一個回 `boolean` 的普通函式。
 
-`x is Cat` 是 TS 獨有的「型別謂詞」語法，只在型別檢查層有意義；編譯到 JS 後整個消失（剩下的只是普通 `boolean` 函式）。寫這個語法等於跟 TS 承諾「當我回 true，x 確實是 Cat」——TS 不驗證你說的對不對，所以實作裡要誠實。
-
-陷阱：實作必須跟 predicate 一致，TS 不會幫你驗證邏輯正確。
+要小心的是：寫這個語法等於跟 TS 立下承諾「我回 true，x 就真的是 Cat」。TS 不會驗證實作邏輯對不對，謊報了它也照單全收——所以實作裡要誠實。
 
 ## assertion function：asserts
 
-predicate 是回 boolean，assertion function 是直接 throw：
+type predicate 是回 boolean 讓你分流，assertion function 則是不對就直接 throw：
 
 ```typescript
 function assertString(x: unknown): asserts x is string {
@@ -181,10 +183,10 @@ function f(v: unknown) {
 }
 ```
 
-要點：
+幾個要點：
 
 - 回傳型別寫成 `asserts x is T`
-- 函式必須真的會 throw（否則型別系統騙人）
+- 函式必須真的會 throw，否則型別系統就被騙了
 - 不能用 arrow function（語法不支援）
 
 ## 型別斷言（as）vs 型別守衛
@@ -207,7 +209,7 @@ if (el2 instanceof HTMLDivElement) { /* 真的檢查 */ }
 const el = document.getElementById('app')!   // 告訴 TS：絕不為 null
 ```
 
-跟 `as` 一樣是逃生口。能用守衛就用守衛。
+跟 `as` 一樣是逃生口，不做任何檢查。能用守衛就用守衛。
 
 ## 常見窄化陷阱
 
@@ -225,7 +227,7 @@ function f(box: Box) {
 }
 ```
 
-callback 中重新進入新 scope，TS 不再保證 box.value 沒被改過。改存區域變數：
+callback 是一個新的 scope，TS 沒辦法保證它執行時 box.value 還沒被改過，所以窄化不帶進去。解法是先存成區域變數：
 
 ```typescript
 const v = box.value
@@ -245,7 +247,7 @@ function check(x: string | null) {
 }
 ```
 
-對區域變數通常 OK；對物件屬性、外部變數要小心。
+區域變數通常沒事；物件屬性、外部變數就要小心，呼叫別的函式之後窄化可能不再成立。
 
 ### 3. typeof null === 'object'
 
@@ -260,11 +262,11 @@ function f(x: object | null) {
 }
 ```
 
-null check 要明確。
+JS 的老坑：`typeof null` 也是 `'object'`。null check 要自己明確寫。
 
 ## 控制流分析
 
-TS 的窄化是**基於控制流**的：
+TS 的窄化是**基於控制流**的，不只看 if 區塊：
 
 ```typescript
 function f(v: string | number) {
@@ -275,6 +277,6 @@ function f(v: string | number) {
 }
 ```
 
-if 內 return / throw 後，下面的程式自動窄化（因為到不了那邊代表前面條件不成立）。
+if 裡面 return 或 throw 之後，後面的程式自動被窄化——能執行到那裡，就代表前面的條件不成立。
 
-最後一篇進模組與 `.d.ts`，把跨檔案 import / export、ambient 宣告、第三方套件型別這些工程面的東西收尾。
+最後一篇進到模組與 `.d.ts`，把跨檔案 import / export、ambient 宣告、第三方套件型別這些工程面的東西收尾。

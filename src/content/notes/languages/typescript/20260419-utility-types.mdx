@@ -3,22 +3,20 @@ title: "[TypeScript] 內建型別工具"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["TypeScript", "utility types", "Partial", "Pick", "Omit", "Record"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 6
 ---
 
-上一篇講完泛型、`keyof`、`infer`、mapped、conditional——這些都是「素材」。這一篇看標準庫已經把這些素材組好的成品：`Partial`、`Pick`、`Omit`、`Record`、`ReturnType`...。會用是日常戰力，理解原理能在不夠用時自己擴充。
-
-標準庫提供的 utility types 都用前一篇的機制（mapped、conditional、infer）實作。會用就夠，但理解原理能在不夠用時自己擴充。
+上一篇講的泛型、`keyof`、`infer`、mapped、conditional 都是「素材」，這一篇看標準庫用這些素材組好的成品：`Partial`、`Pick`、`Omit`、`Record`、`ReturnType`⋯⋯。會用是日常戰力；理解背後怎麼組的，遇到內建不夠用時才有辦法自己擴充。所以下面每個工具都會附上它的實作（或等價寫法），對照前一篇的機制看。
 
 ## Partial\<T> / Required\<T>
+
+一個把所有屬性變可選，一個變必填：
 
 ```typescript
 type Partial<T> = { [K in keyof T]?: T[K] }
 type Required<T> = { [K in keyof T]-?: T[K] }
 ```
-
-把所有屬性變可選 / 變必填。
 
 ```typescript
 interface User {
@@ -34,9 +32,11 @@ type FullUser = Required<User>
 // { id: number; name: string; email: string }
 ```
 
-實際用途：update 用 `Partial<User>` 接收任意子集欄位。
+最常見的用途是 update：用 `Partial<User>` 接收任意子集的欄位。
 
 ## Readonly\<T>
+
+所有欄位加上 `readonly`：
 
 ```typescript
 type Readonly<T> = { readonly [K in keyof T]: T[K] }
@@ -45,7 +45,7 @@ const u: Readonly<User> = { id: 1, name: 'a' }
 u.id = 2   // ❌
 ```
 
-注意：是 shallow readonly，深層巢狀屬性還是可變。深 readonly 要自己遞迴：
+注意它是 shallow readonly，只鎖最外層，深層巢狀屬性還是可變。要深 readonly 得自己遞迴：
 
 ```typescript
 type DeepReadonly<T> = {
@@ -53,7 +53,7 @@ type DeepReadonly<T> = {
 }
 ```
 
-對比：
+兩者的差別：
 
 ```typescript
 type Config = { db: { host: string } }
@@ -68,6 +68,8 @@ c2.db.host = 'y'             // Error: host is readonly（深層也鎖）
 
 ## Pick\<T, K>：挑選欄位
 
+從 T 挑出指定的幾個欄位組成新型別：
+
 ```typescript
 type Pick<T, K extends keyof T> = { [P in K]: T[P] }
 
@@ -77,6 +79,8 @@ type UserPreview = Pick<User, 'id' | 'name'>
 
 ## Omit\<T, K>：排除欄位
 
+反過來，把指定欄位剔掉、留下其餘的：
+
 ```typescript
 type Omit<T, K extends keyof any> = Pick<T, Exclude<keyof T, K>>
 
@@ -84,9 +88,11 @@ type UserWithoutEmail = Omit<User, 'email'>
 // { id: number; name: string }
 ```
 
-`K` 不限定 `keyof T`，所以可以傳不存在的 key，TS 不會抱怨（這是設計取捨）。
+注意 `K` 沒有限定 `keyof T`，所以傳一個不存在的 key 進去 TS 也不會抱怨——這是官方刻意的設計取捨。
 
 ## Record\<K, V>：等值物件
+
+所有 key 都對應同一種 value 型別：
 
 ```typescript
 type Record<K extends keyof any, V> = { [P in K]: V }
@@ -98,25 +104,27 @@ type Cache = Record<string, unknown>
 // 任意字串 key 對應任意值
 ```
 
-比 `{ [k: string]: V }` 更精準，因為 K 可以是字面值 union。
+比 index signature 的 `{ [k: string]: V }` 更靈活，因為 K 可以是字面值 union，把 key 限定在固定幾個。
 
 ## Exclude\<T, U> / Extract\<T, U>
+
+這兩個是對 union 做篩選，實作就是上一篇講的 distributive conditional：
 
 ```typescript
 type Exclude<T, U> = T extends U ? never : T
 type Extract<T, U> = T extends U ? T : never
 ```
 
-對 union 做篩選：
-
 ```typescript
 type T1 = Exclude<'a' | 'b' | 'c', 'a'>   // 'b' | 'c'
 type T2 = Extract<string | number | boolean, string | number>  // string | number
 ```
 
-`Omit<T, K>` 內部就靠 `Exclude` 從 keyof T 剔掉 K。
+前面 `Omit<T, K>` 的實作裡就是靠 `Exclude` 從 keyof T 剔掉 K。
 
 ## NonNullable\<T>
+
+清掉 union 裡的 `null` 與 `undefined`：
 
 ```typescript
 type NonNullable<T> = T & {}   // TS 4.8+ 改用這個寫法
@@ -124,11 +132,9 @@ type NonNullable<T> = T & {}   // TS 4.8+ 改用這個寫法
 type X = NonNullable<string | null | undefined>   // string
 ```
 
-清掉 union 裡的 `null` 與 `undefined`。
-
 ## ReturnType\<T> / Parameters\<T>
 
-從函式型別抽出回傳值與參數：
+用 `infer` 從函式型別抽出回傳值與參數：
 
 ```typescript
 type ReturnType<T> = T extends (...args: any) => infer R ? R : never
@@ -144,9 +150,11 @@ type R = ReturnType<typeof fetchUser>     // { id: number; name: string }
 type P = Parameters<typeof fetchUser>     // [id: number, cache: boolean]
 ```
 
-實務上配 `typeof someFunction` 用，省得手動同步函式簽章與型別。
+實務上多半配 `typeof someFunction` 用，函式簽章改了型別自動跟上，不用手動同步。
 
 ## ConstructorParameters\<T> / InstanceType\<T>
+
+class 版本的對應工具——抽 constructor 參數、抽實例型別：
 
 ```typescript
 class Greeter {
@@ -165,7 +173,7 @@ type A2 = Awaited<Promise<Promise<number>>>    // number（會遞迴拆）
 type A3 = Awaited<number>                      // number
 ```
 
-寫 async 函式時搭配 `ReturnType` 拿真正的回傳值：
+寫 async 函式時搭配 `ReturnType`，才能拿到真正的回傳值型別：
 
 ```typescript
 async function load() {
@@ -177,6 +185,8 @@ type Data = Awaited<ReturnType<typeof load>> // { id: number }
 ```
 
 ## 字串大小寫工具
+
+四個內建的字串字面值轉換：
 
 ```typescript
 type Uppercase<T extends string>
@@ -190,7 +200,7 @@ type A = Uppercase<'hello'>     // 'HELLO'
 type B = Capitalize<'hello'>    // 'Hello'
 ```
 
-配 mapped type + template literal 重新命名 key：
+配 mapped type + template literal 重新命名 key，就是上一篇結尾那招：
 
 ```typescript
 type Setters<T> = {
@@ -220,7 +230,7 @@ type UserSetters = Setters<{ name: string; age: number }>
 
 ## 自訂常用工具
 
-幾個社群常見、標準庫沒提供的：
+標準庫沒有、但社群很常見的幾個：
 
 ```typescript
 // 至少要有一個欄位
@@ -240,12 +250,12 @@ type DeepPartial<T> = {
 
 ## 何時不要硬寫複雜型別
 
-幾條提醒：
+最後幾條提醒：
 
-- 型別讀不懂的人會比寫的人多
-- 編譯時間會變慢，IDE 提示會卡
-- 太聰明的型別常常壓不住邊界 case，得加 `as` 收尾
+- 型別讀不懂的人，永遠比寫的人多
+- 複雜型別會拖慢編譯，IDE 提示也會卡
+- 太聰明的型別常常壓不住邊界 case，最後還是得加 `as` 收尾
 
-實務原則：**型別應該幫助理解，不是炫技**。能 `Pick` / `Omit` 解的，不要動 mapped + conditional。
+實務原則：**型別應該幫助理解，不是炫技**。能用 `Pick` / `Omit` 解決的，就不要動 mapped + conditional。
 
-下一篇切換到「執行期 + 型別系統的互動」這條線——TS 怎麼用 `typeof` / `instanceof` / 自訂 type guard 在 runtime 縮小型別。前面 discriminated union 在那裡會跟 narrowing 收束在一起。
+下一篇切到「執行期與型別系統互動」這條線——TS 怎麼靠 `typeof`、`instanceof`、自訂 type guard 在 runtime 縮小型別。前面提過的 discriminated union 會在那裡跟 narrowing 收束在一起。

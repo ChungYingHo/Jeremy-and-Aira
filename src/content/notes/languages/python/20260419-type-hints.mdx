@@ -3,7 +3,7 @@ title: "[Python] 型別提示與工具"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["Python", "type hints", "typing", "mypy", "Protocol"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 8
 ---
 
@@ -95,7 +95,7 @@ fetch('GET')      # ✅
 fetch('PATCH')    # ❌ mypy 報錯
 ```
 
-取代「拿 enum 但只是想要幾個字串」的場景。
+如果只是想限制在幾個固定字串、又懶得開 enum，`Literal` 剛好。
 
 ## 泛型函式
 
@@ -259,7 +259,7 @@ class Builder:
 # 子類可以鏈式呼叫並回傳子類自身
 ```
 
-過去要用 `TypeVar('T', bound='Builder')` 才能達到，現在直接 `Self`。
+過去要用 `TypeVar('T', bound='Builder')` 才做得到，現在一個 `Self` 就解決。
 
 ## Final、ClassVar、ReadOnly
 
@@ -331,9 +331,7 @@ get_type_hints(f)
 # {'x': <class 'int'>, 'y': <class 'str'>, 'return': <class 'bool'>}
 ```
 
-`get_type_hints(fn)` 回傳一個 `dict`：參數名對應型別、額外一個鍵 `'return'` 對應回傳型別（class 則是欄位對應型別）。runtime 取型別資訊（例如 pydantic、dataclasses、FastAPI）都靠這個。
-
-`pydantic`、`fastapi`、`typer` 都靠這個 runtime 讀型別，做驗證、序列化、CLI 解析。
+`get_type_hints(fn)` 回傳一個 `dict`：參數名對應型別，外加一個 `'return'` 鍵對應回傳型別（傳 class 進去則是欄位對應型別）。`pydantic`、`fastapi`、`typer` 這些在 runtime 讀型別做驗證、序列化、CLI 解析的工具，底層都靠它。
 
 ## 寫 type hints 的順序建議
 
@@ -346,7 +344,7 @@ get_type_hints(f)
 寫 type hints 不是為了寫而寫，是為了：
 
 - IDE 補全與跳轉更準
-- 在改舊程式時，hints 是你「重構安全網」
+- 改舊程式時，hints 是你的重構安全網
 - 配合 `pydantic` / `dataclass` 直接拿 hints 做 runtime 驗證
 
 Python 系列到此結束——從環境（uv / venv）、語法骨架（型別、流程、函式、OOP）、組織（module / package）、IO 與例外、標準庫，到型別提示，整套寫真實 Python 專案需要的基礎都串完了。下一階段可以挑一個方向深入：Web（FastAPI / Django）、資料（pandas / polars）、ML（pytorch / scikit-learn），各自還會用到本系列沒展開的特定生態。

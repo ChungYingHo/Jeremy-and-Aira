@@ -3,7 +3,7 @@ title: "[Python] 基本語法與型別"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["Python", "type", "list", "tuple", "dict", "set"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 2
 ---
 
@@ -138,7 +138,7 @@ if xs:        # 等同 if len(xs) > 0
 
 ## list（陣列）
 
-list 是 **mutable**（可變）——`append`、`pop`、`sort` 都直接改動原物件，不回傳新 list；tuple 則是 **immutable**（不可變），建立後不能改。mutable 物件若多處共用同一個 reference，一處改動其他地方會看到——這是 Python 常見 bug 來源。
+list 是 **mutable**（可變）——`append`、`pop`、`sort` 都直接改動原物件，不回傳新 list；tuple 則是 **immutable**（不可變），建立後不能改。mutable 物件如果多個地方共用同一個 reference，一處改了、其他地方都會看到——這是 Python 很常見的 bug 來源。
 
 可變、有序、可混型別：
 
@@ -173,7 +173,7 @@ xs[::-1]     # [50, 40, 30, 20, 10]（反轉）
 
 ## tuple
 
-不可變的 list。常用來表「固定結構的小組合」：
+不可變的 list。常用來裝「固定結構的小組合」：
 
 ```python
 point = (1, 2)
@@ -188,7 +188,7 @@ not_tuple = (5)   # 這只是個括號內的整數
 x, y = point
 ```
 
-慣例：返回多值用 tuple。
+慣例：要回傳多個值，就用 tuple。
 
 ```python
 def divmod_(a, b):

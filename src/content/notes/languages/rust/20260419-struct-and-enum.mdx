@@ -3,11 +3,11 @@ title: "[Rust] 結構體與列舉"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["Rust", "struct", "enum", "impl", "match", "pattern matching"]
-changelog: []
+changelog: ["2026-06-11"]
 sameDateSort: 4
 ---
 
-所有權建立完，下一步是會用所有權的真正單位——自訂型別。Rust 的 `struct` 跟其他語言差不多，但 `enum` 完全是另一個層級：每個變體可以帶資料，配 `match` 模式匹配能取代繼承、null、type guard 一票東西。這篇把 struct、enum、`Option`、`match`、`if let` / `while let` / `let else` 一次串完。
+所有權的觀念建立後，接著輪到實際承載所有權的單位——自訂型別。Rust 的 `struct` 跟其他語言差不多，但 `enum` 完全是另一個層級：每個變體可以帶資料，配上 `match` 模式匹配，能取代繼承、null、type guard 一票東西。這篇把 struct、enum、`Option`、`match`、`if let` / `while let` / `let else` 一次串完。
 
 ## 結構體（struct）
 
@@ -57,7 +57,7 @@ fn build_user(username: String, email: String) -> User {
 
 ### Struct update syntax
 
-從另一個 instance 補齊剩下欄位：
+從另一個 instance 補齊剩下的欄位：
 
 ```rust
 let user2 = User {
@@ -66,7 +66,7 @@ let user2 = User {
 };
 ```
 
-注意：`..user1` 對非 Copy 欄位會 **move**，所以 `user1` 之後可能就不能用了（取決於有哪些欄位被 move）。
+注意：`..user1` 對非 Copy 欄位會 **move**，所以 `user1` 之後可能就不能用了（取決於哪些欄位被 move）。
 
 ### Tuple struct
 
@@ -81,7 +81,7 @@ let p = Point(1.0, 2.0);
 println!("{} {}", red.0, p.1);
 ```
 
-適合「我想要一個獨立型別，但欄位本身名字沒意義」的場景，例如顏色三原色、座標。
+適合「我想要一個獨立型別，但欄位名字本身沒意義」的場景，例如顏色三原色、座標。
 
 ### Unit struct
 
@@ -174,7 +174,7 @@ let m3 = Message::Write(String::from("hi"));
 let m4 = Message::ChangeColor(255, 0, 0);
 ```
 
-這在其他語言通常要寫一堆 class 配繼承才能表達。
+同樣的東西在其他語言通常要寫一堆 class 配繼承才能表達。
 
 ### enum 也能 impl 方法
 
@@ -193,7 +193,7 @@ impl Message {
 
 ## 內建：Option\<T>
 
-Rust 沒有 `null`。要表達「可能有值，可能沒有」用標準庫的 `Option`：
+Rust 沒有 `null`。要表達「可能有值，可能沒有」，用標準庫的 `Option`：
 
 ```rust
 enum Option<T> {
@@ -209,7 +209,7 @@ let x: Option<i32> = Some(5);
 let y: Option<i32> = None;
 ```
 
-這個設計強迫程式碼**明確處理「沒值」的情況**，徹底消滅 NullPointerException 這類問題。
+這個設計逼你**明確處理「沒值」的情況**，徹底消滅 NullPointerException 這類問題。
 
 ## match：模式匹配
 
@@ -280,7 +280,7 @@ fn area(s: &Shape) -> f64 {
 
 ## if let：只關心一個 case
 
-整個 `match` 只用一個 arm 太囉嗦：
+只在乎其中一種情況時，寫整個 `match` 太囉嗦：
 
 ```rust
 let x = Some(5);
@@ -309,7 +309,7 @@ if let Some(v) = x {
 
 ## while let
 
-只要某個 pattern 還匹配就持續：
+只要 pattern 還匹配就繼續跑：
 
 ```rust
 let mut stack = vec![1, 2, 3];
@@ -322,7 +322,7 @@ while let Some(top) = stack.pop() {
 
 ## let else：早退場
 
-值不符合 pattern 就走 else 分支（必須中斷流程）：
+值不符合 pattern 就走 else 分支（else 裡必須中斷流程）：
 
 ```rust
 fn parse_age(s: &str) -> u32 {
@@ -335,4 +335,4 @@ fn parse_age(s: &str) -> u32 {
 
 比 `match` 或巢狀 `if let` 平坦許多。
 
-`Option<T>` 處理「可能沒值」的場景；下一篇要看的 `Result<T, E>` 用一樣的 enum + `match` 模式處理「可能失敗」，是 Rust 錯誤處理的核心。
+`Option<T>` 處理「可能沒值」；下一篇的 `Result<T, E>` 用一樣的 enum + `match` 模式處理「可能失敗」，是 Rust 錯誤處理的核心。

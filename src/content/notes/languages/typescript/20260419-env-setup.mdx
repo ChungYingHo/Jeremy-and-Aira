@@ -3,7 +3,7 @@ title: "[TypeScript] 環境建置"
 author: "Jeremy & Claude"
 date: "2026-04-19"
 tags: ["TypeScript", "tsconfig", "Node", "Bun", "tsx"]
-changelog: []
+changelog: ['2026-06-11']
 sameDateSort: 1
 ---
 
@@ -11,9 +11,9 @@ sameDateSort: 1
 
 ## TypeScript 是什麼
 
-JavaScript 的超集，在 JS 之上加靜態型別系統。TS 程式經 `tsc` 編譯後輸出純 JS，瀏覽器與 Node 不會直接執行 `.ts` 檔（除非搭配 runtime loader）。
+TypeScript 是 JavaScript 的超集，在 JS 之上多一層靜態型別系統。寫好的 TS 要先用 `tsc` 編譯成純 JS——瀏覽器和 Node 不會直接執行 `.ts` 檔（除非搭配 runtime loader）。
 
-實務上幾乎不會手動跑 `tsc`，而是透過：
+不過實務上幾乎不會手動跑 `tsc`，多半交給這些工具：
 
 | 工具 | 用途 |
 | :--- | :--- |
