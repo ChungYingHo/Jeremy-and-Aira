@@ -1,0 +1,6 @@
+{
+  "redirects": [
+    { "source": "/notes/:path*", "destination": "/codex/:path*", "permanent": true },
+    { "source": "/series/:path*", "destination": "/codex/series/:path*", "permanent": true }
+  ]
+}
