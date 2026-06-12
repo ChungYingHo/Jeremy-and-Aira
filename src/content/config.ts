@@ -2,6 +2,7 @@ import { defineCollection, z } from 'astro:content'
 
 const commonSchema = z.object({
   title: z.string().optional().default('Untitled'),
+  description: z.string().optional(),
   draft: z.boolean().optional().default(false),
   author: z.string().optional().default('Jeremy'),
   date: z.date().or(z.string()).optional(),

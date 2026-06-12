@@ -7,6 +7,7 @@ import mdx from '@astrojs/mdx'
 import remarkDirective from 'remark-directive'
 import { visit } from 'unist-util-visit'
 import pagefind from 'astro-pagefind'
+import sitemap from '@astrojs/sitemap'
 import vercel from '@astrojs/vercel'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
@@ -70,6 +71,8 @@ function remarkAdmonitions() {
 
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://jeremyho.tw',
+
   // 明確指定 static，確保 pagefind 搜尋功能正常運作
   output: 'static',
 
@@ -79,7 +82,8 @@ export default defineConfig({
   integrations: [
     svelte(),
     mdx(),
-    pagefind()
+    pagefind(),
+    sitemap()
   ],
 
   vite: {

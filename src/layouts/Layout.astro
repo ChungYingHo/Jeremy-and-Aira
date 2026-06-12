@@ -14,6 +14,11 @@ const FONT_CSS_URL = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;50
 interface Props {
   title?: string
   description?: string
+  image?: string
+  type?: 'website' | 'article'
+  publishedTime?: string
+  author?: string
+  tags?: string[]
 }
 
 const SITE_NAME = 'Jeremy'
@@ -21,9 +26,39 @@ const SITE_NAME = 'Jeremy'
 const {
   title = SITE_NAME,
   description = "Jeremy's Tech Blog",
+  image = '/icon-512.png',
+  type = 'website',
+  publishedTime,
+  author = SITE_NAME,
+  tags = [],
 } = Astro.props
 
 const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site).href
+const ogImage = new URL(image, Astro.site).href
+const twitterCard = image === '/icon-512.png' ? 'summary' : 'summary_large_image'
+
+const jsonLd = type === 'article'
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: title,
+      description,
+      image: ogImage,
+      url: canonicalURL,
+      author: { '@type': 'Person', name: author },
+      publisher: { '@type': 'Person', name: SITE_NAME },
+      ...(publishedTime ? { datePublished: publishedTime } : {}),
+      ...(tags.length ? { keywords: tags.join(', ') } : {}),
+    }
+  : {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: SITE_NAME,
+      url: new URL('/', Astro.site).href,
+      description,
+    }
 ---
 
 <!doctype html>
@@ -33,8 +68,30 @@ const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
 
     <title>{pageTitle}</title>
+
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:locale" content="zh_TW" />
+    <meta property="og:image" content={ogImage} />
+    {type === 'article' && publishedTime && (
+      <meta property="article:published_time" content={publishedTime} />
+    )}
+    {type === 'article' && <meta property="article:author" content={author} />}
+    {type === 'article' && tags.map((tag) => <meta property="article:tag" content={tag} />)}
+
+    <meta name="twitter:card" content={twitterCard} />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
+
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />

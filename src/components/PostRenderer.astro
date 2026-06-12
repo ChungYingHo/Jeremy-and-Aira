@@ -3,6 +3,7 @@ import type { CollectionEntry } from 'astro:content'
 import 'katex/dist/katex.min.css'
 import { AUTHORS } from '@/constants/authors'
 import { formatDisplayDate } from '@/utils/date'
+import { getExcerpt } from '@/utils/excerpt'
 import Layout from '@/layouts/Layout.astro'
 import type { NavLink } from '@/utils/content'
 
@@ -20,6 +21,7 @@ const authorData = AUTHORS.find(a => a.name.toLowerCase() === authorKey.toLowerC
 
 const publishDate = entry.data.date ? new Date(entry.data.date) : new Date()
 const tags: string[] = entry.data.tags || []
+const description = entry.data.description ?? getExcerpt(entry.body)
 
 // Sort changelog descending, keep top 3
 const changelog = (entry.data.changelog || [])
@@ -28,7 +30,14 @@ const changelog = (entry.data.changelog || [])
   .slice(0, 3);
 ---
 
-<Layout title={entry.data.title} description={entry.data.title}>
+<Layout
+  title={entry.data.title}
+  description={description}
+  type="article"
+  publishedTime={publishDate.toISOString()}
+  author={authorData.name}
+  tags={tags}
+>
 
   {/* Inline transform, not Tailwind scale-x-*: the standalone `scale` property would multiply with the script's scaleX */}
   <div id="progress-bar" class="fixed top-0 left-0 h-[3px] bg-gradient-to-r from-moss-soft to-moss z-[100] w-full origin-left" style="transform: scaleX(0)"></div>
