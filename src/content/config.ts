@@ -10,7 +10,7 @@ const commonSchema = z.object({
   sameDateSort: z.number().optional().default(0),
 })
 
-const codexCollection = defineCollection({
+const techbookCollection = defineCollection({
   type: 'content',
   schema: commonSchema,
 })
@@ -26,7 +26,7 @@ const releaseNotesCollection = defineCollection({
 })
 
 export const collections = {
-  'codex': codexCollection,
+  'techbook': techbookCollection,
   'blog': blogCollection,
   'release-notes': releaseNotesCollection,
 }

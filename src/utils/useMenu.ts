@@ -157,7 +157,7 @@ export async function useMenu() {
   validCollectionMenus.sort((a, b) => {
     const getWeight = (title: string) => {
       const t = title.toLowerCase()
-      if (t === 'codex') return 1
+      if (t === 'techbook') return 1
       if (t === 'blog') return 999
       return 50
     }

@@ -1,7 +1,8 @@
 {
   "redirects": [
-    { "source": "/notes/:path*", "destination": "/codex/:path*", "permanent": true },
-    { "source": "/series/:path*", "destination": "/codex/series/:path*", "permanent": true },
-    { "source": "/languages/:path*", "destination": "/codex/languages/:path*", "permanent": true }
+    { "source": "/notes/:path*", "destination": "/techbook/:path*", "permanent": true },
+    { "source": "/series/:path*", "destination": "/techbook/series/:path*", "permanent": true },
+    { "source": "/languages/:path*", "destination": "/techbook/languages/:path*", "permanent": true },
+    { "source": "/codex/:path*", "destination": "/techbook/:path*", "permanent": true }
   ]
 }

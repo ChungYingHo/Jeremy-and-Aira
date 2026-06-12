@@ -5,11 +5,11 @@ import PostRenderer from '@/components/PostRenderer.astro'
 import type { CollectionEntry } from 'astro:content'
 
 export async function getStaticPaths() {
-  return generateCollectionPaths('codex')
+  return generateCollectionPaths('techbook')
 }
 
 type Props = {
-  entry: CollectionEntry<'codex'>;
+  entry: CollectionEntry<'techbook'>;
   prev: NavLink;
   next: NavLink;
 }

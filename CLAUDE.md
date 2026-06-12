@@ -51,7 +51,7 @@ src/
 │   └── seriesLabels.ts     # 系列名稱對應表
 ├── content/                # Astro Content Collections（MDX 文章）
 │   ├── blog/
-│   ├── codex/              # 軟體開發筆記（原 notes，路由 /codex）
+│   ├── techbook/          # 軟體開發筆記（原 notes → codex，路由 /techbook）
 │   │   ├── languages/      # 程式語言筆記（原為獨立 collection，已合併入此）
 │   │   └── series/         # iThome 鐵人賽系列（原為獨立 series collection，已合併入此）
 │   ├── release-notes/      # Aira Studio 作品 release notes（目前無內容）
@@ -167,8 +167,8 @@ sameDateSort?: number // 同日期文章排序微調，預設 0
 | :--- | :--- |
 | **Svelte for 互動組件** | Menu 與 Search 使用 Svelte，其餘為 Astro（zero-JS 優先） |
 | **`src/models/menu.ts` 是 SSOT** | 所有路由型別與選單資料集中於此，不要分散 |
-| **Codex（原 Notes）** | 軟體開發筆記 collection，資料夾 `src/content/codex/`、路由 `/codex`。原 `notes` 已改名為 `codex`（名字、路由、collection key 一致） |
-| **Languages、Series 已合併入 Codex** | `src/content/codex/languages/`（程式語言）與 `src/content/codex/series/`（iThome 鐵人賽，原獨立 series collection）都是 codex 的子資料夾，不再是獨立 collection |
+| **TechBook（原 Notes → Codex）** | 軟體開發筆記 collection，資料夾 `src/content/techbook/`、路由 `/techbook`、導覽列顯示 `TechBook`（名字、路由、collection key 一致）。`notes` → `codex` → `techbook` 兩度更名，避免與 ChatGPT Codex 混淆 |
+| **Languages、Series 已合併入 TechBook** | `src/content/techbook/languages/`（程式語言）與 `src/content/techbook/series/`（iThome 鐵人賽，原獨立 series collection）都是 techbook 的子資料夾，不再是獨立 collection |
 | **Aira 選單自動顯示/隱藏** | `release-notes` collection 目前無內容，`useMenu` 自動過濾空 group，Aira 按鈕不會出現；有內容才會出現 |
 | **Blog 排序特殊處理** | Blog 列表為「新到舊」（與選單、prev/next 的舊到新相反），方向寫在 `src/pages/blog/index.astro`，時間戳共用 `entryTimestamp()` |
 | **文章配色變數** | `PostRenderer.astro` 樣式只用 CSS 變數：全站 token 來自 `tailwind.css` 的 `@theme`（`--color-*`、`--font-*`），文章專用色階定義在該檔頂部的 `:root`（`--md-*`），透明變化用 `color-mix()`；改色票不要逐字搜換 hex |
