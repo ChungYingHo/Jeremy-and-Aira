@@ -67,6 +67,14 @@ const jsonLd = type === 'article'
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
+
+    <script async is:inline src="https://www.googletagmanager.com/gtag/js?id=G-X57D2M0BZX"></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || []
+      function gtag() { dataLayer.push(arguments) }
+      gtag('js', new Date())
+      gtag('config', 'G-X57D2M0BZX')
+    </script>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL} />
 
