@@ -83,7 +83,7 @@ export default defineConfig({
     svelte(),
     mdx(),
     pagefind(),
-    sitemap()
+    sitemap({ filter: (page) => !page.includes('/og/') })
   ],
 
   vite: {

@@ -22,6 +22,7 @@ const authorData = AUTHORS.find(a => a.name.toLowerCase() === authorKey.toLowerC
 const publishDate = entry.data.date ? new Date(entry.data.date) : new Date()
 const tags: string[] = entry.data.tags || []
 const description = entry.data.description ?? getExcerpt(entry.body)
+const ogImage = `/og/${entry.collection}/${entry.slug}.png`
 
 // Sort changelog descending, keep top 3
 const changelog = (entry.data.changelog || [])
@@ -33,6 +34,7 @@ const changelog = (entry.data.changelog || [])
 <Layout
   title={entry.data.title}
   description={description}
+  image={ogImage}
   type="article"
   publishedTime={publishDate.toISOString()}
   author={authorData.name}

@@ -1,8 +1,13 @@
-const MAX_LENGTH = 150
+const DEFAULT_LENGTH = 150
+
+export function clamp(text: string, max: number): string {
+  if (text.length <= max) return text
+  return `${text.slice(0, max).trimEnd()}…`
+}
 
 // Derives a plain-text meta description from raw MDX body when frontmatter has no `description`.
 // Strips import/export lines, admonition/JSX markers, and inline markdown tokens — best-effort, not a full parser.
-export function getExcerpt(body: string): string {
+export function getExcerpt(body: string, maxLength = DEFAULT_LENGTH): string {
   const text = body
     .replace(/```[\s\S]*?```/g, '')
     .replace(/^import\s.+$/gm, '')
@@ -19,6 +24,5 @@ export function getExcerpt(body: string): string {
     .replace(/\s+/g, ' ')
     .trim()
 
-  if (text.length <= MAX_LENGTH) return text
-  return `${text.slice(0, MAX_LENGTH).trimEnd()}…`
+  return clamp(text, maxLength)
 }
