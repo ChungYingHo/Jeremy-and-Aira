@@ -45,7 +45,7 @@
   let step = 0
 
   $: mode = modes[activeMode]
-  $: maxStep = KEYS.length
+  const maxStep = KEYS.length
   $: currentKey = step > 0 ? KEYS[step - 1] : null
   $: currentPath = step > 0 ? mode.paths[step - 1] : null
 

@@ -78,7 +78,6 @@ import Layout from '@/layouts/Layout.astro';
 </Layout>
 
 <script>
-// === 1. Greeting ===
 const greetingContainer = document.getElementById('greeting-container')
 const greetingMain = document.getElementById('greeting-main')
 const greetingSub = document.getElementById('greeting-sub')
@@ -109,12 +108,11 @@ const initPage = () => {
   })
 }
 
-// === 2. Splatter Logic ===
 const container = document.getElementById('splatter-container')
 const canvasArea = document.getElementById('canvas-area')
-// 定義手機斷點 (小於 640px 視為手機，避開平板)
+// < 640px counts as phone — tablets keep desktop sizing
 const PHONE_BREAKPOINT = 640
-const MAX_BLOBS = window.innerWidth < PHONE_BREAKPOINT ? 10 : 20 // 手機總上限也稍微調低
+const MAX_BLOBS = window.innerWidth < PHONE_BREAKPOINT ? 10 : 20
 
 const COLORS = [
   '#a8bfa0', '#d8a79e', '#dcc49a', '#a9c3d4',
@@ -128,18 +126,14 @@ const createSplatter = (x: number, y: number, isInitial = false) => {
 
   const isPhone = window.innerWidth < PHONE_BREAKPOINT
   const color = COLORS[Math.floor(Math.random() * COLORS.length)]
-  
+
   let size
   if (isPhone) {
-    // 手機版：大幅縮小尺寸以避免擁擠
-    // 初始載入稍微大一點，普通點擊或閒置生成則很小
     size = isInitial ? random(80, 160) : random(40, 90)
   } else {
-    // 電腦/平板版維持原樣
     size = isInitial ? random(150, 350) : random(80, 220)
   }
-  
-  // Group
+
   const group = document.createElement('div')
   group.style.position = 'absolute'
   group.style.left = `${x}px`
@@ -147,8 +141,7 @@ const createSplatter = (x: number, y: number, isInitial = false) => {
   group.style.pointerEvents = 'none'
   group.style.zIndex = '0'
   group.style.opacity = '1'
-  
-  // Main Blob
+
   const mainBlob = document.createElement('div')
   const r1 = random(35, 65)
   const r2 = random(35, 65)
@@ -167,17 +160,15 @@ const createSplatter = (x: number, y: number, isInitial = false) => {
 
   group.appendChild(mainBlob)
 
-  // Droplets (手機版減少飛濺的數量和距離)
   const dropletsCount = isPhone ? Math.floor(random(2, 5)) : Math.floor(random(4, 9))
-  
+
   for (let i = 0; i < dropletsCount; i++) {
     const drop = document.createElement('div')
-    // 手機版飛濺液滴也按比例縮小
     const dropSize = random(size * 0.08, size * 0.18)
-    const distance = isPhone 
-      ? random(size * 0.5, size * 0.7) // 手機版飛濺距離縮短
+    const distance = isPhone
+      ? random(size * 0.5, size * 0.7)
       : random(size * 0.55, size * 0.9)
-    
+
     const angle = random(0, Math.PI * 2)
     
     const dx = Math.cos(angle) * distance
@@ -214,9 +205,8 @@ const createSplatter = (x: number, y: number, isInitial = false) => {
     })
   })
 
-  // Lifecycle
   setTimeout(() => {
-    group.dataset.dying = 'true' 
+    group.dataset.dying = 'true'
     group.style.transition = 'opacity 1s ease-out'
     group.style.opacity = '0'
     setTimeout(() => {
@@ -226,14 +216,12 @@ const createSplatter = (x: number, y: number, isInitial = false) => {
     }, 1000)
   }, 5000)
 
-  // Hard Limit (移除最舊的)
   if (container.children.length > MAX_BLOBS) {
     const oldest = container.firstChild
     if (oldest) container.removeChild(oldest)
   }
 }
 
-// === 3. Idle Loop ===
 let lastInteractionTime = Date.now()
 
 const resetTimer = () => {
@@ -244,8 +232,6 @@ const startIdleLoop = () => {
   setInterval(() => {
     const now = Date.now()
     const isPhone = window.innerWidth < PHONE_BREAKPOINT
-    
-    // 設定閒置生成上限：手機 3 個，其他設備 5 個
     const IDLE_LIMIT = isPhone ? 3 : 5
 
     let activeCount = 0
@@ -257,9 +243,8 @@ const startIdleLoop = () => {
       }
     }
 
-    // 只有在活躍數量低於限制時才自動生成
     if (now - lastInteractionTime > 2000 && activeCount < IDLE_LIMIT) {
-      // 確保生成位置稍微向內縮，避免手機版切邊
+      // spawn inset from the edges so phone-width splats don't clip
       const margin = isPhone ? 0.2 : 0.1
       const x = random(window.innerWidth * margin, window.innerWidth * (1 - margin))
       const y = random(window.innerHeight * margin, window.innerHeight * (1 - margin))
@@ -268,12 +253,9 @@ const startIdleLoop = () => {
   }, 1000)
 }
 
-// === 4. Init ===
 window.addEventListener('DOMContentLoaded', () => {
   initPage()
-  
-  // Progressive Entrance (初始動畫)
-  // 這裡不需要改，因為 createSplatter 內部已經判斷尺寸了
+
   setTimeout(() => createSplatter(window.innerWidth * 0.25, window.innerHeight * 0.35, true), 500)
   setTimeout(() => createSplatter(window.innerWidth * 0.75, window.innerHeight * 0.65, true), 1200)
   setTimeout(() => createSplatter(window.innerWidth * 0.5, window.innerHeight * 0.5, true), 2000)

@@ -15,4 +15,5 @@
   --color-line: #e4e1da;
 
   --font-serif: 'Lora', 'Noto Serif TC', 'Georgia', serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'Cascadia Mono', Consolas, monospace;
 }

@@ -1,7 +1,9 @@
 import type { MenuItem, MenuGroup } from '@/models/menu'
 import { MENU_COLLECTIONS, type CollectionType } from '@/models/menu'
-import { getCollection, type CollectionEntry } from 'astro:content'
+import type { CollectionEntry } from 'astro:content'
 import { SERIES_LABELS } from '@/constants/seriesLabels'
+import { getPublishedEntries } from '@/utils/content'
+import { compareSortKeys } from '@/utils/sort'
 
 function removeDatePrefix(fileSegment: string): string {
   return fileSegment.replace(/^\d{8}-/, '')
@@ -14,9 +16,8 @@ function humanizeSegment(pathSegment: string): string {
 }
 
 function resolveEntryTitle(entry: CollectionEntry<CollectionType>): string {
-  const data = entry.data as any
-  if (data.title) return data.title
-  
+  if (entry.data.title) return entry.data.title
+
   const slugParts = entry.slug.split('/')
   const fileName = slugParts[slugParts.length - 1]
   return humanizeSegment(fileName)
@@ -63,7 +64,7 @@ function insertEntryIntoTree(
         href: href,
         date: entry.data.date,
         sameDateSort: entry.data.sameDateSort,
-      } as any)
+      })
     } else {
       const groupTitle = (SERIES_LABELS as Record<string, string>)[segment] || humanizeSegment(segment)
       
@@ -77,20 +78,10 @@ function insertEntryIntoTree(
 function sortMenuTree(menuItems: MenuItem[]): void {
   menuItems.sort((a, b) => {
     if (a.type === 'page' && b.type === 'page') {
-      const pageA = a as any
-      const pageB = b as any
-
-      if (pageA.date && pageB.date) {
-        const timeA = new Date(pageA.date).getTime()
-        const timeB = new Date(pageB.date).getTime()
-        if (timeA !== timeB) return timeA - timeB
-      }
-
-      const sortA = pageA.sameDateSort ?? 0
-      const sortB = pageB.sameDateSort ?? 0
-      if (sortA !== sortB) return sortA - sortB
-
-      return a.title.localeCompare(b.title)
+      return compareSortKeys(
+        { time: a.date ? new Date(a.date).getTime() : null, sameDateSort: a.sameDateSort, title: a.title },
+        { time: b.date ? new Date(b.date).getTime() : null, sameDateSort: b.sameDateSort, title: b.title },
+      )
     }
 
     if (a.type !== b.type) return a.type === 'page' ? -1 : 1
@@ -119,13 +110,10 @@ function sortMenuTree(menuItems: MenuItem[]): void {
 async function buildTreeFromCollection(name: CollectionType, baseUrl: string) {
   const tree: MenuItem[] = []
 
-  // `as any` bypasses Astro's overloaded getCollection type — intentional workaround
-  const entries = await getCollection(name as any, (entry: any) => {
-    return entry.data.draft !== true
-  })
+  const entries = await getPublishedEntries(name)
 
   for (const entry of entries) {
-    insertEntryIntoTree(tree, entry as CollectionEntry<CollectionType>, baseUrl)
+    insertEntryIntoTree(tree, entry, baseUrl)
   }
 
   sortMenuTree(tree)

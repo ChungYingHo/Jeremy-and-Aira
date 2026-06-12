@@ -1,58 +1,63 @@
-import { getCollection } from 'astro:content'
+import { getCollection, type CollectionEntry } from 'astro:content'
 import type { CollectionType } from '@/models/menu'
 import { MENU_COLLECTIONS } from '@/models/menu'
+import { parseDateFromSlug } from '@/utils/date'
+import { compareSortKeys } from '@/utils/sort'
 
 export type NavLink = { title: string; href: string } | null
 
-function slugToTimestamp(slug: string): number {
-  const parts = slug.split('/')
-  const filename = parts[parts.length - 1]
-  const match = filename.match(/^(\d{4})(\d{2})(\d{2})-/)
-  if (match) return new Date(`${match[1]}-${match[2]}-${match[3]}`).valueOf()
-  return 0
+type Entry = CollectionEntry<CollectionType>
+
+/** All non-draft entries of a collection. */
+export async function getPublishedEntries<T extends CollectionType>(collectionName: T): Promise<CollectionEntry<T>[]> {
+  // `as any` bypasses Astro's overloaded getCollection type — intentional workaround
+  return await getCollection(collectionName as any, (entry: any) => entry.data.draft !== true) as CollectionEntry<T>[]
+}
+
+/** Publish timestamp: frontmatter date first, falling back to the YYYYMMDD- filename prefix. */
+export function entryTimestamp(entry: Entry): number {
+  const time = entry.data.date
+    ? new Date(entry.data.date).valueOf()
+    : parseDateFromSlug(entry.slug)?.valueOf() ?? 0
+  return Number.isNaN(time) ? 0 : time
 }
 
 function slugGroup(slug: string): string {
-  const parts = slug.split('/')
-  return parts.slice(0, -1).join('/')
+  return slug.split('/').slice(0, -1).join('/')
 }
 
 export async function generateCollectionPaths(collectionName: CollectionType) {
-  // `as any` bypasses Astro's overloaded getCollection type — intentional workaround
-  const entries = await getCollection(collectionName as any, (entry: any) => {
-    return entry.data.draft !== true
-  })
+  const entries = await getPublishedEntries(collectionName)
 
   const baseUrl = MENU_COLLECTIONS.find(c => c.collectionName === collectionName)?.baseUrl ?? `/${collectionName}`
 
-  // Sort ascending (oldest first) with same tiebreakers as useMenu
-  const sorted = [...entries].sort((a: any, b: any) => {
-    const dateA = a.data.date ? new Date(a.data.date).valueOf() : slugToTimestamp(a.slug)
-    const dateB = b.data.date ? new Date(b.data.date).valueOf() : slugToTimestamp(b.slug)
-    if (dateA !== dateB) return dateA - dateB
-    const sortDiff = (a.data.sameDateSort ?? 0) - (b.data.sameDateSort ?? 0)
-    if (sortDiff !== 0) return sortDiff
-    return (a.data.title ?? '').localeCompare(b.data.title ?? '')
-  })
+  const sorted = [...entries].sort((a, b) => compareSortKeys(
+    { time: entryTimestamp(a), sameDateSort: a.data.sameDateSort, title: a.data.title ?? '' },
+    { time: entryTimestamp(b), sameDateSort: b.data.sameDateSort, title: b.data.title ?? '' },
+  ))
 
-  return sorted.map((entry: any) => {
+  // Prev/next never cross folders: siblings share the same slug prefix
+  const siblingsByGroup = new Map<string, Entry[]>()
+  for (const entry of sorted) {
     const group = slugGroup(entry.slug)
-    const siblings = sorted.filter((e: any) => slugGroup(e.slug) === group)
-    const i = siblings.findIndex((e: any) => e.slug === entry.slug)
+    const list = siblingsByGroup.get(group)
+    if (list) {
+      list.push(entry)
+    } else {
+      siblingsByGroup.set(group, [entry])
+    }
+  }
 
-    const prevEntry = siblings[i - 1] ?? null
-    const nextEntry = siblings[i + 1] ?? null
+  const toNavLink = (entry: Entry | undefined): NavLink =>
+    entry ? { title: entry.data.title ?? 'Untitled', href: `${baseUrl}/${entry.slug}` } : null
 
-    const prev: NavLink = prevEntry
-      ? { title: prevEntry.data.title ?? 'Untitled', href: `${baseUrl}/${prevEntry.slug}` }
-      : null
-    const next: NavLink = nextEntry
-      ? { title: nextEntry.data.title ?? 'Untitled', href: `${baseUrl}/${nextEntry.slug}` }
-      : null
+  return sorted.map((entry) => {
+    const siblings = siblingsByGroup.get(slugGroup(entry.slug)) ?? []
+    const i = siblings.indexOf(entry)
 
     return {
       params: { slug: entry.slug },
-      props: { entry, prev, next },
+      props: { entry, prev: toNavLink(siblings[i - 1]), next: toNavLink(siblings[i + 1]) },
     }
   })
 }

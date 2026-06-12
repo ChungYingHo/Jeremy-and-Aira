@@ -55,7 +55,7 @@
       bestRight: null,
       checking: null,
       final: null,
-      desc: `Conquer 左半：兩兩比對 → 最近為 A–B = √5 ≈ 2.24（d_L）`,
+      desc: 'Conquer 左半：兩兩比對 → 最近為 A–B = √5 ≈ 2.24（d_L）',
     },
     {
       divider: xm,
@@ -66,7 +66,7 @@
       bestRight: [4, 5],
       checking: null,
       final: null,
-      desc: `Conquer 右半：兩兩比對 → 最近為 E–F = √8 ≈ 2.83（d_R）`,
+      desc: 'Conquer 右半：兩兩比對 → 最近為 E–F = √8 ≈ 2.83（d_R）',
     },
     {
       divider: xm,
@@ -77,7 +77,7 @@
       bestRight: [4, 5],
       checking: null,
       final: null,
-      desc: `d = min(d_L, d_R) = 2.24。以中垂線為中心，取寬 2d 的帶狀區域（strip）`,
+      desc: 'd = min(d_L, d_R) = 2.24。以中垂線為中心，取寬 2d 的帶狀區域（strip）',
     },
     {
       divider: xm,
@@ -88,7 +88,7 @@
       bestRight: [4, 5],
       checking: null,
       final: null,
-      desc: `篩出 strip 內的點：左 B, C；右 D, E。依 y 排序：B(1) → D(2) → C(4) → E(5)`,
+      desc: '篩出 strip 內的點：左 B, C；右 D, E。依 y 排序：B(1) → D(2) → C(4) → E(5)',
     },
     {
       divider: xm,
@@ -121,7 +121,7 @@
       bestRight: null,
       checking: null,
       final: [0, 1],
-      desc: `最終最近距離 = √5 ≈ 2.24，點對為 A–B`,
+      desc: '最終最近距離 = √5 ≈ 2.24，點對為 A–B',
     },
   ]
 
@@ -173,7 +173,7 @@
     {/each}
 
     <!-- divider vertical line (中垂線) -->
-    {#if step.divider != null}
+    {#if typeof step.divider === 'number'}
       <line x1={toX(step.divider)} y1={toY(1) - 5} x2={toX(step.divider)} y2={toY(6)}
         stroke="#6e94b5" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.85"/>
       <text x={toX(step.divider) - 18} y={toY(6) - 4} fill="#3f5f7a" font-size="8">L</text>

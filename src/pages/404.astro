@@ -9,6 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>404 — Page Not Found | Jeremy</title>
     <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -217,7 +218,6 @@
       let state: State = 'idle'
       let score  = 0
       let hiScore = 0
-      let tick   = 0
       let speed  = 0
       let spawnIn = 0
 
@@ -249,7 +249,7 @@
 
       function resetGame() {
         state = 'running'
-        score = 0; tick = 0; speed = 4; spawnIn = 80
+        score = 0; speed = 4; spawnIn = 80
         obs = []
         dino.y = GY; dino.vy = 0; dino.grounded = true
         dino.jumps = 0; dino.dead = false; dino.leg = 0; dino.legTimer = 0
@@ -257,7 +257,7 @@
       }
 
       function update() {
-        tick++; score++
+        score++
         speed = Math.min(13, 3 + Math.pow(score / 600, 0.85))
 
         // Dino physics

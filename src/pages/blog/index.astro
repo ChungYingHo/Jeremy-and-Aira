@@ -1,53 +1,41 @@
 ---
-import Layout from '@/layouts/Layout.astro';
-import { getCollection } from 'astro:content';
+import Layout from '@/layouts/Layout.astro'
+import type { CollectionEntry } from 'astro:content'
+import { parseDateFromSlug } from '@/utils/date'
+import { getPublishedEntries, entryTimestamp } from '@/utils/content'
 
-// 1. 輔助函式：從檔名解析日期
-const parseDateFromSlug = (slug: string): Date | null => {
-  const match = slug.match(/^(\d{4})(\d{2})(\d{2})-/);
-  if (match) {
-    return new Date(`${match[1]}-${match[2]}-${match[3]}`);
-  }
-  return null;
-};
-
-// 2. 輔助函式：產生文章摘要
-const getPostExcerpt = (post: any) => {
-  if (post.data.description) return post.data.description;
-  const body = post.body || '';
+// Strips MDX noise (imports, ::: directives, JSX tags) and markdown syntax for a plain-text excerpt
+const getPostExcerpt = (post: CollectionEntry<'blog'>) => {
+  const body = post.body || ''
   return body
+    .replace(/^(import|export)\s.+$/gm, '')
+    .replace(/(`{3,}|~{3,})[\s\S]*?\1/g, '')
+    .replace(/^:{3,}\s*\w*.*$/gm, '')
+    .replace(/`(.+?)`/g, '$1')
+    .replace(/<\/?[A-Za-z][^>\n]*>/g, '')
     .replace(/^#+\s+(.*)/gm, '$1')
     .replace(/!\[.*?\]\(.*?\)/g, '')
     .replace(/\[(.*?)\]\(.*?\)/g, '$1')
-    .replace(/`{3}[\s\S]*?`{3}/g, '')
-    .replace(/`(.+?)`/g, '$1')
     .replace(/(\*\*|__)(.*?)\1/g, '$2')
     .replace(/(\*|_)(.*?)\1/g, '$2')
-    .replace(/\n/g, ' ')
+    .replace(/\n+/g, ' ')
     .trim()
-    .substring(0, 140) + '...';
-};
+    .substring(0, 140) + '...'
+}
 
-// 3. 抓取 blog 集合並排序
-const posts = await getCollection('blog', ({ data }) => {
-  return data.draft !== true;
-});
+const posts = await getPublishedEntries('blog')
 
-const sortedPosts = posts.sort((a, b) => {
-  const dateA = a.data.date ? new Date(a.data.date).valueOf() : (parseDateFromSlug(a.slug)?.valueOf() || 0);
-  const dateB = b.data.date ? new Date(b.data.date).valueOf() : (parseDateFromSlug(b.slug)?.valueOf() || 0);
-  return dateB - dateA;
-});
+// Newest first, unlike the ascending order used by menus and prev/next
+const sortedPosts = posts.sort((a, b) => entryTimestamp(b) - entryTimestamp(a))
 
-// 4. 日期格式化
 const getDateParts = (date: Date | string | undefined, slug: string) => {
-  let validDate = date ? new Date(date) : parseDateFromSlug(slug);
-  if (!validDate || isNaN(validDate.getTime())) return { year: '', dateStr: '' };
-  
+  const validDate = date ? new Date(date) : parseDateFromSlug(slug)
+  if (!validDate || isNaN(validDate.getTime())) return { year: '', dateStr: '' }
+
   return {
     year: validDate.getFullYear().toString(),
-    dateStr: validDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit' }) 
-  };
+    dateStr: validDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })
+  }
 }
 ---
 
@@ -67,7 +55,7 @@ const getDateParts = (date: Date | string | undefined, slug: string) => {
     <div class="relative border-l border-line ml-2 md:ml-0 space-y-8 md:space-y-12 pb-12">
       
       {sortedPosts.map((post) => {
-        const { year, dateStr } = getDateParts(post.data.date, post.slug);
+        const { year, dateStr } = getDateParts(post.data.date, post.slug)
         
         return (
           <div class="relative pl-6 md:pl-12 group">
@@ -114,7 +102,7 @@ const getDateParts = (date: Date | string | undefined, slug: string) => {
               </article>
             </a>
           </div>
-        );
+        )
       })}
 
       <div class="absolute -left-[3px] bottom-0 w-[5px] h-[5px] rounded-full bg-ink-faint/50"></div>

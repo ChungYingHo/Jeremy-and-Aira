@@ -8,15 +8,30 @@ import remarkDirective from 'remark-directive'
 import { visit } from 'unist-util-visit'
 import pagefind from 'astro-pagefind'
 import vercel from '@astrojs/vercel'
-
-// [!code ++] 新增這兩個 import
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
+
+function rehypeLazyImages() {
+  return (/** @type {any} */ tree) => {
+    let pastFirstImage = false
+    visit(tree, 'element', (node) => {
+      if (node.tagName !== 'img') return
+      node.properties ??= {}
+      // The first image may be the LCP element — leave it eager
+      if (!pastFirstImage) {
+        pastFirstImage = true
+        return
+      }
+      node.properties.loading ??= 'lazy'
+      node.properties.decoding ??= 'async'
+    })
+  }
+}
 
 function rehypeWrapTables() {
   return (/** @type {any} */ tree) => {
     visit(tree, 'element', (node, index, parent) => {
-      if (node.tagName !== 'table' || !parent || index == null) return
+      if (node.tagName !== 'table' || !parent || typeof index !== 'number') return
       const wrapper = {
         type: 'element',
         tagName: 'div',
@@ -84,16 +99,17 @@ export default defineConfig({
     remarkPlugins: [
       remarkDirective,
       remarkAdmonitions,
-      remarkMath, // 讓 Markdown 讀懂數學語法
+      remarkMath,
     ],
     rehypePlugins: [
-      rehypeKatex, // 將數學語法轉成 HTML
+      rehypeKatex,
       rehypeWrapTables,
+      rehypeLazyImages,
     ],
   },
 
   adapter: vercel({
-    webAnalytics: { enabled: true }, // 開啟 Vercel 流量分析
-    imageService: true, // 使用 Vercel 的圖片優化服務
+    webAnalytics: { enabled: true },
+    imageService: true,
   }),
-});
+})

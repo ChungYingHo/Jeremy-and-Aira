@@ -116,14 +116,14 @@
     {/each}
 
     <!-- threshold y* line -->
-    {#if step.threshold != null}
+    {#if typeof step.threshold === 'number'}
       <line x1={toX(1)} y1={toY(step.threshold)} x2={toX(8)} y2={toY(step.threshold)}
         stroke="#c9a64e" stroke-width="1" stroke-dasharray="3 3" opacity="0.85"/>
       <text x={toX(8) + 4} y={toY(step.threshold) + 3} fill="#8a6d23" font-size="8">y*={step.threshold}</text>
     {/if}
 
     <!-- divider vertical line -->
-    {#if step.divider != null}
+    {#if typeof step.divider === 'number'}
       <line x1={toX(step.divider)} y1={toY(1) - 5} x2={toX(step.divider)} y2={toY(8) + 5}
         stroke="#6e94b5" stroke-width="1" stroke-dasharray="4 3" opacity="0.8"/>
       <text x={toX(step.divider) - 14} y={toY(8) - 4} fill="#3f5f7a" font-size="8">L</text>

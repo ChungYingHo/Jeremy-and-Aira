@@ -65,9 +65,10 @@ src/
 │   ├── tailwind.css
 │   └── main.scss
 └── utils/
-    ├── content.ts          # generateCollectionPaths()
-    ├── date.ts             # formatDate()、formatDisplayDate()
+    ├── content.ts          # getPublishedEntries()、entryTimestamp()、generateCollectionPaths()
+    ├── date.ts             # formatDisplayDate()、parseDateFromSlug()
     ├── readPath.ts         # normalizePath()（路由比對用）
+    ├── sort.ts             # compareSortKeys()（date → sameDateSort → title 共用排序鏈）
     └── useMenu.ts          # useMenu()（動態選單生成）
 ```
 
@@ -75,14 +76,22 @@ src/
 
 ## 共用工具與樣式
 
-### 日期格式化
+### 日期工具
 
-`src/utils/date.ts` 提供兩種格式，**不要在元件裡自行定義 date formatter**：
+`src/utils/date.ts`，**不要在元件裡自行定義 date formatter 或檔名日期解析**：
 
 | 函式 | 輸出範例 | 使用場景 |
 | :--- | :--- | :--- |
-| `formatDate(date)` | `January 1, 2025` | 英文長格式（en-US） |
 | `formatDisplayDate(date)` | `2025.01.01` | 文章標頭、changelog（zh-TW） |
+| `parseDateFromSlug(slug)` | `Date \| null` | 解析 `YYYYMMDD-` 檔名前綴 |
+
+### Collection 存取與排序
+
+**不要直接呼叫 `getCollection` 或自己寫排序比較**，共用工具如下：
+
+- `getPublishedEntries(name)`（`utils/content.ts`）— 取得非 draft 文章，`as any` workaround 全專案只在此出現
+- `entryTimestamp(entry)`（`utils/content.ts`）— 發布時間戳：frontmatter date 優先，缺少時退回檔名前綴
+- `compareSortKeys(a, b)`（`utils/sort.ts`）— date → sameDateSort → title 的共用排序鏈（選單與 prev/next 都用它）
 
 ### 共用樣式
 
@@ -90,7 +99,7 @@ src/
 
 - `.animate-fade-in-up` — 頁面進場動畫
 - `.custom-scrollbar` — 覆蓋面板、TOC sidebar 等的細滑桿樣式
-  - 注意：`Menu.svelte` 以 Svelte scoped CSS 覆蓋為粉色版本，屬刻意設計
+  - 注意：`Menu.svelte` 以 Svelte scoped CSS 覆蓋為苔綠（moss）版本，屬刻意設計
 
 ### 型別
 
@@ -161,11 +170,13 @@ sameDateSort?: number // 同日期文章排序微調，預設 0
 | **Codex（原 Notes）** | 軟體開發筆記 collection，資料夾 `src/content/codex/`、路由 `/codex`。原 `notes` 已改名為 `codex`（名字、路由、collection key 一致） |
 | **Languages、Series 已合併入 Codex** | `src/content/codex/languages/`（程式語言）與 `src/content/codex/series/`（iThome 鐵人賽，原獨立 series collection）都是 codex 的子資料夾，不再是獨立 collection |
 | **Aira 選單自動顯示/隱藏** | `release-notes` collection 目前無內容，`useMenu` 自動過濾空 group，Aira 按鈕不會出現；有內容才會出現 |
-| **Blog 排序特殊處理** | 排序邏輯（含從檔名解析日期）寫在 `src/pages/blog/index.astro`，非通用 utils |
+| **Blog 排序特殊處理** | Blog 列表為「新到舊」（與選單、prev/next 的舊到新相反），方向寫在 `src/pages/blog/index.astro`，時間戳共用 `entryTimestamp()` |
+| **文章配色變數** | `PostRenderer.astro` 樣式只用 CSS 變數：全站 token 來自 `tailwind.css` 的 `@theme`（`--color-*`、`--font-*`），文章專用色階定義在該檔頂部的 `:root`（`--md-*`），透明變化用 `color-mix()`；改色票不要逐字搜換 hex |
+| **品牌字體自託管** | Caveat 600/700 與 Lora italic 的 woff2 在 `public/fonts/`，`@font-face` 宣告於 `main.scss`、`Layout.astro` 負責 preload；其餘字體仍走 Google Fonts（非同步載入），新增品牌字重時兩處都要更新 |
 | **Prev/Next 導覽限同層** | `generateCollectionPaths()` 的 prev/next 只含同一資料夾下的兄弟文章（相同 slug 前綴），不跨子資料夾 |
 | **Tailwind 4 無獨立設定檔** | 無 `tailwind.config.ts`，Tailwind 與 DaisyUI 直接在 `astro.config.mjs` 透過 Vite plugin 設定 |
 | **系列顯示名稱覆蓋** | `src/constants/seriesLabels.ts` 定義 slug → 顯示標題的對照表，drilldown 選單優先取用此名稱 |
-| **數學支援** | remark-math + rehype-katex，直接在 MDX 中寫 LaTeX |
+| **數學支援** | remark-math + rehype-katex，直接在 MDX 中寫 LaTeX；`katex.min.css` 由 `PostRenderer.astro` 載入（僅文章頁），不要搬回 Layout |
 | **Admonition 語法** | remark-directive 支援 `:::note`、`:::warning`、`:::tip`、`:::danger`、`:::info` |
 | **搜尋** | Pagefind 靜態索引，build 時生成，無後端需求 |
 | **部署** | Vercel static adapter，含 Web Analytics 與 Image Service |

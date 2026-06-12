@@ -1,13 +1,24 @@
 import astro from 'eslint-plugin-astro'
+import svelte from 'eslint-plugin-svelte'
+import svelteParser from 'svelte-eslint-parser'
 import tseslint from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'
 import importPlugin from 'eslint-plugin-import'
 
+const sharedStyleRules = {
+  quotes: ['error', 'single', { avoidEscape: true }],
+  semi: ['error', 'never'],
+  eqeqeq: ['error', 'always'],
+  'no-var': 'error',
+  'prefer-const': 'error',
+}
+
 export default [
   ...astro.configs.recommended,
+  ...svelte.configs['flat/recommended'],
 
   {
-    files: ['**/*.{js,ts,tsx,mts,cts}'],
+    files: ['**/*.{js,mjs,cjs,ts,tsx,mts,cts}'],
     languageOptions: {
       parser: tsParser,
       ecmaVersion: 'latest',
@@ -66,6 +77,22 @@ export default [
     files: ['**/*.astro'],
     rules: {
       'no-console': 'off',
+      ...sharedStyleRules,
+    },
+  },
+
+  {
+    files: ['**/*.svelte'],
+    languageOptions: {
+      parser: svelteParser,
+      parserOptions: {
+        parser: tsParser,
+      },
+    },
+    rules: {
+      ...sharedStyleRules,
+      // Visualizer components iterate fixed-length arrays and rely on positional updates
+      'svelte/require-each-key': 'off',
     },
   },
 ]

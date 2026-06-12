@@ -1,40 +1,40 @@
 <script>
   import { onMount } from 'svelte'
   import Chart from 'chart.js/auto'
-  import ChartDataLabels from 'chartjs-plugin-datalabels';
+  import ChartDataLabels from 'chartjs-plugin-datalabels'
 
   let canvas
 
   onMount(() => {
-    Chart.register(ChartDataLabels);
+    Chart.register(ChartDataLabels)
 
-    const maxN = 12;
-    const yAxisMax = 120;
+    const maxN = 12
+    const yAxisMax = 120
 
     function generateData(calcFn) {
-        const data = [];
+        const data = []
         for (let x = 1; x <= maxN; x++) {
-            const y = calcFn(x);
+            const y = calcFn(x)
             
             if (y >= yAxisMax) {
                 if (y === yAxisMax) {
-                    data.push({ x: x, y: yAxisMax });
+                    data.push({ x: x, y: yAxisMax })
                 } else {
-                    const prevX = x - 1;
-                    const prevY = data[data.length - 1].y;
-                    const fraction = (yAxisMax - prevY) / (y - prevY);
-                    const exactX = prevX + fraction;
+                    const prevX = x - 1
+                    const prevY = data[data.length - 1].y
+                    const fraction = (yAxisMax - prevY) / (y - prevY)
+                    const exactX = prevX + fraction
                     
-                    data.push({ x: exactX, y: yAxisMax });
+                    data.push({ x: exactX, y: yAxisMax })
                 }
-                break; 
+                break 
             }
-            data.push({ x: x, y: y });
+            data.push({ x: x, y: y })
         }
-        return data;
+        return data
     }
 
-    const factorial = (n) => (n <= 1 ? 1 : n * factorial(n - 1));
+    const factorial = (n) => (n <= 1 ? 1 : n * factorial(n - 1))
 
     const datasets = [
       { label: 'O(1)', data: generateData(() => 3), borderColor: '#5f7355' },
@@ -51,9 +51,9 @@
         pointHoverRadius: 6,
         borderWidth: 2,
         fill: false
-    }));
+    }))
 
-    new Chart(canvas, {
+    const chart = new Chart(canvas, {
       type: 'line',
       data: { datasets },
       options: {
@@ -82,11 +82,11 @@
             offset: 4,
             clip: false,
             formatter: (value, context) => {
-                const dataArray = context.dataset.data;
+                const dataArray = context.dataset.data
                 if (context.dataIndex === dataArray.length - 1) {
-                    return context.dataset.label;
+                    return context.dataset.label
                 }
-                return null;
+                return null
             }
           }
         },
@@ -112,6 +112,8 @@
         }
       }
     })
+
+    return () => chart.destroy()
   })
 </script>
 

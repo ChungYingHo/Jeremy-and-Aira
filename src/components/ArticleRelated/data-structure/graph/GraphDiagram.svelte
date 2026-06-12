@@ -46,6 +46,7 @@
     const cur = step >= 0 ? order[step] : null
 
     // collect tree edges revealed so far
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- local temp rebuilt on every run of this block
     const treeEdgeSet = new Set()
     if (step >= 0) {
       mode.treeEdges.slice(0, step + 1).forEach(e => {

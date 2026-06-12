@@ -1,11 +1,11 @@
 ---
-import { generateCollectionPaths } from '@/utils/content';
-import type { NavLink } from '@/utils/content';
-import PostRenderer from '@/components/PostRenderer.astro';
-import type { CollectionEntry } from 'astro:content';
+import { generateCollectionPaths } from '@/utils/content'
+import type { NavLink } from '@/utils/content'
+import PostRenderer from '@/components/PostRenderer.astro'
+import type { CollectionEntry } from 'astro:content'
 
 export async function getStaticPaths() {
-  return generateCollectionPaths('codex');
+  return generateCollectionPaths('codex')
 }
 
 type Props = {

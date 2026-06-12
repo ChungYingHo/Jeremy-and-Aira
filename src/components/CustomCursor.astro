@@ -104,7 +104,6 @@ const initCursor = () => {
   requestAnimationFrame(render)
 }
 
-document.addEventListener('astro:page-load', initCursor)
 document.addEventListener('DOMContentLoaded', initCursor)
 </script>
 
@@ -169,9 +168,13 @@ document.addEventListener('DOMContentLoaded', initCursor)
       opacity: 1;
     }
 
-    /* 連結與按鈕：隱藏系統游標 */
-    :global(body.custom-cursor-active) :global(a), 
-    :global(body.custom-cursor-active) :global(button) {
+    /* UA cursors on interactive/form elements are not overridden by body's cursor:none */
+    :global(body.custom-cursor-active) :global(a),
+    :global(body.custom-cursor-active) :global(button),
+    :global(body.custom-cursor-active) :global(input),
+    :global(body.custom-cursor-active) :global(textarea),
+    :global(body.custom-cursor-active) :global(select),
+    :global(body.custom-cursor-active) :global(label) {
       cursor: none !important;
     }
     

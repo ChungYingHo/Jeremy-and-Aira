@@ -4,10 +4,12 @@ import '@/styles/main.scss'
 import Menu from '@/components/Menu/Menu.svelte'
 import { useMenu } from '@/utils/useMenu'
 import CustomCursor from '@/components/CustomCursor.astro'
-import 'katex/dist/katex.min.css'
 
 const { menu } = await useMenu()
 const currentPath = Astro.url.pathname
+
+// Caveat and Lora italic are self-hosted in public/fonts/ — keep them out of this request
+const FONT_CSS_URL = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Lora:wght@400;500;600&family=Noto+Serif+TC:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap'
 
 interface Props {
   title?: string
@@ -28,22 +30,29 @@ const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
 <html lang="zh-TW" class="scroll-smooth overflow-x-hidden">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
 
     <title>{pageTitle}</title>
     <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Serif+TC:wght@500;600;700&family=Caveat:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
+    {/* Self-hosted brand fonts (declared in main.scss) preloaded so the masthead renders without font swap */}
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/caveat-700-latin.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/lora-italic-400-latin.woff2" />
+    {/* Async font CSS keeps the huge CJK stylesheets off the critical render path */}
+    <link rel="preload" as="style" href={FONT_CSS_URL} />
+    <link rel="stylesheet" href={FONT_CSS_URL} media="print" onload="this.media='all'" />
+    <noscript>
+      <link rel="stylesheet" href={FONT_CSS_URL} />
+    </noscript>
   </head>
 
   <body
@@ -61,11 +70,12 @@ const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
     "
   >
     <div class="fixed inset-0 z-[-1] w-full h-full pointer-events-none">
-      <div class="absolute top-[-12%] left-[-8%] w-[500px] h-[500px] bg-moss-soft/10 blur-[120px] rounded-full"></div>
-      <div class="absolute bottom-[-12%] right-[-6%] w-[600px] h-[600px] bg-clay/5 blur-[130px] rounded-full"></div>
+      {/* Radial gradients instead of filter:blur — same glow, no per-frame GPU blur cost on mobile */}
+      <div class="absolute top-[-12%] left-[-8%] w-[640px] h-[640px] bg-[radial-gradient(circle_at_center,rgba(139,160,126,0.10),transparent_65%)]"></div>
+      <div class="absolute bottom-[-12%] right-[-6%] w-[760px] h-[760px] bg-[radial-gradient(circle_at_center,rgba(179,103,74,0.05),transparent_65%)]"></div>
     </div>
 
-    <Menu client:load rootItems={menu} currentPath={currentPath} />
+    <Menu client:idle rootItems={menu} currentPath={currentPath} />
 
     <main class="flex-1 w-full max-w-5xl mx-auto px-6 pt-32 pb-24 relative z-10">
       <slot />

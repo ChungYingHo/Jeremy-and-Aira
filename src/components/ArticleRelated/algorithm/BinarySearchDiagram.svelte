@@ -29,7 +29,7 @@
   $: cells = arr.map((v, i) => {
     const isMid = i === step.mid
     const isPruned = i < step.lo || i > step.hi
-    let fill, stroke, textFill
+    let fill, stroke
     if (isMid) {
       fill = step.cmp === 'eq' ? '#e6ece2' : '#f3e3dc'
       stroke = step.cmp === 'eq' ? '#5f7355' : '#b3674a'
@@ -40,7 +40,7 @@
       fill = '#f0eee8'
       stroke = '#d6d1c5'
     }
-    textFill = isPruned ? '#8f8a80' : '#2d2a25'
+    const textFill = isPruned ? '#8f8a80' : '#2d2a25'
     return { v, i, x: startX + i * cellW, fill, stroke, textFill }
   })
 </script>

@@ -8,9 +8,9 @@
     [43, 15, 31, 9, 21],
   ]
   // medians of each sorted group
-  $: sortedGroups = data.map((g) => [...g].sort((a, b) => a - b))
-  $: medians = sortedGroups.map((g) => g[2])
-  $: pivot = [...medians].sort((a, b) => a - b)[2]
+  const sortedGroups = data.map((g) => [...g].sort((a, b) => a - b))
+  const medians = sortedGroups.map((g) => g[2])
+  const pivot = [...medians].sort((a, b) => a - b)[2]
 
   const W = 480, H = 260
   const cellW = 30

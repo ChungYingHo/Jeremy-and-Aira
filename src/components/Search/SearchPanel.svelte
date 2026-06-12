@@ -1,86 +1,84 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount } from 'svelte'
 
-  export let onClose: () => void; 
+  export let onClose: () => void 
   
-  let errorMsg = "";
+  let errorMsg = ''
 
   onMount(() => {
-    // 1. 定義同步事件
     const handleKeydown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+      if (e.key === 'Escape') onClose()
+    }
     
     const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.closest(".pagefind-ui__result-link")) {
-        onClose();
+      const target = e.target as HTMLElement
+      if (target.closest('.pagefind-ui__result-link')) {
+        onClose()
       }
-    };
+    }
 
-    window.addEventListener("keydown", handleKeydown);
-    const container = document.getElementById("pagefind-search");
-    container?.addEventListener("click", handleClick);
+    window.addEventListener('keydown', handleKeydown)
+    const container = document.getElementById('pagefind-search')
+    container?.addEventListener('click', handleClick)
 
-    // 2. 初始化 Pagefind
     const initPagefind = async () => {
       if (!(window as any).PagefindUI) {
         try {
-          await loadScript("/pagefind/pagefind-ui.js");
+          await loadScript('/pagefind/pagefind-ui.js')
         } catch (e) {
           try {
-             await loadScript("/_pagefind/pagefind-ui.js");
+             await loadScript('/_pagefind/pagefind-ui.js')
           } catch (e2) {
-             console.error("Pagefind script load error:", e2);
-             errorMsg = "無法載入搜尋引擎。請確認已執行 npm run build。";
-             return;
+             console.error('Pagefind script load error:', e2)
+             errorMsg = '無法載入搜尋引擎。請確認已執行 npm run build。'
+             return
           }
         }
       }
 
-      const PagefindUI = (window as any).PagefindUI;
+      const PagefindUI = (window as any).PagefindUI
       if (PagefindUI) {
         try {
           new PagefindUI({
-            element: "#pagefind-search",
+            element: '#pagefind-search',
             showImages: false,
             showSubResults: true,
             excerptLength: 15,
-            baseUrl: "/", 
+            baseUrl: '/', 
             translations: {
-              placeholder: "Search...",
-              zero_results: "No results found",
-              clear_search: "Clear" 
+              placeholder: 'Search...',
+              zero_results: 'No results found',
+              clear_search: 'Clear' 
             }
-          });
+          })
 
-          const input = document.querySelector(".pagefind-ui__search-input") as HTMLInputElement;
+          const input = document.querySelector('.pagefind-ui__search-input') as HTMLInputElement
           if (input) {
-            input.focus();
-            input.addEventListener('click', (e) => e.stopPropagation());
+            input.focus()
+            input.addEventListener('click', (e) => e.stopPropagation())
           }
         } catch (e) {
-          console.error("Pagefind init error:", e);
+          console.error('Pagefind init error:', e)
         }
       }
-    };
+    }
 
-    initPagefind();
+    initPagefind()
 
     return () => {
-      window.removeEventListener("keydown", handleKeydown);
-      container?.removeEventListener("click", handleClick);
-    };
-  });
+      window.removeEventListener('keydown', handleKeydown)
+      container?.removeEventListener('click', handleClick)
+    }
+  })
 
   function loadScript(src: string) {
     return new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = src;
-      script.onload = () => resolve(true);
-      script.onerror = () => reject(new Error(`Script load error for ${src}`));
-      document.body.appendChild(script);
-    });
+      const script = document.createElement('script')
+      script.src = src
+      script.onload = () => resolve(true)
+      script.onerror = () => reject(new Error(`Script load error for ${src}`))
+      document.body.appendChild(script)
+    })
   }
 </script>
 
@@ -122,47 +120,37 @@
     --pagefind-ui-font: 'Inter', system-ui, sans-serif;
   }
 
-  /* 1. Form 容器修正：
-       - position: relative (為了讓按鈕定位)
-       - flex-direction: column (關鍵！讓 Input 和 結果 垂直排列，不會左右擠壓)
-  */
+  /* Pagefind form must stack vertically, or results squeeze the input sideways */
   :global(.pagefind-ui__form) {
     position: relative !important;
-    display: flex !important; 
-    flex-direction: column !important; /* [修正] 垂直排列，解決 Input 被壓扁的問題 */
+    display: flex !important;
+    flex-direction: column !important;
     width: 100% !important;
   }
 
   :global(.pagefind-ui__form::before),
   :global(.pagefind-ui__form::after) { display: none !important; }
 
-  /* 2. 輸入框設定 */
   :global(.pagefind-ui__search-input) {
     width: 100% !important;
     background-color: rgba(45, 42, 37, 0.03) !important;
     border: 1px solid #e4e1da !important;
     color: #2d2a25 !important;
-    
-    /* 預留右側空間給按鈕 */
     padding: 14px 16px !important;
-    padding-right: 60px !important; 
-
+    padding-right: 60px !important;
     font-size: 16px !important;
     font-weight: 500 !important;
     border-radius: 12px !important;
     transition: all 0.2s ease !important;
     box-sizing: border-box !important;
-    
-    /* 固定高度：手機 50px */
     height: 50px !important;
   }
-  
+
   @media (min-width: 768px) {
     :global(.pagefind-ui__search-input) {
       padding: 18px 22px !important;
-      padding-right: 70px !important; 
-      font-size: 1.1rem !important; 
-      /* 固定高度：電腦 60px */
+      padding-right: 70px !important;
+      font-size: 1.1rem !important;
       height: 60px !important;
     }
   }
@@ -174,28 +162,20 @@
     box-shadow: 0 0 0 1px rgba(95, 115, 85, 0.35) !important;
   }
 
-  /* 3. 清除按鈕定位 [關鍵修正]：
-       - 不使用 top: 50% (因為結果出現後 form 會變高，50% 會跑到下面去)
-       - 改用 top: 25px / 30px (精準鎖定在 Input 高度的一半位置)
-  */
+  /* Anchored at half the input height instead of top:50% — the form grows when results render */
   :global(.pagefind-ui__search-clear) {
     position: absolute !important;
     right: 10px !important;
     z-index: 20 !important;
-    
-    /* 手機版：Input 高 50px -> Top 25px */
-    top: 25px !important; 
+    top: 25px !important;
     transform: translateY(-50%) !important;
-    
     background: transparent !important;
     color: #8f8a80 !important;
     padding: 4px 8px !important;
     margin: 0 !important;
-    
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    
     font-size: 13px !important;
     cursor: pointer !important;
     border-radius: 4px !important;
@@ -203,8 +183,7 @@
 
   @media (min-width: 768px) {
     :global(.pagefind-ui__search-clear) {
-      /* 電腦版：Input 高 60px -> Top 30px */
-      top: 30px !important; 
+      top: 30px !important;
     }
   }
   
@@ -213,11 +192,10 @@
     background: rgba(45, 42, 37, 0.05) !important;
   }
 
-  /* 4. 結果列表 */
-  :global(.pagefind-ui__drawer) { 
-    gap: 12px !important; 
+  :global(.pagefind-ui__drawer) {
+    gap: 12px !important;
     padding-top: 16px !important;
-    width: 100% !important; /* 確保佔滿寬度 */
+    width: 100% !important;
   }
 
   :global(.pagefind-ui__result) {
@@ -260,7 +238,6 @@
     }
   }
   
-  /* 5. 摘要與 line-clamp */
   :global(.pagefind-ui__result-excerpt) {
     color: #5d574d !important;
     font-size: 0.85rem !important;

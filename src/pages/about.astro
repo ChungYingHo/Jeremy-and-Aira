@@ -3,22 +3,22 @@ import Layout from '@/layouts/Layout.astro'
 import { AUTHORS } from '@/constants/authors'
 
 const SocialIcons: Record<string, string> = {
-  github: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>`,
-  linkedin: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>`,
-  npm: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 12v3H8v-3H5v7h14v-7h-3zM21 8H3v10h18V8zM3 8v-2h18v2"/></svg>`,
-  ithome: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>`,
-  default: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`
+  github: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>',
+  linkedin: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>',
+  npm: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 12v3H8v-3H5v7h14v-7h-3zM21 8H3v10h18V8zM3 8v-2h18v2"/></svg>',
+  ithome: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>',
+  default: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>'
 }
 
 const getSocialIcon = (key: string) => SocialIcons[key.toLowerCase()] || SocialIcons.default
 
 const splitSummary = (text: string) => {
-  if (!text) return { quote: '', author: '' };
-  const parts = text.split('\n');
+  if (!text) return { quote: '', author: '' }
+  const parts = text.split('\n')
   return {
     quote: parts[0],
     author: parts.length > 1 ? parts[1] : ''
-  };
+  }
 }
 ---
 
@@ -37,8 +37,8 @@ const splitSummary = (text: string) => {
     <div class="space-y-12">
       
       {AUTHORS.filter(a => !a.isHiddenFromAbout).map((author, index) => {
-        const { quote, author: quoteAuthor } = splitSummary(author.summary || '');
-        const hasPortfolio = author.portfolio && author.portfolio.length > 0;
+        const { quote, author: quoteAuthor } = splitSummary(author.summary || '')
+        const hasPortfolio = author.portfolio && author.portfolio.length > 0
         
         return (
           <article 
@@ -132,7 +132,7 @@ const splitSummary = (text: string) => {
                               "{quote}"
                             </p>
                             {quoteAuthor && (
-                              <p class="text-ink-faint text-sm mt-2 font-mono text-right md:text-right">
+                              <p class="text-ink-faint text-sm mt-2 font-mono text-right">
                                 {quoteAuthor}
                               </p>
                             )}
@@ -169,6 +169,7 @@ const splitSummary = (text: string) => {
                                 rel="noopener noreferrer"
                                 class="text-ink-faint hover:text-moss transition-colors p-2 hover:bg-ink/5 rounded-full"
                                 title={platform}
+                                aria-label={platform}
                               >
                                 <Fragment set:html={getSocialIcon(platform)} />
                               </a>
@@ -180,9 +181,11 @@ const splitSummary = (text: string) => {
                       {/* Portfolio */}
                       {hasPortfolio && (
                         <div class="w-full pt-2">
-                           <button 
+                           <button
                             class="portfolio-trigger group/btn flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-ink-faint hover:text-moss transition-colors"
                             data-target={`portfolio-${index}`}
+                            aria-expanded="false"
+                            aria-controls={`portfolio-${index}`}
                            >
                             <span>Featured Projects</span>
                             <svg 
@@ -240,7 +243,7 @@ const splitSummary = (text: string) => {
                <div class="absolute inset-0 bg-noise opacity-[0.08] mix-blend-overlay pointer-events-none rounded-[32px]"></div>
             )}
           </article>
-        );
+        )
       })}
 
     </div>
@@ -259,8 +262,9 @@ triggers.forEach((btn) => {
     if (!content) return
 
     const isExpanded = btn.getAttribute('data-expanded') === 'true'
-    
+
     btn.setAttribute('data-expanded', (!isExpanded).toString())
+    btn.setAttribute('aria-expanded', (!isExpanded).toString())
     
     if (!isExpanded) {
       content.classList.remove('grid-rows-[0fr]')

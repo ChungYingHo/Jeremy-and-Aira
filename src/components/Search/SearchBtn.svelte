@@ -1,6 +1,6 @@
 <script lang="ts">
   // 接收點擊事件
-  export let onClick: () => void;
+  export let onClick: () => void
 </script>
 
 <button

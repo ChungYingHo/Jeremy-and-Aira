@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { fly } from "svelte/transition"
-  import { cubicOut } from "svelte/easing"
-  import type { MenuItem, MenuGroup } from "@/models/menu"
+  import { fly } from 'svelte/transition'
+  import { cubicOut } from 'svelte/easing'
+  import type { MenuItem, MenuGroup } from '@/models/menu'
   
-  import { normalizePath } from "@/utils/readPath"
+  import { normalizePath } from '@/utils/readPath'
 
   export let rootItems: MenuItem[] = []
   export let initialItems: MenuItem[] | null = null
-  export let currentPath = "" 
+  export let currentPath = '' 
 
   export let onTitleChange: ((title: string) => void) | undefined = undefined
   export let onBackToRoot: (() => void) | undefined
@@ -23,7 +23,7 @@
     currentStack: MenuItem[][]
   ): { found: boolean, stack: MenuItem[][], finalItems: MenuItem[] } {
     
-    const normalizedTarget = normalizePath(targetPath);
+    const normalizedTarget = normalizePath(targetPath)
 
     for (const item of currentItems) {
       if (item.type === 'page' && normalizePath(item.href) === normalizedTarget) {
@@ -64,7 +64,7 @@
   init()
 
   function isGroup(item: MenuItem): item is MenuGroup {
-    return item.type === "group"
+    return item.type === 'group'
   }
 
   function enterGroup(item: MenuGroup) {
@@ -83,35 +83,35 @@
     direction = -1
     items = stack[stack.length - 1]
     stack = stack.slice(0, -1)
-    onTitleChange?.("")
+    onTitleChange?.('')
   }
 
   function backToRoot() {
     direction = -1
     items = initialItems ?? rootItems
     stack = []
-    onTitleChange?.("")
+    onTitleChange?.('')
   }
 
   function scrollToActive(node: HTMLElement, isActive: boolean) {
     if (isActive) {
       setTimeout(() => {
-        node.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 250);
+        node.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 250)
     }
     
     return {
       update(newIsActive: boolean) {
         if (newIsActive) {
           setTimeout(() => {
-            node.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }, 250);
+            node.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }, 250)
         }
       }
     }
   }
 
-  $: normalizedCurrentPath = normalizePath(currentPath);
+  $: normalizedCurrentPath = normalizePath(currentPath)
 </script>
 
 <div class="relative w-full">
@@ -143,8 +143,8 @@
     {#key items}
       <ul
         class="menu menu-vertical w-full col-start-1 row-start-1 p-0 gap-1"
-        in:fly={{ x: direction * 20, duration: 300, easing: cubicOut }}
-        out:fly={{ x: direction * -20, duration: 300, easing: cubicOut }}
+        in:fly|local={{ x: direction * 20, duration: 250, easing: cubicOut }}
+        out:fly|local={{ x: direction * -20, duration: 250, easing: cubicOut }}
       >
       {#each items as item}
         <li>
