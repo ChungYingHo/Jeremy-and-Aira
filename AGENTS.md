@@ -9,7 +9,7 @@ This file is the canonical, tool-neutral guidance for anyone or any automation w
 
 ## 專案概觀
 
-**Jeremy 的技術部落格**（Aira 為附屬 sub-brand，非並列作者）。Astro 5 靜態站 + Svelte 5 互動組件 + Tailwind CSS 4 / DaisyUI 5，部署 Vercel。2026-06 起為「紙與墨」淺色設計系統。
+**Jeremy 的技術部落格**（工作室 Solunastre，原名 Aira，為附屬 sub-brand，非並列作者）。Astro 5 靜態站 + Svelte 5 互動組件 + Tailwind CSS 4 / DaisyUI 5，部署 Vercel。2026-06 起為「紙與墨」淺色設計系統。
 
 ```bash
 npm run dev      # localhost:4321

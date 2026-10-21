@@ -22,7 +22,7 @@ sameDateSort?: number // 同日期文章排序微調，預設 0
 | :--- | :--- | :--- | :--- |
 | blog | `src/content/blog/` | `/blog` | 列表新到舊（與選單、prev/next 的舊到新相反），方向寫在 `src/pages/blog/index.astro` |
 | techbook | `src/content/techbook/` | `/techbook` | 軟體開發筆記；`languages/`（程式語言）與 `series/`（iThome 鐵人賽）是其子資料夾，不是獨立 collection。歷史：notes → codex → techbook 兩度更名 |
-| release-notes | `src/content/release-notes/` | — | 目前無內容；`useMenu` 自動過濾空 group，選單 'Aira' 按鈕不會出現 |
+| release-notes | `src/content/release-notes/` | — | 目前無內容；`useMenu` 自動過濾空 group，選單 'Solunastre' 按鈕不會出現 |
 
 ## 新增一個 collection 的步驟（依序）
 

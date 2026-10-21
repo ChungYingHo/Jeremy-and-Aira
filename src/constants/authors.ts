@@ -33,11 +33,6 @@ export const AUTHORS: Author[] = [
     },
     portfolio: [
       {
-        name: 'Exam Review System',
-        link: 'https://tcm-sand.vercel.app/',
-        summary: 'An online study and review system I built for a professional exam — question banks, practice sessions, and progress tracking all in one place, full-stack from front end to deployment. Still a work in progress, so the front door stays locked for now.'
-      },
-      {
         name: 'Env Aligner',
         link: 'https://www.npmjs.com/package/env-aligner',
         summary: 'Env Aligner is a lightweight CLI tool that helps you validate and align environment variables between .env and .env.example files.\n\nIt checks for missing keys, empty values, and extra variables, and optionally formats .env files to match the schema.'
@@ -61,10 +56,10 @@ export const AUTHORS: Author[] = [
     isHiddenFromAbout: true,
     coAuthorImgs: ['/assets/authors/jeremy.png', '/assets/authors/claude.png'],
   },
-  // Aira Studio：Jeremy 的附屬工作室／第二人格，日後可能獨立成站。
+  // Solunastre Studio（原 Aira）：Jeremy 的附屬工作室／第二人格，日後可能獨立成站。
   // 暫不顯示為作者卡（保留設定以便日後復用）。
   // {
-  //   name: 'Aira Studio',
+  //   name: 'Solunastre Studio',
   //   imgPath: '/assets/authors/aira.png',
   //   isSecret: true,
   // },

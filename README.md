@@ -1,4 +1,4 @@
-# Jeremy & Aira's Tech Blog
+# Jeremy's Tech Blog
 
 這是一個基於 [Astro](https://astro.build) 構建的技術部落格專案，採用了 Content Collections 來管理文章，並透過 TypeScript 進行型別安全的選單生成。
 
@@ -24,7 +24,7 @@
 │   │   ├── blog/
 │   │   ├── notes/       # CS 筆記（含 languages/ 子資料夾）
 │   │   │   └── languages/
-│   │   ├── release-notes/  # Aira Studio release notes
+│   │   ├── release-notes/  # Solunastre Studio release notes
 │   │   ├── series/
 │   │   └── config.ts    # 定義 Content Collections Schema
 │   ├── layouts/         # 頁面佈局 (Layout.astro)

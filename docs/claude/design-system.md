@@ -33,14 +33,14 @@
 - Caveat **絕不用在**：內文、文章標題、TOC、admonition、程式碼、技術 eyebrow 標籤。它只含拉丁字母，中文會 fallback，天然限制在英文品牌短句。
 - Caveat 600/700 與 Lora italic 為自託管 woff2（`public/fonts/`，`@font-face` 在 `main.scss`，preload 在 `Layout.astro`）；新增品牌字重時兩處都要更新。其餘字體走 Google Fonts 非同步載入。
 
-## 品牌定位：Jeremy 為主，Aira 為從屬
+## 品牌定位：Jeremy 為主，Solunastre 為從屬
 
-2026-06-11 定案：本站是 **Jeremy 的個人站**，Aira 是「附屬工作室／第二人格」sub-brand，不是並列作者。
+2026-06-11 定案、2026-10-22 工作室更名：本站是 **Jeremy 的個人站**，Solunastre（原名 Aira）是「附屬工作室／第二人格」sub-brand，不是並列作者。
 
 - meta 層純 Jeremy：`Layout.astro` 的 `SITE_NAME = 'Jeremy'`。
-- logo／hero：主名「Jeremy」Caveat 大字，旁邊小字 Lora 斜體「aira studio」（moss 色），靠字級與顏色做主從。
-- `authors.ts` 的 Aira Studio 物件以註解保留，勿刪除；About 頁不顯示 Aira 卡。
-- **刻意保留、勿「修正」**：文章程式碼範例裡的 `name: 'Aira'`、CDN 路徑 `jeremy-and-aira/...`（改了會破圖）、blog `20260215-astro.mdx` 講站名由來、`models/menu.ts` release-notes 的 title 'Aira'（空 collection，選單自動隱藏）。
+- logo／hero：主名「Jeremy」Caveat 大字，旁邊小字 Lora 斜體「solunastre studio」（moss 色），靠字級與顏色做主從。
+- `authors.ts` 的 Solunastre Studio 物件以註解保留，勿刪除；About 頁不顯示工作室卡。頭像檔仍為 `public/assets/authors/aira.png`。
+- **刻意保留、勿「修正」**：文章程式碼範例裡的 `name: 'Aira'`（只是範例人名）、CDN 路徑 `jeremy-and-aira/...`（改了會破圖）、`package.json` 的 `jeremy-and-aira`（對應 repo 名）、blog `20260215-astro.mdx` 講站名由來（已加註更名）。`models/menu.ts` release-notes 的 title 為 'Solunastre'（空 collection，選單自動隱藏）。
 - 「Jeremy & Claude」共同作者署名保留。
 
 ## 其他

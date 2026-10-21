@@ -171,7 +171,7 @@
             class="text-ink group-hover:text-moss transition-colors duration-300"
             style="font-family: 'Caveat', cursive; font-weight: 700; font-size: 1.65rem; line-height: 1"
           >Jeremy</span>
-          <span class="font-serif italic text-moss-soft text-[10px] md:text-[11px] tracking-[0.16em]">aira studio</span>
+          <span class="font-serif italic text-moss-soft text-[10px] md:text-[11px] tracking-[0.16em]">solunastre studio</span>
         </span>
       </a>
 

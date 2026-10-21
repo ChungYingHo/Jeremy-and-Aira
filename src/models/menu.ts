@@ -25,5 +25,5 @@ export type MenuCollectionConfig = {
 export const MENU_COLLECTIONS: MenuCollectionConfig[] = [
   { collectionName: 'blog', title: 'Blog', baseUrl: '/blog' },
   { collectionName: 'techbook', title: 'TechBook', baseUrl: '/techbook' },
-  { collectionName: 'release-notes', title: 'Aira', baseUrl: '/release-notes' },
+  { collectionName: 'release-notes', title: 'Solunastre', baseUrl: '/release-notes' },
 ]
