@@ -68,9 +68,9 @@ const recentPosts = [...dailyPosts, ...notePosts].sort((a, b) => compareSortKeys
   h2 { font-family: var(--font-body); font-size: clamp(25px, 2.4vw, 32px); line-height: 1.5; font-weight: 400; margin: 0; letter-spacing: .01em; }
   .empty-note { margin: 0; padding: 32px 0; color: var(--color-ink-soft); font-size: 16px; }
   @media(max-width: 767px) {
-    .ink-intro { top: max(124px, 22svh); }
-    .poem-preface { margin-bottom: 12px; font-size: 20px; line-height: 1.8; letter-spacing: .035em; }
-    .ink-intro h1 { font-size: 36px; line-height: 1.65; letter-spacing: .025em; }
+    .ink-intro { top: max(164px, calc(22svh + 52px)); left: clamp(24px, 7vw, 30px); width: min(32rem, calc(100% - 2 * clamp(24px, 7vw, 30px))); }
+    .poem-preface { margin-bottom: 16px; font-size: 24px; line-height: 1.75; letter-spacing: .025em; }
+    .ink-intro h1 { font-size: clamp(34px, 10vw, 40px); line-height: 1.6; letter-spacing: .01em; }
     .ink-intro-actions { margin-top: 20px; }
     .more-link { gap: 24px; }
     .home-writing { padding: 52px 0 72px; }
@@ -78,8 +78,8 @@ const recentPosts = [...dailyPosts, ...notePosts].sort((a, b) => compareSortKeys
     .section-heading { align-items: baseline; gap: 16px; margin-bottom: 24px; }
     h2 { font-size: 25px; }
   }
-  @media(max-width: 360px) { .poem-preface { font-size: 18px; } .ink-intro h1 { font-size: 30px; } }
-  @media(max-height: 620px) { .ink-intro { top: max(124px, 22svh); } .poem-preface { font-size: 18px; line-height: 1.65; margin-bottom: 10px; } .ink-intro h1 { font-size: 30px; line-height: 1.55; } .ink-intro-actions { margin-top: 18px; } }
+  @media(max-width: 360px) { .poem-preface { font-size: 22px; } .ink-intro h1 { font-size: 33px; } }
+  @media(max-height: 620px) and (orientation: landscape), (max-height: 480px) { .ink-intro { top: max(124px, 22svh); } .poem-preface { font-size: 18px; line-height: 1.65; margin-bottom: 10px; } .ink-intro h1 { font-size: 30px; line-height: 1.55; } .ink-intro-actions { margin-top: 18px; } }
   @media(max-height: 620px) and (min-width: 768px) { .ink-intro { top: max(140px, 25svh); } .poem-preface { font-size: 24px; } .ink-intro h1 { font-size: 46px; } .ink-intro-actions { margin-top: 22px; } }
   @media(prefers-reduced-motion: reduce) { .more-link svg, .more-link span { transition: none; transform: none !important; } }
 </style>

@@ -7,6 +7,7 @@
 - `/` 是持續滴墨入水、漣漪及暈染首屏；以100lvh最大視窗高度為下限，讓Safari透明工具列後方仍是主視覺，並同時包含共用Header與最少入口。高度保留100vh／100svh／100dvh、最小高度保留100vh備援，不受flex壓縮，下方直接真實文章。既有Safari自動safe-area inset保留，不以visualViewport高度覆蓋pinch zoom或鍵盤視窗。
 - 首屏完整呈現「雪沫乳花浮午盞，蓼茸蒿筍試春盤。人間有味是清歡。」；前兩句輕量、末句唯一H1，皆採Kouzan Brush Sousho 400真正草書。僅一個輕盈「閱讀更多」連/about。3個實際文字Range行框與CTA採padding8px／圓角8px／外30px柔邊（僅核心外固定起伏≤3px）、核心R≤0.16的局部冪等濃度上限，pigment及screenUV共用helper防平流／折射堆深並同比保留G/R age；區外及intro空隙維持原墨，字形另保留24%紙色／10px柔邊，無全版veil。文字pointer-events:none，操作連結auto。
 - Jeremy 是主名，Solunastre Studio 是指定小標，不加 by 或並列作者。Header 不再放額外細 J／桃色方塊，也不加巨大重複 Jeremy。
+- 手機詩句前兩行24px／窄屏22px、行高1.75與下距16px；主句34–40px／窄屏33px、行高1.6／tracking.01em。文字組採24–30px光學內縮及top=max(164px,22svh+52px)，compact僅限<=620px橫向或<=480px超短視窗，568px直式仍用放大字級；Header與桌機排版不變。
 - 自託管Water Brush 400作Jeremy連筆書寫字標，line-height:1、左右4px空間、font-synthesis:none；Studio小標仍為正文體。Header／Footer／canonical SVG與J favicon同一來源字形，來源、原字形排字對照與OFL保留，不宣稱客製新字型。一般標題、內文、控制用Urbanist／Noto Sans TC，code用JetBrains Mono；詩句草書另保留完整23個字元與來源使用條件。
 - 品牌連結統一 `/`；未採用的提案頁、場景、畫作與字型移至專案外封存，正式站只保留已採用的共用 Header 與 InkSurface。
 

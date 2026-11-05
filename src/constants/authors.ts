@@ -68,7 +68,7 @@ export const AUTHORS: Author[] = [
     imgPath: '/assets/authors/jeremy.png',
     isSecret: false,
     isHiddenFromAbout: true,
-    coAuthorImgs: ['/assets/authors/jeremy.png', '/assets/authors/claude.png'],
+    coAuthorImgs: ['/assets/authors/jeremy.png', '/assets/authors/claude.png', '/assets/authors/codex.svg'],
     members: [{ name: 'Jeremy', kind: 'person' }, { name: 'Claude', kind: 'ai' }, { name: 'Codex', kind: 'ai' }],
   },
   // Solunastre Studio（原 Aira）：Jeremy 的附屬工作室／第二人格，日後可能獨立成站。

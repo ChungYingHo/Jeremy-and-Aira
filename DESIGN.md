@@ -6,7 +6,7 @@
 
 ## 首頁與路由
 
-正式 `/` 使用 InkSurface 的全寬場景，以100lvh最大視窗高度為下限，讓Safari透明工具列後方仍由主視覺覆蓋；高度依序保留100vh／100svh／100dvh、最小高度保留100vh備援，並禁止flex壓縮。保留Safari自動safe-area inset，不改viewport-fit或以visualViewport JS縮放首屏。共用Header在首屏上方，小型Jeremy／Solunastre Studio保持；左側完整呈現「雪沫乳花浮午盞，蓼茸蒿筍試春盤。人間有味是清歡。」。前兩句輕量、末句為唯一H1，詩句全部採Kouzan Brush Sousho 400草書；前兩句桌機26–32px，主句48–56px桌機／36px手機／30px窄屏，短桌機24／46px、短手機18／30px。詩句與Header共用1360px置中版心，響應式邊距56／32／20px。僅留一個細線文字加箭頭的「閱讀更多」到/about。文字區維持pointer-events:none，僅連結接事件；墨可自然暈到詩句背後，3條實際文字Range行框與CTA採局部核心R≤0.16限濃（padding8px／圓角8px／外30px柔邊，僅核心外固定起伏≤3px），pigment及screenUV共用同一冪等限濃helper並同比保留G/R age，防平流與折射堆深。區外及intro空隙仍可自然疊濃，字形另保留24%紙色／10px柔邊，沒有全版veil。pointer幾何排除保留Header、操作面板與實際閱讀更多連結。
+正式 `/` 使用 InkSurface 的全寬場景，以100lvh最大視窗高度為下限，讓Safari透明工具列後方仍由主視覺覆蓋；高度依序保留100vh／100svh／100dvh、最小高度保留100vh備援，並禁止flex壓縮。保留Safari自動safe-area inset，不改viewport-fit或以visualViewport JS縮放首屏。共用Header在首屏上方，小型Jeremy／Solunastre Studio保持；左側完整呈現「雪沫乳花浮午盞，蓼茸蒿筍試春盤。人間有味是清歡。」。前兩句輕量、末句為唯一H1，詩句全部採Kouzan Brush Sousho 400草書；前兩句桌機26–32px、手機24px／窄屏22px；主句桌機48–56px、手機clamp(34px,10vw,40px)／窄屏33px，短桌機24／46px、短手機18／30px。Header保留1360px置中版心與56／32／20px響應邊距；手機詩句另採24–30px光學內縮，top=max(164px,22svh+52px)，前兩句行高1.75／下距16px、主句行高1.6／tracking.01em。compact僅限<=620px橫向或<=480px超短視窗，568px直式仍用22／33px與下移位置；桌機詩句網格不變。僅留一個細線文字加箭頭的「閱讀更多」到/about。文字區維持pointer-events:none，僅連結接事件；墨可自然暈到詩句背後，3條實際文字Range行框與CTA採局部核心R≤0.16限濃（padding8px／圓角8px／外30px柔邊，僅核心外固定起伏≤3px），pigment及screenUV共用同一冪等限濃helper並同比保留G/R age，防平流與折射堆深。區外及intro空隙仍可自然疊濃，字形另保留24%紙色／10px柔邊，沒有全版veil。pointer幾何排除保留Header、操作面板與實際閱讀更多連結。
 下一段「最近的書寫」合併getPublishedEntries的Blog與TechBook，透過entryTimestamp及compareSortKeys依時間倒序、同日sameDateSort與標題正序取最新六筆。ArticleList依MENU_COLLECTIONS產生實際路徑，首頁顯示「筆記／日常」類型；目前六筆皆為較新的TechBook是實際日期排序結果，不另造Blog配額。
 品牌首頁連結一律 `/`。不保留未採用的提案路由、獨立 Header、舊場景或花草資產，避免誤回已否決的畫面。
 

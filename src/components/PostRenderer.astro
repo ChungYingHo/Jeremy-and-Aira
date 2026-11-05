@@ -64,7 +64,7 @@ const changelog = (entry.data.changelog || [])
           title="關於作者"
         >
           {authorData.coAuthorImgs ? (
-            <div class="flex shrink-0 items-center -space-x-3">
+            <div class:list={['flex shrink-0 items-center', authorData.coAuthorImgs.length === 3 ? '-space-x-2' : '-space-x-3']}>
               {authorData.coAuthorImgs.map((img, i) => (
                 <img
                   src={img}
