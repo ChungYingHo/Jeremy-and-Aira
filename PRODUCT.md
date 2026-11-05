@@ -20,7 +20,7 @@ Jeremy 的個人部落格，收藏生活、思考與書寫。保留既有技術�
 ## Current Brand and Navigation
 
 - Jeremy 是站名；Solunastre Studio 是指定小標，不另造 by／並列作者關係。
-- 正式首頁為持續滴墨、水波與暈染；首屏以100lvh最大視窗高度為下限，覆蓋Safari透明工具列後方；含小型品牌、共用Header及完整三句「雪沫乳花浮午盞，蓼茸蒿筍試春盤。人間有味是清歡。」。高度保留100vh／100svh／100dvh備援，最小高度保留100vh備援且不受flex壓縮。前兩句輕量、末句為唯一H1，單一細線「閱讀更多」入口連到/about，不放巨大重複Jeremy。
+- 正式首頁為持續滴墨、水波與暈染；首屏以100lvh最大視窗高度為下限，減少工具列收合時露出下一段內容；含小型品牌、共用Header及完整三句「雪沫乳花浮午盞，蓼茸蒿筍試春盤。人間有味是清歡。」。高度保留100vh／100svh／100dvh備援，最小高度保留100vh備援且不受flex壓縮。前兩句輕量、末句為唯一H1，單一細線「閱讀更多」入口連到/about，不放巨大重複Jeremy。
 - 首頁、Blog、About、文章共用同一 Header。Water Brush 400 的 Jeremy、Studio 小標、字級、對齊及導覽次序一致；只有首頁頂部透明、內頁紙白的背景變體。Footer、向量字標與J favicon採同一字體來源。
 - 導覽維持實際內容：桌機About／TechBook／Blog／Search／Music，音樂單鍵固定在搜尋右側；<1024px的Header只留品牌與44px漢堡，MENU內提供About／TechBook分類／Blog直連及48px搜尋、音樂橫列。搜尋關閉或Escape回到可見漢堡；Blog是隨筆入口，不改稱泛用「開始閱讀」。
 - 〈人間有味是清歡〉為全站Layout頁背景音樂，預設啟用、音量0.12；訪客可用Header單鍵關閉並保留偏好。ClientRouter與持續Audio節點維持一般站內切頁播放；若瀏覽器拒絕初次播放，等待真實點擊／按鍵再試，介面呈現實際播放或等待狀態。

@@ -4,7 +4,7 @@
 
 ## 首頁與身份
 
-- `/` 是持續滴墨入水、漣漪及暈染首屏；以100lvh最大視窗高度為下限，讓Safari透明工具列後方仍是主視覺，並同時包含共用Header與最少入口。高度保留100vh／100svh／100dvh、最小高度保留100vh備援，不受flex壓縮，下方直接真實文章。既有Safari自動safe-area inset保留，不以visualViewport高度覆蓋pinch zoom或鍵盤視窗。
+- `/` 是持續滴墨入水、漣漪及暈染首屏；以100lvh最大視窗高度為下限，減少工具列收合時露出下一段內容，並同時包含共用Header與最少入口。高度保留100vh／100svh／100dvh、最小高度保留100vh備援，不受flex壓縮，下方直接真實文章。既有Safari自動safe-area inset保留，不以visualViewport高度覆蓋pinch zoom或鍵盤視窗。
 - 首屏完整呈現「雪沫乳花浮午盞，蓼茸蒿筍試春盤。人間有味是清歡。」；前兩句輕量、末句唯一H1，皆採Kouzan Brush Sousho 400真正草書。僅一個輕盈「閱讀更多」連/about。3個實際文字Range行框與CTA採padding8px／圓角8px／外30px柔邊（僅核心外固定起伏≤3px）、核心R≤0.16的局部冪等濃度上限，pigment及screenUV共用helper防平流／折射堆深並同比保留G/R age；區外及intro空隙維持原墨，字形另保留24%紙色／10px柔邊，無全版veil。文字pointer-events:none，操作連結auto。
 - Jeremy 是主名，Solunastre Studio 是指定小標，不加 by 或並列作者。Header 不再放額外細 J／桃色方塊，也不加巨大重複 Jeremy。
 - 手機詩句前兩行24px／窄屏22px、行高1.75與下距16px；主句34–40px／窄屏33px、行高1.6／tracking.01em。文字組採24–30px光學內縮及top=max(164px,22svh+52px)，compact僅限<=620px橫向或<=480px超短視窗，568px直式仍用放大字級；Header與桌機排版不變。
@@ -27,6 +27,7 @@ Networking三圖與五種排序圖解以局部橫捲保留可讀比例，只有�
 ## 色彩與動態
 
 palette 為象牙白、墨藍與板岩；paper #f4f3ef、ink／brand #263248。舊 moss／teal／sage 變數只保留非綠的相容值。禁止綠色／teal／sage 色相、雲海、花草圖回到正式首頁。
+首頁存在SSR data-ink-cover時，html／body背景及theme-color例外採#f9f8f4，對齊墨場底端紙色；最近書寫與其他路由仍維持paper #f4f3ef。這是瀏覽器背景延伸的色彩銜接，實體Safari效果待驗，不保證工具列區能顯示動態墨。
 滴墨為原生 WebGL2 流體／墨色／水波，逐滴初始輪廓、角度、尺度與旋流／拉伸／漂移不同。保留真正的 shader 參數變化，不以計數器或固定 CSS 圓環冒充材質效果。
 fine-hover游標移動作筆；hover／自動落墨／點擊共用原滴墨形態與流動；僅路徑取樣、尺寸及劑量隨互動調整，重複描繪允許自然疊濃。Header、操作面板與實際連結保留pointer排除，詩句限濃而非禁畫，intro空隙與區外自然疊濃；移動或點觸後約2600ms恢復閒置auto。寬度>=1024px且支援fine-hover時，僅自動滴墨間隔由3.6–4.9秒縮為2.88–3.92秒；首滴2.4秒、形態／強度／衰退／手機配置不變。點觸仍可加墨、touch pan不寫筆跡也不誤注入；墨色淡去、離屏／hidden停繪。減動／無JS／無GL／context loss有可見SVG，失效context不因resize或減動切換露出空白canvas。不要以同步counter當視覺驗收。
 

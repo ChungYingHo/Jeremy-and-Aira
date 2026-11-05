@@ -122,7 +122,7 @@ const jsonLd = type === 'article'
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <meta name="theme-color" content="#f4f3ef" />
+    <meta name="theme-color" content={visualHome ? '#f9f8f4' : '#f4f3ef'} />
     <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/urbanist-variable.woff2" />
     <link rel="stylesheet" href="/fonts/iansui.css" />
     {/* Async font CSS keeps the huge CJK stylesheets off the critical render path */}

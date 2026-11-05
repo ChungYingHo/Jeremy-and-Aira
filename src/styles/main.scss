@@ -24,6 +24,7 @@
 html, body { margin: 0; width: 100%; min-height: 100vh; }
 html { scroll-padding-top: 112px; }
 body { caret-color: var(--color-moss); font-family: var(--font-body); }
+html:has([data-ink-cover]), body:has([data-ink-cover]) { background-color: #f9f8f4; }
 button, a, input { -webkit-tap-highlight-color: transparent; }
 button, textarea, select, input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']) { border-radius: var(--radius-control); }
 a { text-underline-offset: 0.22em; }

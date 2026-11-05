@@ -6,7 +6,7 @@
 
 ## 首頁與路由
 
-正式 `/` 使用 InkSurface 的全寬場景，以100lvh最大視窗高度為下限，讓Safari透明工具列後方仍由主視覺覆蓋；高度依序保留100vh／100svh／100dvh、最小高度保留100vh備援，並禁止flex壓縮。保留Safari自動safe-area inset，不改viewport-fit或以visualViewport JS縮放首屏。共用Header在首屏上方，小型Jeremy／Solunastre Studio保持；左側完整呈現「雪沫乳花浮午盞，蓼茸蒿筍試春盤。人間有味是清歡。」。前兩句輕量、末句為唯一H1，詩句全部採Kouzan Brush Sousho 400草書；前兩句桌機26–32px、手機24px／窄屏22px；主句桌機48–56px、手機clamp(34px,10vw,40px)／窄屏33px，短桌機24／46px、短手機18／30px。Header保留1360px置中版心與56／32／20px響應邊距；手機詩句另採24–30px光學內縮，top=max(164px,22svh+52px)，前兩句行高1.75／下距16px、主句行高1.6／tracking.01em。compact僅限<=620px橫向或<=480px超短視窗，568px直式仍用22／33px與下移位置；桌機詩句網格不變。僅留一個細線文字加箭頭的「閱讀更多」到/about。文字區維持pointer-events:none，僅連結接事件；墨可自然暈到詩句背後，3條實際文字Range行框與CTA採局部核心R≤0.16限濃（padding8px／圓角8px／外30px柔邊，僅核心外固定起伏≤3px），pigment及screenUV共用同一冪等限濃helper並同比保留G/R age，防平流與折射堆深。區外及intro空隙仍可自然疊濃，字形另保留24%紙色／10px柔邊，沒有全版veil。pointer幾何排除保留Header、操作面板與實際閱讀更多連結。
+正式 `/` 使用 InkSurface 的全寬場景，以100lvh最大視窗高度為下限，減少工具列收合時露出下一段內容；高度依序保留100vh／100svh／100dvh、最小高度保留100vh備援，並禁止flex壓縮。保留Safari自動safe-area inset，不改viewport-fit或以visualViewport JS縮放首屏。共用Header在首屏上方，小型Jeremy／Solunastre Studio保持；左側完整呈現「雪沫乳花浮午盞，蓼茸蒿筍試春盤。人間有味是清歡。」。前兩句輕量、末句為唯一H1，詩句全部採Kouzan Brush Sousho 400草書；前兩句桌機26–32px、手機24px／窄屏22px；主句桌機48–56px、手機clamp(34px,10vw,40px)／窄屏33px，短桌機24／46px、短手機18／30px。Header保留1360px置中版心與56／32／20px響應邊距；手機詩句另採24–30px光學內縮，top=max(164px,22svh+52px)，前兩句行高1.75／下距16px、主句行高1.6／tracking.01em。compact僅限<=620px橫向或<=480px超短視窗，568px直式仍用22／33px與下移位置；桌機詩句網格不變。僅留一個細線文字加箭頭的「閱讀更多」到/about。文字區維持pointer-events:none，僅連結接事件；墨可自然暈到詩句背後，3條實際文字Range行框與CTA採局部核心R≤0.16限濃（padding8px／圓角8px／外30px柔邊，僅核心外固定起伏≤3px），pigment及screenUV共用同一冪等限濃helper並同比保留G/R age，防平流與折射堆深。區外及intro空隙仍可自然疊濃，字形另保留24%紙色／10px柔邊，沒有全版veil。pointer幾何排除保留Header、操作面板與實際閱讀更多連結。
 下一段「最近的書寫」合併getPublishedEntries的Blog與TechBook，透過entryTimestamp及compareSortKeys依時間倒序、同日sameDateSort與標題正序取最新六筆。ArticleList依MENU_COLLECTIONS產生實際路徑，首頁顯示「筆記／日常」類型；目前六筆皆為較新的TechBook是實際日期排序結果，不另造Blog配額。
 品牌首頁連結一律 `/`。不保留未採用的提案路由、獨立 Header、舊場景或花草資產，避免誤回已否決的畫面。
 
@@ -24,6 +24,7 @@ Layout使用ClientRouter、body不加切頁動畫，固定名稱transition:persi
 ## 色彩、字體與閱讀
 
 色彩 SSOT 為 src/styles/tailwind.css：paper #f4f3ef、ink／brand #263248、ink-soft #505e73、line #d0d3d8。舊 moss／teal／sage 名稱只為相容，實際值已改墨藍／板岩，不能據名稱恢復綠色。
+首頁存在SSR data-ink-cover時，html／body背景及theme-color例外採#f9f8f4，對齊墨場底端紙色；最近書寫與其他路由仍維持paper #f4f3ef。這是瀏覽器背景延伸的色彩銜接，實體Safari效果待驗，不保證工具列區能顯示動態墨。
 一般標題、正文及操作使用 Urbanist／Noto Sans TC；code 用 JetBrains Mono；Iansui 僅留相容輔助 token。詩句Kouzan Brush Sousho的9,164-byte子集涵蓋全部23個獨立字元，原始字形與來源／使用條件保留。正文及 placeholder 對比至少4.5:1，大字3:1。文章標題、正文與前後篇共用上限836px的獨立置中版心，目錄不佔正文寬度；1536px以上以48px間距外掛256px右側目錄，小於1536px且有章節時採底部固定、可展開的目錄，避讓safe-area／visualViewport並讓長目錄內部捲動；列印隱藏底部目錄並移除預留空間。無章節文章維持獨立置中正文。細線目錄／表格／程式碼，避免多彩大卡片與過多標籤膠囊。焦點、caret、選取與 scrollbar 同色系。
 
 Networking三圖與五種排序圖解以局部橫捲保留可讀比例，只有實際溢位才顯示滑動提示並可鍵盤聚焦；排序控制位於捲動區外、觸控區至少44px，不對全站SVG設定最小寬度。
