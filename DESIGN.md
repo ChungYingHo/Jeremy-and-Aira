@@ -25,6 +25,7 @@ Layout使用ClientRouter、body不加切頁動畫，固定名稱transition:persi
 
 色彩 SSOT 為 src/styles/tailwind.css：paper #f4f3ef、ink／brand #263248、ink-soft #505e73、line #d0d3d8。舊 moss／teal／sage 名稱只為相容，實際值已改墨藍／板岩，不能據名稱恢復綠色。
 首頁存在SSR data-ink-cover時，html／body背景及theme-color例外採#f9f8f4，對齊墨場底端紙色；最近書寫與其他路由仍維持paper #f4f3ef。這是瀏覽器背景延伸的色彩銜接，實體Safari效果待驗，不保證工具列區能顯示動態墨。
+<=600px手機首頁底端15%以不接pointer的偽元素，從透明柔化至同一#f9f8f4；z1位於墨場上、intro z2下，不改字／按鈕、固定Header、首頁高度或GL。>600px保持原場景。
 一般標題、正文及操作使用 Urbanist／Noto Sans TC；code 用 JetBrains Mono；Iansui 僅留相容輔助 token。詩句Kouzan Brush Sousho的9,164-byte子集涵蓋全部23個獨立字元，原始字形與來源／使用條件保留。正文及 placeholder 對比至少4.5:1，大字3:1。文章標題、正文與前後篇共用上限836px的獨立置中版心，目錄不佔正文寬度；1536px以上以48px間距外掛256px右側目錄，小於1536px且有章節時採底部固定、可展開的目錄，避讓safe-area／visualViewport並讓長目錄內部捲動；列印隱藏底部目錄並移除預留空間。無章節文章維持獨立置中正文。細線目錄／表格／程式碼，避免多彩大卡片與過多標籤膠囊。焦點、caret、選取與 scrollbar 同色系。
 
 Networking三圖與五種排序圖解以局部橫捲保留可讀比例，只有實際溢位才顯示滑動提示並可鍵盤聚焦；排序控制位於捲動區外、觸控區至少44px，不對全站SVG設定最小寬度。

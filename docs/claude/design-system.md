@@ -28,6 +28,7 @@ Networking三圖與五種排序圖解以局部橫捲保留可讀比例，只有�
 
 palette 為象牙白、墨藍與板岩；paper #f4f3ef、ink／brand #263248。舊 moss／teal／sage 變數只保留非綠的相容值。禁止綠色／teal／sage 色相、雲海、花草圖回到正式首頁。
 首頁存在SSR data-ink-cover時，html／body背景及theme-color例外採#f9f8f4，對齊墨場底端紙色；最近書寫與其他路由仍維持paper #f4f3ef。這是瀏覽器背景延伸的色彩銜接，實體Safari效果待驗，不保證工具列區能顯示動態墨。
+<=600px手機首頁底端15%以不接pointer的偽元素，從透明柔化至同一#f9f8f4；z1位於墨場上、intro z2下，不改字／按鈕、固定Header、首頁高度或GL。>600px保持原場景。
 滴墨為原生 WebGL2 流體／墨色／水波，逐滴初始輪廓、角度、尺度與旋流／拉伸／漂移不同。保留真正的 shader 參數變化，不以計數器或固定 CSS 圓環冒充材質效果。
 fine-hover游標移動作筆；hover／自動落墨／點擊共用原滴墨形態與流動；僅路徑取樣、尺寸及劑量隨互動調整，重複描繪允許自然疊濃。Header、操作面板與實際連結保留pointer排除，詩句限濃而非禁畫，intro空隙與區外自然疊濃；移動或點觸後約2600ms恢復閒置auto。寬度>=1024px且支援fine-hover時，僅自動滴墨間隔由3.6–4.9秒縮為2.88–3.92秒；首滴2.4秒、形態／強度／衰退／手機配置不變。點觸仍可加墨、touch pan不寫筆跡也不誤注入；墨色淡去、離屏／hidden停繪。減動／無JS／無GL／context loss有可見SVG，失效context不因resize或減動切換露出空白canvas。不要以同步counter當視覺驗收。
 
