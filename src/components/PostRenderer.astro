@@ -1,6 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content'
 import 'katex/dist/katex.min.css'
+import '@/styles/article-diagrams.css'
 import { AUTHORS } from '@/constants/authors'
 import { formatDisplayDate } from '@/utils/date'
 import { getExcerpt } from '@/utils/excerpt'
@@ -9,8 +10,8 @@ import type { NavLink } from '@/utils/content'
 
 interface Props {
   entry: CollectionEntry<'techbook'> | CollectionEntry<'blog'> | CollectionEntry<'release-notes'>;
-  prev?: NavLink;
-  next?: NavLink;
+  prev?: NavLink
+  next?: NavLink
 }
 
 const { entry, prev = null, next = null } = Astro.props
@@ -28,7 +29,7 @@ const ogImage = `/og/${entry.collection}/${entry.slug}.png`
 const changelog = (entry.data.changelog || [])
   .map(date => new Date(date))
   .sort((a, b) => b.getTime() - a.getTime())
-  .slice(0, 3);
+  .slice(0, 3)
 ---
 
 <Layout
@@ -42,30 +43,24 @@ const changelog = (entry.data.changelog || [])
 >
 
   {/* Inline transform, not Tailwind scale-x-*: the standalone `scale` property would multiply with the script's scaleX */}
-  <div id="progress-bar" class="fixed top-0 left-0 h-[3px] bg-gradient-to-r from-moss-soft to-moss z-[100] w-full origin-left" style="transform: scaleX(0)"></div>
+  <div id="progress-bar" class="fixed top-0 left-0 h-[2px] bg-moss z-[100] w-full origin-left" style="transform: scaleX(0)" aria-hidden="true"></div>
 
-  <div class="relative w-full max-w-[900px] mx-auto px-5 md:px-8 pt-0 pb-0">
+  <div class="post-shell" data-has-toc={headings.length > 0 ? '' : undefined}>
 
-    <header class="flex flex-col items-center text-center mb-16 md:mb-24 space-y-6 animate-fade-in-up">
-      {tags.length > 0 && (
-        <div class="flex flex-wrap justify-center gap-2">
-          {tags.map((tag: string) => (
-            <span class="px-2.5 py-0.5 text-[10px] font-bold tracking-[0.1em] uppercase rounded-full border border-line text-ink-soft hover:text-moss hover:border-moss/40 transition-all duration-300 bg-cream">
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-
-      <h1 class="font-serif text-3xl md:text-5xl lg:text-[3.5rem] font-semibold tracking-tight text-ink leading-[1.25] max-w-4xl mx-auto">
+    <header class="post-header">
+      <a class="post-return" href={entry.collection === 'blog' ? '/blog' : '/'}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m14 6-6 6 6 6M8 12h13"/></svg>
+        {entry.collection === 'blog' ? '返回隨筆' : '返回首頁'}
+      </a>
+      <h1 class="post-title">
         {entry.data.title}
       </h1>
 
-      <div class="flex flex-wrap items-center justify-center gap-5 text-xs font-medium text-ink-faint tracking-wider uppercase">
+      <div class="post-meta">
         <a
           href="/about"
-          class="flex items-center gap-3 group cursor-pointer hover:opacity-90 transition-opacity p-1 -ml-1"
-          title="About Author"
+          class="post-author"
+          title="關於作者"
         >
           {authorData.coAuthorImgs ? (
             <div class="flex items-center -space-x-3">
@@ -73,7 +68,7 @@ const changelog = (entry.data.changelog || [])
                 <img
                   src={img}
                   alt={authorData.name}
-                  class="w-10 h-10 rounded-full object-cover ring-2 ring-paper group-hover:ring-moss/40 transition-all shadow-md"
+                  class="post-avatar"
                   style={`z-index: ${authorData.coAuthorImgs!.length - i}`}
                 />
               ))}
@@ -82,37 +77,54 @@ const changelog = (entry.data.changelog || [])
             <img
               src={authorData.imgPath}
               alt={authorData.name}
-              class="w-10 h-10 rounded-full object-cover ring-2 ring-line group-hover:ring-moss/40 transition-all shadow-md"
+              class="post-avatar"
             />
           )}
           <span
-            class="text-ink-soft group-hover:text-ink transition-colors border-b border-transparent group-hover:border-ink/40 pb-0.5 normal-case text-lg leading-none"
-            style="font-family: 'Caveat', cursive; font-weight: 700"
+            class="post-author-name"
           >
             {authorData.name}
           </span>
         </a>
-        <div class="w-px h-4 bg-line hidden sm:block"></div>
-        <div class="flex items-center gap-2" title="Published Date">
-          <span class="text-ink-faint">{formatDisplayDate(publishDate)}</span>
-        </div>
+        <time datetime={publishDate.toISOString()}>{formatDisplayDate(publishDate)}</time>
       </div>
+      {tags.length > 0 && (
+        <ul class="post-tags" aria-label="文章標籤">
+          {tags.map((tag: string) => <li>{tag}</li>)}
+        </ul>
+      )}
     </header>
 
-    <div class="relative">
-      <article class="md-content min-w-0 break-words pb-24 overflow-x-hidden">
+    {headings.length > 0 && (
+      <section class="post-mobile-index" data-post-mobile-toc aria-label="本篇目錄">
+        <button id="toc-toggle" class="post-toc-toggle" type="button" aria-expanded="false" aria-controls="mobile-toc-panel" title="展開本篇目錄">
+          <span class="post-toc-label"><span>本篇目錄</span><span data-toc-hint>展開章節</span></span>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m6 14 6-6 6 6" /></svg>
+        </button>
+        <nav id="mobile-toc-panel" class="post-toc-panel custom-scrollbar" aria-label="文章章節" hidden>
+          <ul>
+            {headings.map(heading => (
+              <li><a href={`#${heading.slug}`} class="mobile-toc-link toc-link" data-depth={heading.depth} style={`padding-left: ${Math.max(0, heading.depth - 2) * 0.875}rem`}>{heading.text}</a></li>
+            ))}
+          </ul>
+        </nav>
+      </section>
+    )}
+
+    <div class="post-reading-layout">
+      <article class="md-content min-w-0 break-words overflow-x-hidden">
         <Content />
 
         {/* Changelog Section */}
         {changelog.length > 0 && (
           <div class="mt-24 pt-8 border-t border-line">
-            <h3 class="text-sm font-bold text-ink-soft uppercase tracking-widest mb-6">Latest Updates</h3>
+            <h3 class="text-sm font-bold text-ink-soft mb-6">更新紀錄</h3>
             <ul class="space-y-3">
               {changelog.map(date => (
                 <li class="flex items-center gap-4 text-xs text-ink-faint group">
                   <span class="w-1.5 h-1.5 rounded-full bg-moss-soft group-hover:bg-moss transition-colors"></span>
                   <span class="font-mono text-ink-soft">{formatDisplayDate(date)}</span>
-                  <span class="text-ink-faint group-hover:text-ink-soft transition-colors">Content updated</span>
+                  <span class="text-ink-faint group-hover:text-ink-soft transition-colors">內容更新</span>
                 </li>
               ))}
             </ul>
@@ -121,18 +133,18 @@ const changelog = (entry.data.changelog || [])
       </article>
 
       {headings.length > 0 && (
-      <aside class="hidden xl:block absolute top-0 left-[100%] ml-12 h-full">
-        <div id="toc-scroll" class="sticky top-32 w-64 max-h-[75vh] overflow-y-auto custom-scrollbar">
-          <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-ink-faint mb-4 pl-4">
-            On this page
+      <aside class="post-desktop-index">
+        <div id="toc-scroll" class="custom-scrollbar">
+          <div class="post-index-title">
+            本篇目錄
           </div>
-          <nav>
-            <ul class="border-l border-line">
+          <nav aria-label="本篇目錄">
+            <ul>
               {headings.map((heading) => (
                 <li>
                   <a
                     href={`#${heading.slug}`}
-                    class="toc-link block py-1.5 pr-2 text-xs truncate leading-relaxed transition-colors duration-200"
+                    class="toc-link block py-2 pr-2 text-xs leading-relaxed transition-colors duration-200"
                     data-depth={heading.depth}
                     style={`padding-left: ${Math.max(0, heading.depth - 2) * 0.75 + 1}rem`}
                   >
@@ -148,13 +160,13 @@ const changelog = (entry.data.changelog || [])
     </div>
 
     {(prev || next) && (
-      <nav class="mt-6">
-        <div class="grid grid-cols-2 gap-3">
+      <nav class="post-pagination" aria-label="相鄰文章">
+        <div class="grid grid-cols-2 gap-8">
           <div>
             {prev && (
               <a
                 href={prev.href}
-                class="group flex flex-col gap-2 p-4 rounded-xl border border-line bg-cream/60 hover:border-moss/40 hover:bg-cream transition-all duration-300 h-full"
+                class="post-adjacent group"
               >
                 <span class="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.15em] uppercase text-ink-faint group-hover:text-moss transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
@@ -170,7 +182,7 @@ const changelog = (entry.data.changelog || [])
             {next && (
               <a
                 href={next.href}
-                class="group flex flex-col gap-2 p-4 rounded-xl border border-line bg-cream/60 hover:border-moss/40 hover:bg-cream transition-all duration-300 text-right h-full"
+                class="post-adjacent group text-right"
               >
                 <span class="flex items-center justify-end gap-1.5 text-[10px] font-bold tracking-[0.15em] uppercase text-ink-faint group-hover:text-moss transition-colors">
                   下一篇
@@ -187,150 +199,172 @@ const changelog = (entry.data.changelog || [])
     )}
   </div>
 
-  {headings.length > 0 && (
-  <div
-    id="mobile-toc-container"
-    class="
-      xl:hidden fixed z-50
-      bottom-0 left-0 right-0
-      translate-y-[calc(100%-4rem)]
-      transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]
-      border-t border-line bg-cream/95 shadow-[0_-10px_40px_rgba(58,53,44,0.12)]
-      pb-[env(safe-area-inset-bottom)]
-    "
-  >
-    <button id="toc-toggle" class="w-full h-16 flex items-center justify-between px-6 cursor-pointer group">
-       <div class="flex flex-col items-start">
-         <span class="text-xs font-bold tracking-[0.2em] text-ink uppercase group-hover:text-moss transition-colors">Table of Contents</span>
-         <span class="text-[10px] text-ink-faint mt-0.5" id="toc-hint">Click to expand</span>
-       </div>
-       <div class="w-8 h-8 rounded-full bg-ink/5 flex items-center justify-center group-hover:bg-ink/10 transition-colors">
-         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-ink-soft transition-transform duration-300" id="toc-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-         </svg>
-       </div>
-    </button>
-    <div class="px-6 py-6 pb-16 max-h-[60vh] overflow-y-auto custom-scrollbar">
-      <ul class="border-l border-line ml-1">
-        {headings.map((heading) => (
-          <li>
-            <a
-              href={`#${heading.slug}`}
-              class="mobile-toc-link toc-link block py-2 pr-2 text-sm leading-snug transition-colors duration-200"
-              data-depth={heading.depth}
-              style={`padding-left: ${Math.max(0, heading.depth - 2) * 0.875 + 1}rem`}
-            >
-              {heading.text}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
-  </div>
-  )}
 
 </Layout>
 
 <script>
-// scaleX on a rAF tick: compositor-only updates, no layout work per scroll event
-const progressBar = document.getElementById('progress-bar')
-let progressTicking = false
-window.addEventListener('scroll', () => {
-  if (!progressBar || progressTicking) return
-  progressTicking = true
-  requestAnimationFrame(() => {
-    const winScroll = document.documentElement.scrollTop
-    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight
-    progressBar.style.transform = `scaleX(${height > 0 ? winScroll / height : 0})`
-    progressTicking = false
-  })
-}, { passive: true })
+let cleanupArticlePage: (() => void) | undefined
 
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      document.querySelectorAll('.toc-link').forEach(l => {
-        l.classList.remove('toc-link-active')
-      })
-      document.querySelectorAll(`.toc-link[href="#${entry.target.id}"]`).forEach(l => {
-        l.classList.add('toc-link-active')
-      })
-      const activeLink = document.querySelector(`#toc-scroll .toc-link[href="#${entry.target.id}"]`)
-      if (activeLink) {
-        const tocScroll = document.getElementById('toc-scroll')
-        if (tocScroll && tocScroll.scrollHeight > tocScroll.clientHeight) {
-          const linkEl = activeLink as HTMLElement
-          const target = linkEl.offsetTop - tocScroll.clientHeight / 2 + linkEl.offsetHeight / 2
-          tocScroll.scrollTo({ top: target, behavior: 'smooth' })
-        }
-      }
-    }
-  })
-}, { rootMargin: '-100px 0px -70% 0px' })
-document.querySelectorAll('.md-content h2, .md-content h3').forEach(h => observer.observe(h))
-
-const toggleBtn = document.getElementById('toc-toggle')
-const container = document.getElementById('mobile-toc-container')
-const icon = document.getElementById('toc-icon')
-const hint = document.getElementById('toc-hint')
-let isOpen = false
-
-const toggle = (force?: boolean) => {
-  isOpen = force ?? !isOpen
-  if(isOpen) {
-    container?.classList.remove('translate-y-[calc(100%-4rem)]')
-    container?.classList.add('translate-y-0')
-    icon?.classList.add('rotate-180')
-    if(hint) hint.innerText = 'Click to close'
-  } else {
-    container?.classList.add('translate-y-[calc(100%-4rem)]')
-    container?.classList.remove('translate-y-0')
-    icon?.classList.remove('rotate-180')
-    if(hint) hint.innerText = 'Click to expand'
-  }
+function disposeArticlePage() {
+  cleanupArticlePage?.()
+  cleanupArticlePage = undefined
 }
 
-toggleBtn?.addEventListener('click', () => toggle())
-document.querySelectorAll('.mobile-toc-link').forEach(l => l.addEventListener('click', () => toggle(false)))
+function initArticlePage() {
+  disposeArticlePage()
+  const shell = document.querySelector<HTMLElement>('.post-shell')
+  if (!shell) return
 
-document.addEventListener('DOMContentLoaded', () => {
-  const preElements = document.querySelectorAll('pre')
+  const controller = new AbortController()
+  const { signal } = controller
+  const timers = new Set<number>()
+  let progressFrame = 0
 
-  preElements.forEach(pre => {
-    const wrapper = document.createElement('div')
-    wrapper.className = 'code-block-wrapper group relative mb-8 rounded-lg overflow-hidden'
+  const scheduleFeedback = (callback: () => void, delay: number) => {
+    const timer = window.setTimeout(() => {
+      timers.delete(timer)
+      callback()
+    }, delay)
+    timers.add(timer)
+  }
 
-    pre.parentNode?.insertBefore(wrapper, pre)
-    wrapper.appendChild(pre)
+  const progressBar = document.getElementById('progress-bar')
+  const updateProgress = () => {
+    if (!progressBar || progressFrame) return
+    progressFrame = requestAnimationFrame(() => {
+      progressFrame = 0
+      const winScroll = document.documentElement.scrollTop
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight
+      progressBar.style.transform = `scaleX(${height > 0 ? winScroll / height : 0})`
+    })
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true, signal })
+  updateProgress()
+
+  const tocLinks = Array.from(shell.querySelectorAll<HTMLAnchorElement>('.toc-link'))
+  const tocScroll = shell.querySelector<HTMLElement>('#toc-scroll')
+  const observer = new IntersectionObserver((entries) => {
+    if (signal.aborted) return
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return
+      const href = `#${entry.target.id}`
+      tocLinks.forEach(link => link.classList.toggle('toc-link-active', link.getAttribute('href') === href))
+      const activeLink = tocLinks.find(link => link.getAttribute('href') === href && tocScroll?.contains(link))
+      if (activeLink && tocScroll && tocScroll.scrollHeight > tocScroll.clientHeight) {
+        const top = activeLink.offsetTop - tocScroll.clientHeight / 2 + activeLink.offsetHeight / 2
+        tocScroll.scrollTo({ top, behavior: 'smooth' })
+      }
+    })
+  }, { rootMargin: '-100px 0px -70% 0px' })
+  shell.querySelectorAll('.md-content h2, .md-content h3').forEach(heading => observer.observe(heading))
+
+  const mobileToc = shell.querySelector<HTMLElement>('[data-post-mobile-toc]')
+  const tocToggle = mobileToc?.querySelector<HTMLButtonElement>('#toc-toggle')
+  const tocPanel = mobileToc?.querySelector<HTMLElement>('#mobile-toc-panel')
+  if (mobileToc && tocToggle && tocPanel) {
+    let tocOpen = false
+    const tocHint = mobileToc.querySelector<HTMLElement>('[data-toc-hint]')
+    const viewport = window.visualViewport
+    const updateTocViewport = () => {
+      const visibleTop = viewport?.offsetTop ?? 0
+      const visibleHeight = viewport?.height ?? window.innerHeight
+      const viewportBottom = Math.max(0, window.innerHeight - visibleTop - visibleHeight)
+      mobileToc.style.setProperty('--toc-viewport-bottom', `${viewportBottom}px`)
+      const headerBottom = document.querySelector('[data-site-header]')?.getBoundingClientRect().bottom ?? 96
+      const headerClearance = Math.max(0, headerBottom - visibleTop)
+      const bottom = parseFloat(getComputedStyle(mobileToc).bottom)
+      const bottomGap = Math.max(0, Number.isFinite(bottom) ? bottom - viewportBottom : 12)
+      const available = Math.max(0, visibleHeight - headerClearance - (tocToggle.offsetHeight || 64) - bottomGap - 24)
+      mobileToc.style.setProperty('--toc-panel-max-height', `${available}px`)
+      if (window.innerWidth >= 1536 && tocOpen) setTocOpen(false)
+    }
+    const setTocOpen = (open: boolean, returnFocus = false) => {
+      tocOpen = open
+      mobileToc.toggleAttribute('data-open', open)
+      tocToggle.setAttribute('aria-expanded', String(open))
+      tocToggle.title = open ? '收合本篇目錄' : '展開本篇目錄'
+      if (tocHint) tocHint.textContent = open ? '選擇章節' : '展開章節'
+      tocPanel.hidden = !open
+      if (open) {
+        updateTocViewport()
+        const active = tocPanel.querySelector<HTMLElement>('.toc-link-active')
+        if (active) {
+          tocPanel.scrollTop += active.getBoundingClientRect().top - tocPanel.getBoundingClientRect().top - tocPanel.clientHeight / 2 + active.offsetHeight / 2
+        }
+      }
+      if (returnFocus) tocToggle.focus({ preventScroll: true })
+    }
+    setTocOpen(false)
+    updateTocViewport()
+    tocToggle.addEventListener('click', () => setTocOpen(!tocOpen), { signal })
+    mobileToc.querySelectorAll('.mobile-toc-link').forEach(link => {
+      link.addEventListener('click', () => setTocOpen(false, true), { signal })
+    })
+    document.addEventListener('pointerdown', (event) => {
+      if (tocOpen && !mobileToc.contains(event.target as Node)) {
+        setTocOpen(false, tocPanel.contains(document.activeElement))
+      }
+    }, { signal })
+    document.addEventListener('focusin', (event) => {
+      if (tocOpen && !mobileToc.contains(event.target as Node)) setTocOpen(false)
+    }, { signal })
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && tocOpen) {
+        event.preventDefault()
+        setTocOpen(false, true)
+      }
+    }, { signal })
+    window.addEventListener('resize', updateTocViewport, { passive: true, signal })
+    viewport?.addEventListener('resize', updateTocViewport, { passive: true, signal })
+    viewport?.addEventListener('scroll', updateTocViewport, { passive: true, signal })
+  }
+
+  shell.querySelectorAll<HTMLPreElement>('.md-content pre').forEach(pre => {
+    let wrapper = pre.parentElement
+    if (!wrapper?.classList.contains('code-block-wrapper')) {
+      wrapper = document.createElement('div')
+      wrapper.className = 'code-block-wrapper group relative mb-8 overflow-hidden'
+      pre.parentNode?.insertBefore(wrapper, pre)
+      wrapper.appendChild(pre)
+    }
 
     pre.style.marginTop = '0'
     pre.style.marginBottom = '0'
-    pre.style.borderRadius = '0'
+    pre.style.borderRadius = 'inherit'
 
-    const copyBtn = document.createElement('button')
-    copyBtn.className = 'copy-btn'
-    copyBtn.setAttribute('aria-label', 'Copy code')
-
-    copyBtn.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" class="icon-copy" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-      <svg xmlns="http://www.w3.org/2000/svg" class="icon-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-    `
+    let copyBtn = wrapper.querySelector<HTMLButtonElement>(':scope > .copy-btn')
+    if (!copyBtn) {
+      copyBtn = document.createElement('button')
+      copyBtn.className = 'copy-btn'
+      copyBtn.type = 'button'
+      copyBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon-copy" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      `
+      wrapper.appendChild(copyBtn)
+    }
+    copyBtn.classList.remove('is-copied')
+    copyBtn.setAttribute('aria-label', '複製程式碼')
+    const button = copyBtn
 
     copyBtn.addEventListener('click', async () => {
       const code = pre.querySelector('code')?.innerText || ''
       try {
         await navigator.clipboard.writeText(code)
-        copyBtn.classList.add('is-copied')
-        setTimeout(() => copyBtn.classList.remove('is-copied'), 2000)
+        if (signal.aborted) return
+        button.classList.add('is-copied')
+        button.setAttribute('aria-label', '已複製')
+        scheduleFeedback(() => {
+          button.classList.remove('is-copied')
+          button.setAttribute('aria-label', '複製程式碼')
+        }, 2000)
       } catch (err) {
         console.error('Failed to copy!', err)
       }
-    })
-
-    wrapper.appendChild(copyBtn)
+    }, { signal })
 
     const lang = pre.dataset.language
-    if (lang && lang !== 'plaintext') {
+    if (lang && lang !== 'plaintext' && !wrapper.querySelector(':scope > .code-lang')) {
       const langLabel = document.createElement('span')
       langLabel.className = 'code-lang'
       langLabel.textContent = lang
@@ -338,32 +372,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   })
 
-  const headings = document.querySelectorAll('.md-content h1, .md-content h2, .md-content h3')
+  const headings = shell.querySelectorAll('.md-content h1, .md-content h2, .md-content h3')
   headings.forEach(heading => {
-    const anchor = document.createElement('a')
-    anchor.className = 'heading-anchor'
-    anchor.href = `#${heading.id}`
-    anchor.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-      </svg>
-    `
+    let anchor = heading.querySelector<HTMLAnchorElement>(':scope > .heading-anchor')
+    if (!anchor) {
+      anchor = document.createElement('a')
+      anchor.className = 'heading-anchor'
+      anchor.href = `#${heading.id}`
+      anchor.setAttribute('aria-label', `複製「${heading.textContent}」段落連結`)
+      anchor.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+      `
+      heading.appendChild(anchor)
+    }
+    anchor.classList.remove('copied')
+    const link = anchor
 
     anchor.addEventListener('click', (e) => {
       e.preventDefault()
-      history.pushState(null, '', anchor.href)
-      navigator.clipboard.writeText(window.location.href).catch(() => {})
+      history.replaceState(history.state, '', link.href)
+      navigator.clipboard?.writeText(window.location.href).catch(() => {})
 
-      anchor.classList.add('copied')
-      setTimeout(() => anchor.classList.remove('copied'), 1500)
-    })
-
-    heading.appendChild(anchor)
+      link.classList.add('copied')
+      scheduleFeedback(() => link.classList.remove('copied'), 1500)
+    }, { signal })
   })
 
   // Open external links in new tab (skip anchor links)
-  const contentLinks = document.querySelectorAll('.md-content a')
+  const contentLinks = shell.querySelectorAll('.md-content a')
   contentLinks.forEach(link => {
     const href = link.getAttribute('href')
     if (href && !href.startsWith('#')) {
@@ -371,40 +410,110 @@ document.addEventListener('DOMContentLoaded', () => {
       link.setAttribute('rel', 'noopener noreferrer')
     }
   })
-})
+  cleanupArticlePage = () => {
+    controller.abort()
+    observer.disconnect()
+    cancelAnimationFrame(progressFrame)
+    timers.forEach(timer => clearTimeout(timer))
+  }
+}
+
+document.addEventListener('astro:page-load', initArticlePage)
+document.addEventListener('astro:before-swap', disposeArticlePage)
+initArticlePage()
 </script>
 
 <style is:global>
   :root {
-    /* Article-only shades; site-wide tokens live in tailwind.css @theme */
-    --md-text: #3b3833;
-    --md-heading: #26231f;
-    --md-quote: #57534a;
-    --md-link: #4f6447;
-    --md-link-hover: #3f5239;
-    --md-marker: #7d9370;
-    --md-code-text: #9c5535;
-    --md-code-bg: #efede6;
-    --md-pre-bg: #f9f8f4;
-    --md-surface: #f1efe9;
-    --md-border-soft: #edebe4;
-    --md-info: #46718f;
-    --md-info-border: #6e94b5;
-    --md-warning: #97772f;
-    --md-warning-border: #c9a64e;
-    --md-danger: #a14b3e;
-    --md-danger-border: #c46a5c;
+    --md-text: var(--color-ink);
+    --md-heading: var(--color-ink);
+    --md-quote: var(--color-ink-soft);
+    --md-link: var(--color-moss);
+    --md-link-hover: var(--color-ink);
+    --md-marker: var(--color-moss);
+    --md-code-text: var(--color-ink);
+    --md-code-bg: color-mix(in srgb, var(--color-ink) 4%, var(--color-paper));
+    --md-pre-bg: var(--color-code-surface);
+    --md-surface: var(--color-cream);
+    --md-border-soft: var(--color-line);
+    --md-info: var(--color-moss);
+    --md-info-border: var(--color-moss);
+    --md-warning: var(--color-clay);
+    --md-warning-border: var(--color-clay);
+    --md-danger: var(--color-clay);
+    --md-danger-border: var(--color-clay);
+  }
+
+  .post-shell { width: min(100%, 836px); margin-inline: auto; padding-top: 1rem; }
+  .post-header { padding: 0 0 2.5rem; margin-bottom: 3.5rem; border-bottom: 1px solid var(--color-line); }
+  .post-return { display: inline-flex; align-items: center; gap: 0.6rem; margin-bottom: 2rem; color: var(--color-ink-soft); font-size: 0.8125rem; }
+  .post-return:hover { color: var(--color-moss); }
+  .post-title { color: var(--color-ink); font-family: var(--font-heading); font-size: clamp(2rem, 3.5vw, 3rem); font-weight: 500; line-height: 1.45; letter-spacing: -0.02em; text-wrap: balance; overflow-wrap: anywhere; margin: 0 0 1.75rem; }
+  .post-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 1.75rem; color: var(--color-ink-soft); font-size: 0.8125rem; font-weight: 400; }
+  .post-meta time { font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+  .post-author { display: inline-flex; gap: 0.75rem; align-items: center; }
+  .post-author:hover { color: var(--color-moss); }
+  .post-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-cream); box-shadow: none; }
+  .post-author-name { font-size: 0.8125rem; font-weight: 400; }
+  .post-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; color: var(--color-ink-soft); font-size: 0.75rem; }
+  .post-tags li:not(:last-child)::after { content: '·'; padding-left: 0.5rem; color: var(--color-ink-faint); }
+  .post-reading-layout { position: relative; }
+  .post-desktop-index { position: absolute; top: 0; left: calc(100% + 48px); width: 256px; height: 100%; }
+  #toc-scroll { position: sticky; top: 8rem; max-height: calc(100vh - 10rem); overflow-y: auto; padding: 0 0 0 1.5rem; border-left: 1px solid var(--color-line); }
+  .post-index-title { margin-bottom: 1.25rem; font-size: 0.8125rem; font-weight: 500; color: var(--color-ink); }
+  .post-mobile-index { display: none; }
+  .post-pagination { margin-top: 4rem; padding: 1.75rem 0 2rem; border-top: 1px solid var(--color-line); }
+  .post-adjacent { display: flex; flex-direction: column; gap: 1rem; height: 100%; padding: 1rem 0; }
+  .post-adjacent > :last-child { font-family: var(--font-body); font-size: 1.05rem; line-height: 1.6; color: var(--color-ink); font-weight: 400; }
+  .post-adjacent:hover > :last-child { color: var(--color-moss); }
+  @media (max-width: 1535px) {
+    .post-desktop-index { display: none; }
+    .post-shell[data-has-toc] { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+    body:has([data-post-mobile-toc]) .site-footer { margin-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+    .post-mobile-index { display: block; position: fixed; z-index: 40; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom, 0px) + var(--toc-viewport-bottom, 0px)); transform: translateX(-50%); width: min(640px, calc(100% - 24px)); color: var(--color-ink); background: var(--color-paper); border: 1px solid var(--color-line); border-radius: var(--radius-panel); box-shadow: 0 12px 40px -16px color-mix(in srgb, var(--color-ink) 25%, transparent); overflow: hidden; }
+    .post-toc-toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; min-height: 64px; padding: 12px 20px; text-align: left; color: inherit; background: transparent; border: 0; cursor: pointer; }
+    .post-toc-label { display: flex; flex-direction: column; gap: 3px; font-size: 0.875rem; font-weight: 500; line-height: 1.5; }
+    [data-toc-hint] { font-size: 0.75rem; font-weight: 400; color: var(--color-ink-soft); }
+    .post-toc-toggle svg { flex: none; transition: transform 180ms ease-out; }
+    .post-mobile-index[data-open] .post-toc-toggle svg { transform: rotate(180deg); }
+    .post-toc-panel { max-height: min(50vh, var(--toc-panel-max-height, 50vh)); max-height: min(50svh, var(--toc-panel-max-height, 50svh)); padding: 0 12px 12px; overflow-y: auto; overscroll-behavior: contain; }
+    .post-toc-panel[hidden] { display: none; }
+    .post-toc-panel ul { margin: 0; padding: 0; list-style: none; }
+    .post-mobile-index .toc-link { display: flex; align-items: center; min-height: 44px; padding-block: 10px; padding-right: 8px; font-size: 0.875rem; line-height: 1.6; border-radius: var(--radius-small); }
+    .post-mobile-index .toc-link:hover, .post-mobile-index .toc-link-active { background: color-mix(in srgb, var(--color-ink) 4%, transparent); }
+    .post-toc-toggle:focus-visible, .post-mobile-index .toc-link:focus-visible { outline-offset: -4px; }
+    .post-mobile-index .toc-link::before { display: none; }
+  }
+  @media print {
+    .post-mobile-index { display: none !important; }
+    .post-shell[data-has-toc] { padding-bottom: 0; }
+    body:has([data-post-mobile-toc]) .site-footer { margin-bottom: 0; }
+  }
+  @media (max-width: 600px) {
+    .post-shell { width: 100%; padding-top: 0; }
+    .post-header { padding-bottom: 2rem; margin-bottom: 2.5rem; }
+    .post-return { margin-bottom: 1.75rem; }
+    .post-title { font-size: 2rem; line-height: 1.5; letter-spacing: -0.015em; }
+    .post-meta { gap: 1rem; }
+    .post-pagination { margin-top: 3.5rem; }
+    .post-adjacent > :last-child { font-size: 0.95rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .post-shell *, .post-shell *::before, .post-shell *::after { scroll-behavior: auto !important; transition: none !important; }
   }
 
   .md-content {
     color: var(--md-text);
+    font-family: var(--font-body);
     font-size: 1.05rem;
     line-height: 1.85;
     letter-spacing: 0.01em;
+    font-weight: 400;
+    width: 100%;
   }
 
   @media (min-width: 768px) {
-    .md-content { font-size: 1.125rem; line-height: 1.95; }
+    .md-content { font-size: 1.125rem; line-height: 1.9; }
   }
 
   .md-content > :first-child { margin-top: 0; }
@@ -413,9 +522,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   .md-content h1, .md-content h2, .md-content h3, .md-content h4 {
     color: var(--md-heading);
-    font-family: var(--font-serif);
-    font-weight: 600;
-    line-height: 1.35;
+    font-family: var(--font-heading);
+    font-weight: 500;
+    line-height: 1.45;
+    letter-spacing: -0.015em;
     scroll-margin-top: 6rem;
     position: relative;
     text-wrap: balance;
@@ -439,61 +549,55 @@ document.addEventListener('DOMContentLoaded', () => {
     opacity: 1;
   }
 
+  .heading-anchor:focus-visible { opacity: 1; }
   .heading-anchor:hover { color: var(--color-moss); }
   .heading-anchor.copied { color: var(--color-moss); transform: scale(1.1); }
 
   .md-content h1 {
     display: block;
-    font-size: 2.25rem;
-    text-align: center;
+    font-size: 2rem;
+    text-align: left;
     margin-top: 4rem;
     margin-bottom: 2rem;
   }
-  .md-content h1::after {
-    content: '✻';
-    display: block;
-    margin-top: 1.25rem;
-    font-size: 0.85rem;
-    color: var(--color-moss-soft);
-    font-style: normal;
-  }
-  @media (min-width: 768px) { .md-content h1 { font-size: 3rem; } }
+  @media (min-width: 768px) { .md-content h1 { font-size: 2.5rem; } }
 
   .md-content h2 {
     font-size: 1.75rem;
-    margin-top: 5rem;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.6rem;
-    border-bottom: 1px solid var(--color-line);
+    margin-top: 3.5rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0;
+    border-bottom: none;
   }
   @media (min-width: 768px) {
     .md-content h2 {
       font-size: 2rem;
-      margin-top: 7rem;
-      margin-bottom: 2rem;
+      margin-top: 4rem;
+      margin-bottom: 1.5rem;
     }
   }
 
   .md-content h3 {
     font-size: 1.35rem;
-    margin-top: 3.5rem;
+    letter-spacing: 0.01em;
+    margin-top: 2.5rem;
     margin-bottom: 1rem;
-    padding-left: 0.75rem;
-    border-left: 3px solid var(--color-moss-soft);
+    padding-left: 0;
+    border-left: none;
     border-bottom: none;
   }
   @media (min-width: 768px) {
     .md-content h3 {
       font-size: 1.5rem;
-      margin-top: 4.5rem;
+      margin-top: 3rem;
       margin-bottom: 1.25rem;
-      padding-left: 1rem;
+      padding-left: 0;
     }
   }
 
   .md-content h4 {
     font-size: 1.15rem;
-    font-weight: 600;
+    font-weight: 500;
     margin-top: 2.5rem;
     margin-bottom: 0.75rem;
     color: var(--md-text);
@@ -536,11 +640,12 @@ document.addEventListener('DOMContentLoaded', () => {
   .md-content blockquote {
     margin: 2.75rem 0;
     padding: 0.25rem 1.25rem 0.25rem 1.5rem;
-    border-left: 2px solid color-mix(in srgb, var(--color-moss) 40%, transparent);
+    border-left: 1px solid var(--color-moss);
     background: transparent;
     color: var(--md-quote);
-    font-family: var(--font-serif);
-    font-style: italic;
+    font-family: var(--font-display);
+    font-style: normal;
+    font-weight: 400;
     font-size: 1.1rem;
     line-height: 1.85;
   }
@@ -558,13 +663,13 @@ document.addEventListener('DOMContentLoaded', () => {
     border-left-color: var(--color-line);
   }
 
-  .md-content :not(pre) > code { font-family: var(--font-mono); font-size: 0.85em; color: var(--md-code-text); background: var(--md-code-bg); padding: 0.2em 0.4em; border-radius: 0.3em; vertical-align: 1px; border: 1px solid var(--color-line); }
+  .md-content :not(pre) > code { font-family: var(--font-mono); font-size: 0.85em; color: var(--md-code-text); background: var(--md-code-bg); padding: 0.2em 0.4em; border-radius: 0.15em; vertical-align: 1px; border: 1px solid var(--color-line); }
 
-  .md-content pre { padding: 1rem; background: var(--md-pre-bg) !important; border: 1px solid var(--color-line); overflow-x: auto; font-family: var(--font-mono); font-size: 0.85rem; }
+  .md-content pre { padding: 1rem; background: var(--md-pre-bg) !important; border: 1px solid var(--color-line); border-radius: var(--radius-surface); overflow-x: auto; font-family: var(--font-mono); font-size: 0.85rem; }
   @media (min-width: 768px) { .md-content pre { padding: 1.25rem; font-size: 0.9rem; } }
   .md-content pre code { background: transparent; padding: 0; color: inherit; border: none; font-size: inherit; }
 
-  .code-block-wrapper { border-radius: 0.65rem; }
+  .code-block-wrapper { border-radius: var(--radius-surface); }
 
   .code-lang {
     position: absolute;
@@ -581,22 +686,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   .code-block-wrapper:hover .code-lang { opacity: 0; }
 
-  .md-content img { border-radius: 0.5rem; border: 1px solid var(--color-line); margin: 2.5rem auto; display: block; max-width: 100%; height: auto; box-shadow: 0 2px 12px -6px rgba(45, 42, 37, 0.18); }
-  @media (min-width: 768px) { .md-content img { border-radius: 0.75rem; margin: 3.5rem auto; } }
+  .md-content img { margin: 2.5rem auto; display: block; max-width: 100%; height: auto; }
+  @media (min-width: 768px) { .md-content img { margin: 3.5rem auto; } }
 
   .md-content hr {
     border: 0;
-    height: auto;
-    background: none;
+    height: 1px;
+    background: var(--color-line);
     margin: 4rem 0;
     text-align: center;
-  }
-  .md-content hr::after {
-    content: '✻';
-    font-size: 0.85rem;
-    color: color-mix(in srgb, var(--color-ink-faint) 55%, var(--color-line));
-    letter-spacing: 1em;
-    padding-left: 1em;
   }
 
   .table-wrapper {
@@ -604,8 +702,8 @@ document.addEventListener('DOMContentLoaded', () => {
     overflow-x: auto;
     margin: 2rem 0;
     border: 1px solid var(--color-line);
-    border-radius: 0.75rem;
-    background: var(--color-cream);
+    border-radius: var(--radius-surface);
+    background: var(--color-paper);
   }
   .md-content table { border-collapse: collapse; font-size: 0.875rem; width: 100%; }
   .md-content th { text-align: left; padding: 0.6rem 0.75rem; font-weight: 600; color: var(--md-heading); background: var(--md-surface); border-bottom: 1px solid var(--color-line); }
@@ -628,7 +726,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   #toc-scroll .toc-link[data-depth="3"],
   #toc-scroll .toc-link[data-depth="4"] {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
   .mobile-toc-link[data-depth="3"],
   .mobile-toc-link[data-depth="4"] {
@@ -640,16 +738,16 @@ document.addEventListener('DOMContentLoaded', () => {
     position: absolute;
     left: -1px;
     top: 50%;
-    width: 2px;
+    width: 1px;
     height: 0;
     background: var(--color-moss);
     border-radius: 1px;
-    transition: height 0.25s ease, top 0.25s ease;
+    transition: opacity 0.2s;
   }
   .toc-link-active {
     color: var(--md-heading) !important;
     font-weight: 600;
-    background: linear-gradient(to right, color-mix(in srgb, var(--color-moss) 7%, transparent), transparent);
+    background: transparent;
   }
   .toc-link-active::before {
     top: 18%;
@@ -658,24 +756,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   .admonition {
     margin: 2rem 0;
-    padding: 0.85rem 1.1rem;
-    border-radius: 0.75rem;
-    background: var(--md-surface);
+    padding: 1rem 0;
+    background: transparent;
     font-size: 0.95rem;
-    padding-left: 1.25rem;
-    border-left-width: 3px;
-    border-left-style: solid;
+    border-block: 1px solid var(--color-line);
     position: relative;
     overflow: hidden;
   }
 
-  @media (min-width: 768px) { .admonition { padding: 1rem 1.5rem; padding-left: 1.75rem; } }
+  @media (min-width: 768px) { .admonition { padding: 1.25rem 0; } }
 
   .admonition::after { display: none; }
   .admonition::before {
     content: attr(class);
     text-transform: uppercase;
-    font-weight: 800;
+    font-weight: 600;
     font-size: 0.72rem;
     letter-spacing: 0.12em;
     display: block;
@@ -689,12 +784,6 @@ document.addEventListener('DOMContentLoaded', () => {
   .admonition.warning::before { content: 'WARNING'; color: var(--md-warning); }
   .admonition.danger::before { content: 'DANGER'; color: var(--md-danger); }
 
-  .admonition.info { border-left-color: var(--md-info-border); background: color-mix(in srgb, var(--md-info-border) 9%, transparent); }
-  .admonition.note { border-left-color: var(--color-ink-faint); background: color-mix(in srgb, var(--color-ink-faint) 10%, transparent); }
-  .admonition.tip { border-left-color: var(--color-moss); background: color-mix(in srgb, var(--color-moss) 9%, transparent); }
-  .admonition.warning { border-left-color: var(--md-warning-border); background: color-mix(in srgb, var(--md-warning-border) 11%, transparent); }
-  .admonition.danger { border-left-color: var(--md-danger-border); background: color-mix(in srgb, var(--md-danger-border) 9%, transparent); }
-
   .admonition p { margin: 0.5rem 0 0 0; }
   .admonition p:first-of-type { margin-top: 0; }
 
@@ -707,17 +796,16 @@ document.addEventListener('DOMContentLoaded', () => {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 0.375rem;
+    border-radius: var(--radius-small);
     background-color: color-mix(in srgb, var(--color-ink) 5%, transparent);
     color: var(--color-ink-soft);
     transition: all 0.2s;
-    backdrop-filter: blur(4px);
     opacity: 0;
     z-index: 20;
     border: 1px solid var(--color-line);
   }
 
-  .code-block-wrapper:hover .copy-btn { opacity: 1; }
+  .code-block-wrapper:hover .copy-btn, .code-block-wrapper:focus-within .copy-btn { opacity: 1; }
   .copy-btn:hover { background-color: color-mix(in srgb, var(--color-ink) 10%, transparent); color: var(--md-heading); border-color: color-mix(in srgb, var(--color-ink) 10%, var(--color-line)); }
 
   .copy-btn.is-copied { border-color: color-mix(in srgb, var(--color-moss) 40%, transparent); background-color: color-mix(in srgb, var(--color-moss) 10%, transparent); color: var(--color-moss); }
@@ -731,6 +819,11 @@ document.addEventListener('DOMContentLoaded', () => {
     .copy-btn { opacity: 1; background-color: color-mix(in srgb, var(--color-cream) 92%, transparent); }
     .code-lang { display: none; }
     .heading-anchor { display: none; }
+  }
+  @media (max-width: 1023px), (pointer: coarse) {
+    .copy-btn { width: 44px; height: 44px; top: 8px; right: 8px; opacity: 1; }
+    .code-block-wrapper pre { padding-top: 56px; }
+    .code-lang { top: 20px; left: 16px; right: auto; }
   }
 
 </style>

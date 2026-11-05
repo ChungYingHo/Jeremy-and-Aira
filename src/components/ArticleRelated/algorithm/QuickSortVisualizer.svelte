@@ -1,4 +1,6 @@
 <script>
+  import DiagramViewport from '@/components/ArticleRelated/DiagramViewport.svelte'
+
   const INITIAL = [4, 1, 3, 1, 5, 2]
 
   function buildSteps(arr) {
@@ -139,6 +141,7 @@
     </div>
   </div>
 
+  <DiagramViewport label="快速排序過程圖" minWidth={500}>
   <svg viewBox="0 0 500 210" class="w-full" xmlns="http://www.w3.org/2000/svg">
     {#each bars as bar}
       <rect x={bar.x} y={bar.y} width={bar.w} height={bar.h}
@@ -151,13 +154,14 @@
       >{bar.v}</text>
     {/each}
   </svg>
+  </DiagramViewport>
 
   <div class="px-4 pb-4">
     <div class="text-center text-xs font-mono min-h-[1.25rem] mb-3
       {state.phase === 'done' ? 'text-moss' : state.phase === 'partitioned' ? 'text-clay' : state.scanning >= 0 ? 'text-[#8a6d23]' : 'text-ink-faint'}">
       {idx < 0 ? '按下播放，觀察排序過程' : state.desc}
     </div>
-    <div class="flex items-center justify-center gap-2">
+    <div class="flex flex-wrap items-center justify-center gap-2" data-diagram-controls>
       <button on:click={togglePlay}
         class="px-4 py-1.5 rounded-lg text-sm font-medium border transition-colors bg-paper text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5"
       >{playLabel}</button>

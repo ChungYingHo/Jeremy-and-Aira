@@ -1,0 +1,22 @@
+{
+  "family": "Kouzan Brush Font Sousho / 衡山毛筆フォント草書",
+  "cssFamily": "Kouzan Brush Sousho",
+  "author": "青柳衡山 / Kouzan Aoyagi",
+  "officialSource": "https://opentype.jp/kouzansousho.htm",
+  "officialDownload": "https://opentype.jp/bin/KouzanSousho.zip",
+  "licenseFile": "/fonts/licenses/kouzan-brush-sousho.txt",
+  "retrieved": "2026-11-05",
+  "sourceFilename": "kouzan-KouzanBrushFontSousyo.ttf",
+  "sourceSha256": "7f676cf7275de19068d6b00c0e8f77c67939715bc585ac66df991a4cc0178830",
+  "subsetSha256": "0d57e586aa40650f93a004e96981db74822c017ce11cf6118f09698969437549",
+  "processing": "fontTools exact-text WOFF2 subset; hinting and legacy gasp/mort tables removed; original names and glyph outlines preserved",
+  "fsType": 8,
+  "noSubsettingFlag": false,
+  "poem": "雪沫乳花浮午盞，蓼茸蒿筍試春盤。人間有味是清歡。",
+  "uniqueCodepoints": 23,
+  "missingCodepoints": [],
+  "glyphOutlinesIdentical": true,
+  "bytes": 9164,
+  "weight": 400,
+  "style": "normal"
+}

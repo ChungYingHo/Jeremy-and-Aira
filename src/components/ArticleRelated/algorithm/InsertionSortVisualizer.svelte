@@ -1,4 +1,6 @@
 <script>
+  import DiagramViewport from '@/components/ArticleRelated/DiagramViewport.svelte'
+
   const INITIAL = [4, 1, 3, 1, 5, 2]
 
   function buildSteps(arr) {
@@ -101,6 +103,7 @@
     </div>
   </div>
 
+  <DiagramViewport label="插入排序過程圖" minWidth={500}>
   <svg viewBox="0 0 500 210" class="w-full" xmlns="http://www.w3.org/2000/svg">
     {#each bars as bar}
       <rect x={bar.x} y={bar.y} width={bar.w} height={bar.h}
@@ -113,6 +116,7 @@
       >{bar.v}</text>
     {/each}
   </svg>
+  </DiagramViewport>
 
   <div class="px-4 pb-4">
     <div class="text-center text-xs font-mono min-h-[1.25rem] mb-3
@@ -122,7 +126,7 @@
         第 {state.arr.length - steps.filter(s => s.phase === 'pick').length + steps.slice(0, idx + 1).filter(s => s.phase === 'pick').length} 輪：{state.desc}（取出的是 {state.keyVal}）
       {:else}{state.desc}{/if}
     </div>
-    <div class="flex items-center justify-center gap-2">
+    <div class="flex flex-wrap items-center justify-center gap-2" data-diagram-controls>
       <button on:click={togglePlay}
         class="px-4 py-1.5 rounded-lg text-sm font-medium border transition-colors bg-paper text-ink-soft border-line hover:text-ink hover:border-moss/50 hover:bg-moss/5"
       >{playLabel}</button>

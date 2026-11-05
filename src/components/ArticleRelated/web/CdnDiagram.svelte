@@ -1,4 +1,9 @@
+<script>
+  import DiagramViewport from '@/components/ArticleRelated/DiagramViewport.svelte'
+</script>
+
 <div class="w-full max-w-3xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
+  <DiagramViewport label="CDN 快取節點比較圖" minWidth={750}>
   <svg viewBox="0 0 500 270" class="w-full" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <marker id="cdn-arrow-solid" markerWidth="8" markerHeight="8" refX="4" refY="3" orient="auto">
@@ -71,4 +76,5 @@
     <text x="14" y="220" font-family="sans-serif" font-size="9" fill="#8f8a80">Cache Hit：Edge Node 直接回應，不回原始伺服器</text>
     <text x="14" y="235" font-family="sans-serif" font-size="9" fill="#8f8a80">Cache Miss：Edge Node 無快取，向原始伺服器取得後再回傳並快取</text>
   </svg>
+  </DiagramViewport>
 </div>

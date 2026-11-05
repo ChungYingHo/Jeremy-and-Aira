@@ -1,47 +1,105 @@
-/* Self-hosted brand fonts (latin subset) — masthead must not depend on Google's versioned CDN URLs */
 @font-face {
-  font-family: 'Caveat';
+  font-family: 'Urbanist';
   font-style: normal;
-  font-weight: 600;
+  font-weight: 100 900;
   font-display: swap;
-  src: url('/fonts/caveat-600-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  src: url('/fonts/urbanist-variable.woff2') format('woff2');
 }
-
 @font-face {
-  font-family: 'Caveat';
+  font-family: 'Water Brush';
   font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('/fonts/caveat-700-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
-@font-face {
-  font-family: 'Lora';
-  font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/lora-italic-400-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  src: url('/fonts/water-brush-jeremy.woff2') format('woff2');
+  unicode-range: U+004A, U+0065, U+006D, U+0072, U+0079;
 }
-
-html,
-body {
-  margin: 0;
-  width: 100%;
-  min-height: 100vh;
+@font-face {
+  font-family: 'Kouzan Brush Sousho';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/kouzan-poem-subset.woff2') format('woff2');
+  unicode-range: U+3002, U+4E73, U+4EBA, U+5348, U+5473, U+6625, U+662F, U+6709, U+6B61, U+6CAB, U+6D6E, U+6E05, U+76DE, U+76E4, U+7B4D, U+82B1, U+8338, U+84BF, U+84FC, U+8A66, U+9593, U+96EA, U+FF0C;
 }
-
-/* Shared animation */
-@keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-in-up { animation: fade-in-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-
-/* Slim scrollbar for overlay panels and sidebars */
+html, body { margin: 0; width: 100%; min-height: 100vh; }
+html { scroll-padding-top: 112px; }
+body { caret-color: var(--color-moss); font-family: var(--font-body); }
+button, a, input { -webkit-tap-highlight-color: transparent; }
+button, textarea, select, input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']) { border-radius: var(--radius-control); }
+a { text-underline-offset: 0.22em; }
+:focus-visible { outline: 2px solid var(--color-moss); outline-offset: 5px; }
+html[data-focus-input='pointer'] :is(a, button, summary, [role='button']):focus { outline: none !important; }
+::selection { background: color-mix(in srgb, var(--color-moss) 17%, transparent); color: var(--color-ink); }
+h1, h2, h3, h4 { text-wrap: balance; }
+.font-heading { font-family: var(--font-heading); font-weight: 400; }
+.site-main { flex: 1; width: min(1180px, calc(100% - 80px)); margin-inline: auto; padding-top: 150px; padding-bottom: 120px; position: relative; }
+.site-main.site-main-immersive { width: 100%; max-width: none; margin: 0; padding: 0; }
+.skip-link { position: fixed; top: 10px; left: 20px; padding: 12px 20px; background: var(--color-ink); color: var(--color-paper); z-index: 100; transform: translateY(-150%); }
+.skip-link:focus { transform: translateY(0); }
+.site-footer { width: min(1180px, calc(100% - 80px)); margin-inline: auto; padding: 36px 0 32px; border-top: 1px solid var(--color-line); display: flex; align-items: center; justify-content: space-between; gap: 28px; }
+.site-brand, .footer-brand { display: flex; flex-direction: column; align-items: center; gap: 8px; width: fit-content; color: var(--color-ink); text-decoration: none; }
+.site-brand-name { display: block; padding-inline: 4px; font-family: var(--font-brand); font-size: 48px; font-weight: 400; line-height: 1; letter-spacing: 0; font-synthesis: none; font-kerning: normal; }
+.site-brand-studio { display: block; font: 500 11px/1.35 var(--font-body); letter-spacing: 0.025em; white-space: nowrap; }
+.footer-brand .site-brand-name { font-size: 39px; }
+.footer-brand .site-brand-studio { font-size: 10px; }
+.footer-meta { display: flex; align-items: center; gap: clamp(24px, 8vw, 150px); color: var(--color-ink-faint); font-size: 0.75rem; }
+.footer-studio { display: inline-flex; align-items: center; gap: 8px; color: var(--color-ink-soft); text-decoration: none; }
+.footer-studio:hover { color: var(--color-brand); }
+.footer-studio svg { transition: transform 250ms ease; }
+.footer-studio:hover svg { transform: translate(2px, -2px); }
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(58, 53, 44, 0.15); border-radius: 4px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(58, 53, 44, 0.3); }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--color-line); }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--color-ink-faint); }
+@keyframes fade-in-up { from { transform: translateY(12px); } to { transform: translateY(0); } }
+.animate-fade-in-up { animation: fade-in-up 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@media (max-width: 767px) {
+  html { scroll-padding-top: 92px; }
+  .site-main { width: calc(100% - 40px); padding-top: 112px; padding-bottom: 72px; }
+  .site-footer { width: calc(100% - 40px); padding-top: 28px; gap: 24px; flex-wrap: wrap; }
+  .footer-meta { width: 100%; justify-content: space-between; gap: 20px; font-size: 0.7rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto !important; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+:root {
+  --site-shell-max: 1360px;
+  --site-shell-gutter: 56px;
+  --radius-panel: 22px;
+  --radius-surface: 16px;
+  --radius-control: 12px;
+  --radius-small: 8px;
+  --radius-box: var(--radius-panel);
+  --radius-field: var(--radius-control);
+  --radius-selector: var(--radius-small);
+  --font-brand: 'Water Brush', cursive;
+  --font-poem: 'Kouzan Brush Sousho', 'Iansui', serif;
+  --color-primary: var(--color-moss);
+  --color-secondary: var(--color-brand);
+  --color-accent: var(--color-brand);
+  --color-base-100: var(--color-paper);
+  --color-base-200: var(--color-cream);
+  --color-base-300: var(--color-line);
+  --color-base-content: var(--color-ink);
+  --type-body: 1rem;
+  --type-meta: 0.8125rem;
+  --type-label: 0.875rem;
+  --type-heading-weight: 500;
+  --type-body-weight: 400;
+}
+.type-meta { font-size: var(--type-meta); font-weight: 400; font-variant-numeric: tabular-nums; letter-spacing: 0.025em; }
+
+@media (max-width: 1023px) {
+  :root { --site-shell-gutter: 32px; }
+}
+@media (max-width: 767px) {
+  :root { --site-shell-gutter: 20px; }
+  .site-brand-name { font-size: 41px; }
+  .site-brand-studio { font-size: 10px; }
+}
+@media (max-width: 359px) {
+  .site-brand-name { font-size: 37px; }
+  .site-brand-studio { font-size: 9px; }
+}

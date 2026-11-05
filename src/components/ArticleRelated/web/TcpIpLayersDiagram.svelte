@@ -1,4 +1,9 @@
+<script>
+  import DiagramViewport from '@/components/ArticleRelated/DiagramViewport.svelte'
+</script>
+
 <div class="w-full max-w-3xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
+  <DiagramViewport label="TCP/IP 四層協定圖" minWidth={640}>
   <svg viewBox="0 0 480 210" class="w-full" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <style>
@@ -39,4 +44,5 @@
     <line x1="185" y1="163" x2="185" y2="207" stroke="#b3674a" stroke-width="1"/>
     <text x="200" y="189" class="proto" fill="#5d574d">乙太網路 · Wi-Fi · 光纖</text>
   </svg>
+  </DiagramViewport>
 </div>

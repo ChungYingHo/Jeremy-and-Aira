@@ -30,7 +30,7 @@
              await loadScript('/_pagefind/pagefind-ui.js')
           } catch (e2) {
              console.error('Pagefind script load error:', e2)
-             errorMsg = '無法載入搜尋引擎。請確認已執行 npm run build。'
+             errorMsg = '搜尋暫時無法載入，請稍後再試。'
              return
           }
         }
@@ -46,15 +46,15 @@
             excerptLength: 15,
             baseUrl: '/', 
             translations: {
-              placeholder: 'Search...',
-              zero_results: 'No results found',
-              clear_search: 'Clear' 
+              placeholder: '輸入關鍵字…',
+              zero_results: '找不到相關文章',
+              clear_search: '清除'
             }
           })
 
           const input = document.querySelector('.pagefind-ui__search-input') as HTMLInputElement
           if (input) {
-            input.focus()
+            input.focus({ preventScroll: true })
             input.addEventListener('click', (e) => e.stopPropagation())
           }
         } catch (e) {
@@ -82,23 +82,25 @@
   }
 </script>
 
-<div class="flex flex-col h-full text-left relative bg-cream">
-  <div class="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-line bg-cream shrink-0">
+<div class="search-surface flex flex-col h-full text-left relative bg-paper">
+  <div class="search-heading flex items-center justify-between px-5 pt-5 pb-2 md:px-7 md:pt-6 md:pb-2 shrink-0">
     <div class="flex items-center gap-2 md:gap-3 text-ink-soft">
       <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
-      <span class="text-xs font-mono font-bold uppercase tracking-[0.15em]">Global Search</span>
+      <span class="text-sm font-medium">搜尋文章</span>
     </div>
     <div class="flex items-center gap-2">
-       <span class="text-[10px] font-mono text-ink-faint hidden md:inline-block">ESC to close</span>
-       <button on:click={onClose} class="md:hidden text-ink-faint p-1 min-w-[32px] min-h-[32px] flex items-center justify-center">✕</button>
+       <span class="text-xs text-ink-faint hidden lg:inline-block">Esc 關閉</span>
+       <button on:click={onClose} aria-label="關閉搜尋" class="lg:hidden text-ink-faint p-1 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-ink/5">
+         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12" /><path d="M18 6 6 18" /></svg>
+       </button>
     </div>
   </div>
 
-  <div class="p-4 md:p-6 overflow-y-auto custom-scrollbar flex-1 relative z-10">
+  <div class="px-5 pt-3 pb-5 md:px-7 md:pt-4 md:pb-7 overflow-y-auto custom-scrollbar flex-1 relative z-10">
     {#if errorMsg}
-        <div class="text-clay text-xs text-center mt-10 p-4 border border-clay/30 rounded bg-clay/5">
+        <div class="search-error text-clay text-xs text-center mt-6 p-4 border border-clay/30 bg-clay/5">
           {errorMsg}
         </div>
     {/if}
@@ -108,16 +110,18 @@
 </div>
 
 <style>
+  .search-surface { border-radius: inherit; }
+  .search-error { border-radius: var(--radius-control); }
   :global(:root) {
     --pagefind-ui-scale: 0.85;
-    --pagefind-ui-primary: #5f7355;
-    --pagefind-ui-text: #3b3833;
-    --pagefind-ui-background: #fcfbf8;
-    --pagefind-ui-border: #e4e1da;
-    --pagefind-ui-tag: #5f7355;
+    --pagefind-ui-primary: var(--color-moss);
+    --pagefind-ui-text: var(--color-ink);
+    --pagefind-ui-background: var(--color-paper);
+    --pagefind-ui-border: var(--color-line);
+    --pagefind-ui-tag: var(--color-moss);
     --pagefind-ui-border-width: 1px;
-    --pagefind-ui-border-radius: 8px;
-    --pagefind-ui-font: 'Inter', system-ui, sans-serif;
+    --pagefind-ui-border-radius: var(--radius-control);
+    --pagefind-ui-font: var(--font-body);
   }
 
   /* Pagefind form must stack vertically, or results squeeze the input sideways */
@@ -133,33 +137,33 @@
 
   :global(.pagefind-ui__search-input) {
     width: 100% !important;
-    background-color: rgba(45, 42, 37, 0.03) !important;
-    border: 1px solid #e4e1da !important;
-    color: #2d2a25 !important;
+    background-color: color-mix(in srgb, var(--color-ink) 3%, transparent) !important;
+    border: 1px solid var(--color-line) !important;
+    color: var(--color-ink) !important;
     padding: 14px 16px !important;
-    padding-right: 60px !important;
+    padding-right: 72px !important;
     font-size: 16px !important;
     font-weight: 500 !important;
-    border-radius: 12px !important;
-    transition: all 0.2s ease !important;
+    border-radius: var(--radius-control) !important;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
     box-sizing: border-box !important;
-    height: 50px !important;
+    height: 54px !important;
   }
 
   @media (min-width: 768px) {
     :global(.pagefind-ui__search-input) {
       padding: 18px 22px !important;
-      padding-right: 70px !important;
+      padding-right: 84px !important;
       font-size: 1.1rem !important;
       height: 60px !important;
     }
   }
 
   :global(.pagefind-ui__search-input:focus) {
-    background-color: #fff !important;
+    background-color: var(--color-paper) !important;
     border-color: var(--pagefind-ui-primary) !important;
-    outline: none;
-    box-shadow: 0 0 0 1px rgba(95, 115, 85, 0.35) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-moss) 14%, transparent) !important;
   }
 
   /* Anchored at half the input height instead of top:50% — the form grows when results render */
@@ -167,18 +171,20 @@
     position: absolute !important;
     right: 10px !important;
     z-index: 20 !important;
-    top: 25px !important;
+    top: 27px !important;
     transform: translateY(-50%) !important;
     background: transparent !important;
-    color: #8f8a80 !important;
-    padding: 4px 8px !important;
+    color: var(--color-ink-faint) !important;
+    padding: 8px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
     margin: 0 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     font-size: 13px !important;
     cursor: pointer !important;
-    border-radius: 4px !important;
+    border-radius: var(--radius-small) !important;
   }
 
   @media (min-width: 768px) {
@@ -188,8 +194,8 @@
   }
   
   :global(.pagefind-ui__search-clear:hover) {
-    color: #5f7355 !important;
-    background: rgba(45, 42, 37, 0.05) !important;
+    color: var(--color-moss) !important;
+    background: color-mix(in srgb, var(--color-ink) 5%, transparent) !important;
   }
 
   :global(.pagefind-ui__drawer) {
@@ -199,9 +205,9 @@
   }
 
   :global(.pagefind-ui__result) {
-    border: 1px solid transparent !important;
+    border: 0 !important;
     padding: 12px !important;
-    border-radius: 8px !important;
+    border-radius: var(--radius-control) !important;
     background: transparent !important;
     transition: background-color 0.2s ease;
   }
@@ -209,20 +215,18 @@
   @media (min-width: 768px) {
     :global(.pagefind-ui__result) {
       padding: 16px !important;
-      border-radius: 12px !important;
     }
   }
 
   :global(.pagefind-ui__result:hover) {
-    background-color: rgba(45, 42, 37, 0.04) !important;
-    border-color: #e4e1da !important;
+    background-color: color-mix(in srgb, var(--color-ink) 4%, transparent) !important;
   }
 
   :global(.pagefind-ui__result-thumb) { display: none; }
 
   :global(.pagefind-ui__result-link) {
-    color: #5f7355 !important;
-    font-weight: 600 !important;
+    color: var(--color-moss) !important;
+    font-weight: 500 !important;
     font-size: 1rem !important;
     text-decoration: none !important;
     display: block !important;
@@ -239,7 +243,7 @@
   }
   
   :global(.pagefind-ui__result-excerpt) {
-    color: #5d574d !important;
+    color: var(--color-ink-soft) !important;
     font-size: 0.85rem !important;
     line-height: 1.5 !important;
     font-weight: 400 !important;
@@ -262,15 +266,15 @@
   }
   
   :global(.pagefind-ui__result-excerpt mark) {
-    background: rgba(95, 115, 85, 0.18) !important;
-    color: #3f5239 !important;
+    background: color-mix(in srgb, var(--color-moss) 12%, transparent) !important;
+    color: var(--color-moss) !important;
     font-weight: 600 !important;
     padding: 0 3px;
     border-radius: 3px;
   }
 
   :global(.pagefind-ui__message) {
-      color: #8f8a80 !important;
+      color: var(--color-ink-faint) !important;
       padding: 10px 4px !important;
       font-size: 0.9rem !important;
   }

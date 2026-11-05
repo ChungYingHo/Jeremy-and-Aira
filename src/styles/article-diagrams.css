@@ -1,0 +1,14 @@
+.md-content [data-diagram-frame] { width: 100%; min-width: 0; }
+.md-content [data-diagram-viewport] { width: 100%; overflow-x: auto; overflow-y: hidden; overscroll-behavior-inline: contain; scrollbar-width: thin; scrollbar-color: var(--color-line) transparent; }
+.md-content [data-diagram-viewport] > svg { display: block; width: 100%; min-width: var(--diagram-min-width); max-width: none; }
+.md-content [data-diagram-viewport]:focus-visible { outline: 2px solid var(--color-ink); outline-offset: -3px; border-radius: var(--radius-small); }
+.md-content [data-diagram-viewport]::-webkit-scrollbar { height: 6px; }
+.md-content [data-diagram-viewport]::-webkit-scrollbar-thumb { background: var(--color-line); border-radius: 3px; }
+.md-content [data-diagram-hint] { margin: 0; padding: 12px 16px 8px; color: var(--color-ink-soft); font: 400 12px/1.6 var(--font-body); text-align: center; }
+.md-content [data-diagram-controls] button { min-width: 44px; min-height: 44px; }
+
+@media print {
+  .md-content [data-diagram-viewport] { overflow: visible; }
+  .md-content [data-diagram-viewport] > svg { min-width: 0; max-width: 100%; }
+  .md-content [data-diagram-hint] { display: none; }
+}

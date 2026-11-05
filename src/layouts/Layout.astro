@@ -2,14 +2,15 @@
 import '@/styles/tailwind.css'
 import '@/styles/main.scss'
 import Menu from '@/components/Menu/Menu.svelte'
+import BackgroundMusic from '@/components/BackgroundMusic.astro'
+import { ClientRouter } from 'astro:transitions'
 import { useMenu } from '@/utils/useMenu'
-import CustomCursor from '@/components/CustomCursor.astro'
 
 const { menu } = await useMenu()
 const currentPath = Astro.url.pathname
 
-// Caveat and Lora italic are self-hosted in public/fonts/ — keep them out of this request
-const FONT_CSS_URL = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Lora:wght@400;500;600&family=Noto+Serif+TC:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap'
+// The display face is self-hosted so the brand does not depend on remote font loading.
+const FONT_CSS_URL = 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap'
 
 interface Props {
   title?: string
@@ -19,18 +20,22 @@ interface Props {
   publishedTime?: string
   author?: string
   tags?: string[]
+  immersive?: boolean
+  visualHome?: boolean
 }
 
 const SITE_NAME = 'Jeremy'
 
 const {
   title = SITE_NAME,
-  description = "Jeremy's Tech Blog",
+  description = 'Jeremy 的日常、想像，與沿途的風景。',
   image = '/icon-512.png',
   type = 'website',
   publishedTime,
   author = SITE_NAME,
   tags = [],
+  immersive = currentPath === '/',
+  visualHome = false,
 } = Astro.props
 
 const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
@@ -62,11 +67,12 @@ const jsonLd = type === 'article'
 ---
 
 <!doctype html>
-<html lang="zh-TW" class="scroll-smooth overflow-x-hidden">
+<html lang="zh-TW" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
+    <ClientRouter fallback="swap" />
 
     <script async is:inline src="https://www.googletagmanager.com/gtag/js?id=G-X57D2M0BZX"></script>
     <script is:inline>
@@ -100,27 +106,29 @@ const jsonLd = type === 'article'
 
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
 
-    <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" href="/favicon.ico?v=20261105-paper-ink" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261105-paper-ink" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=20261105-paper-ink" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=20261105-paper-ink" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    {/* Self-hosted brand fonts (declared in main.scss) preloaded so the masthead renders without font swap */}
-    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/caveat-700-latin.woff2" />
-    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/lora-italic-400-latin.woff2" />
+    <meta name="theme-color" content="#f4f3ef" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/urbanist-variable.woff2" />
+    <link rel="stylesheet" href="/fonts/iansui.css" />
     {/* Async font CSS keeps the huge CJK stylesheets off the critical render path */}
     <link rel="preload" as="style" href={FONT_CSS_URL} />
     <link rel="stylesheet" href={FONT_CSS_URL} media="print" onload="this.media='all'" />
     <noscript>
       <link rel="stylesheet" href={FONT_CSS_URL} />
     </noscript>
+    <slot name="head" />
   </head>
 
   <body
+    transition:animate="none"
     class="
       min-h-screen
       flex
@@ -128,25 +136,26 @@ const jsonLd = type === 'article'
       text-ink
       bg-paper
       antialiased
-      overflow-x-hidden
-      selection:bg-moss/20
+      selection:bg-brand/20
       selection:text-ink
       relative
     "
   >
-    <div class="fixed inset-0 z-[-1] w-full h-full pointer-events-none">
-      {/* Radial gradients instead of filter:blur — same glow, no per-frame GPU blur cost on mobile */}
-      <div class="absolute top-[-12%] left-[-8%] w-[640px] h-[640px] bg-[radial-gradient(circle_at_center,rgba(139,160,126,0.10),transparent_65%)]"></div>
-      <div class="absolute bottom-[-12%] right-[-6%] w-[760px] h-[760px] bg-[radial-gradient(circle_at_center,rgba(179,103,74,0.05),transparent_65%)]"></div>
-    </div>
-
-    <Menu client:idle rootItems={menu} currentPath={currentPath} />
-
-    <main class="flex-1 w-full max-w-5xl mx-auto px-6 pt-32 pb-24 relative z-10">
+    <a class="skip-link" href="#main-content">跳至內容</a>
+    <BackgroundMusic />
+    <Menu client:load rootItems={menu} currentPath={currentPath} {visualHome} />
+    {visualHome && <slot name="cover" />}
+    <main id="main-content" class:list={['site-main', { 'site-main-immersive': immersive }]}>
       <slot />
     </main>
 
-    <CustomCursor />
+    <footer class="site-footer">
+      <a href="/" class="footer-brand" aria-label="Jeremy 首頁">
+        <span class="site-brand-name">Jeremy</span>
+        <span class="site-brand-studio">Solunastre Studio</span>
+      </a>
+      <div class="footer-meta"><span>© {new Date().getFullYear()} Jeremy</span></div>
+    </footer>
 
     <style is:global>
       :root {
@@ -154,7 +163,7 @@ const jsonLd = type === 'article'
       }
 
       html {
-        font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+        font-family: var(--font-body);
         scroll-behavior: smooth;
       }
 
@@ -168,18 +177,16 @@ const jsonLd = type === 'article'
       }
 
       ::-webkit-scrollbar-thumb {
-        background: #d2cfc6;
+        background: var(--color-line);
         border-radius: 4px;
       }
 
       ::-webkit-scrollbar-thumb:hover {
-        background: #b7b3a8;
+        background: var(--color-ink-faint);
       }
 
-      @media (min-width: 1280px) {
-        html, body {
-          overflow-x: clip;
-        }
+      html, body {
+        overflow-x: clip;
       }
     </style>
   </body>

@@ -1,0 +1,1031 @@
+<ink-surface aria-hidden='true' data-ready='loading' data-mode='static' data-drop-count='0' data-frame='0' data-hover-count='0' data-stroke-count='0' data-auto-count='0' data-user-drop-count='0' data-auto-paused='false'>
+  <svg class='ink-still' viewBox='0 0 100 100' preserveAspectRatio='none' focusable='false'>
+    <defs>
+      <filter id='ink-still-edge' x='-25%' y='-25%' width='150%' height='150%'>
+        <feTurbulence type='fractalNoise' baseFrequency='.11' numOctaves='3' seed='8' result='grain' />
+        <feDisplacementMap in='SourceGraphic' in2='grain' scale='1.8' xChannelSelector='R' yChannelSelector='B' />
+        <feGaussianBlur stdDeviation='.12' />
+      </filter>
+      <radialGradient id='ink-still-wash'>
+        <stop offset='0' stop-color='#26364f' stop-opacity='.58' />
+        <stop offset='.55' stop-color='#59708f' stop-opacity='.28' />
+        <stop offset='1' stop-color='#8fa3bc' stop-opacity='0' />
+      </radialGradient>
+    </defs>
+    <rect width='100' height='100' fill='#f8f7f3' />
+    <ellipse cx='69' cy='57' rx='25' ry='28' fill='url(#ink-still-wash)' />
+    <g fill='#364b69' filter='url(#ink-still-edge)'>
+      <path opacity='.17' d='M60 38C70 29 84 37 79 47C76 53 85 54 83 63C81 76 65 76 62 68C61 64 67 61 64 57C61 53 53 56 53 49C52 43 57 43 60 38Z' />
+      <path opacity='.24' d='M67 43C74 36 80 44 73 49C67 54 80 55 76 62C72 68 62 65 66 59C69 55 58 56 60 49C61 45 64 47 67 43Z' />
+      <path opacity='.41' d='M72 47C78 44 80 50 76 54C73 56 78 60 74 62C70 64 67 60 69 56C72 52 66 50 72 47Z' />
+    </g>
+    <g fill='none' stroke='#6c829d' stroke-width='.09'>
+      <ellipse cx='72' cy='51' rx='16' ry='9' opacity='.3' />
+      <ellipse cx='72' cy='51' rx='21' ry='12' opacity='.13' />
+      <ellipse cx='61' cy='68' rx='8' ry='5' opacity='.15' />
+    </g>
+  </svg>
+  <canvas></canvas>
+</ink-surface>
+
+<script>
+  type Target = { texture: WebGLTexture; framebuffer: WebGLFramebuffer; width: number; height: number }
+  type Pair = { read: Target; write: Target }
+  type Pass = { program: WebGLProgram; uniforms: Map<string, WebGLUniformLocation | null> }
+  type DropInput = { x: number; y: number; radius: number; strength: number; kind: 'auto' | 'user' | 'startup' | 'hover'; trace?: { length: number; from: number[] } }
+  type PenPoint = { x: number; y: number; time: number; radius: number; strength: number; speed: number }
+  type Drop = DropInput & {
+    seed: number
+    profile: 'spread' | 'curl' | 'drift' | 'stretch'
+    angle: number
+    aspect: number
+    lobes: number
+    outward: number
+    spin: number
+    strain: number
+    spread: number
+    driftX: number
+    driftY: number
+  }
+
+  const vertex = `#version 300 es
+    precision highp float;
+    out vec2 v_uv;
+    void main() {
+      vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
+      v_uv = p;
+      gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+    }
+  `
+
+  const common = `#version 300 es
+    precision highp float;
+    in vec2 v_uv;
+    out vec4 outColor;
+    vec2 rotateDrop(vec2 point, float angle) {
+      float c = cos(angle);
+      float s = sin(angle);
+      return mat2(c, -s, s, c) * point;
+    }
+  `
+
+  const velocityShader = common + `
+    uniform sampler2D u_velocity;
+    uniform vec2 u_texel;
+    uniform float u_dt;
+    uniform float u_time;
+    uniform float u_aspect;
+    uniform float u_velocity_scale;
+    uniform vec4 u_drop;
+    uniform vec4 u_shape;
+    uniform vec4 u_flow;
+    uniform vec2 u_drift;
+    void main() {
+      vec2 velocity = texture(u_velocity, v_uv).xy;
+      vec2 previous = clamp(v_uv - velocity * u_dt * u_texel, u_texel, 1.0 - u_texel);
+      velocity = texture(u_velocity, previous).xy * exp(-u_dt * 0.3);
+      vec2 p = v_uv * vec2(u_aspect, 1.0);
+      float t = u_time * 0.08;
+      vec2 current = vec2(
+        sin(p.x * 8.0 + t) * cos(p.y * 8.0 - t),
+        -cos(p.x * 8.0 + t) * sin(p.y * 8.0 - t)
+      );
+      current += 0.38 * vec2(
+        sin(p.x * 23.0 - t * 1.7) * cos(p.y * 23.0 + t),
+        -cos(p.x * 23.0 - t * 1.7) * sin(p.y * 23.0 + t)
+      );
+      current += 0.18 * vec2(
+        sin(p.x * 47.0 + t * 1.2) * cos(p.y * 47.0 - t * 0.6),
+        -cos(p.x * 47.0 + t * 1.2) * sin(p.y * 47.0 - t * 0.6)
+      );
+      velocity += current * u_dt * 4.0 * u_velocity_scale;
+      if (u_drop.w > 0.0) {
+        vec2 delta = (v_uv - u_drop.xy) * vec2(u_aspect, 1.0);
+        vec2 local = rotateDrop(delta, u_shape.x) / vec2(u_shape.y, 1.0 / u_shape.y);
+        float radius = max(u_drop.z * 3.7, 0.001);
+        float influence = exp(-dot(local, local) / (radius * radius));
+        vec2 direction = delta / (length(delta) + 0.006);
+        vec2 roll = vec2(-direction.y, direction.x);
+        float asymmetry = 0.65 + 0.35 * sin(atan(local.y, local.x) * u_shape.w + u_shape.z);
+        vec2 strain = rotateDrop(vec2(local.y, local.x), -u_shape.x) / (length(local) + 0.018);
+        velocity += (direction * u_flow.x + roll * u_flow.y * asymmetry + strain * u_flow.z + u_drift) * influence * u_drop.w * u_flow.w * u_velocity_scale;
+      }
+      float edge = smoothstep(0.0, 0.025, min(min(v_uv.x, 1.0 - v_uv.x), min(v_uv.y, 1.0 - v_uv.y)));
+      outColor = vec4(clamp(velocity * edge, -95.0 * u_velocity_scale, 95.0 * u_velocity_scale), 0.0, 1.0);
+    }
+  `
+
+  const curlShader = common + `
+    uniform sampler2D u_velocity;
+    uniform vec2 u_texel;
+    void main() {
+      float l = texture(u_velocity, v_uv - vec2(u_texel.x, 0.0)).y;
+      float r = texture(u_velocity, v_uv + vec2(u_texel.x, 0.0)).y;
+      float b = texture(u_velocity, v_uv - vec2(0.0, u_texel.y)).x;
+      float t = texture(u_velocity, v_uv + vec2(0.0, u_texel.y)).x;
+      outColor = vec4(0.5 * (r - l - t + b), 0.0, 0.0, 1.0);
+    }
+  `
+
+  const confineShader = common + `
+    uniform sampler2D u_velocity;
+    uniform sampler2D u_curl;
+    uniform vec2 u_texel;
+    uniform float u_dt;
+    uniform float u_velocity_scale;
+    void main() {
+      float l = abs(texture(u_curl, v_uv - vec2(u_texel.x, 0.0)).r);
+      float r = abs(texture(u_curl, v_uv + vec2(u_texel.x, 0.0)).r);
+      float b = abs(texture(u_curl, v_uv - vec2(0.0, u_texel.y)).r);
+      float t = abs(texture(u_curl, v_uv + vec2(0.0, u_texel.y)).r);
+      float spin = texture(u_curl, v_uv).r;
+      vec2 gradient = 0.5 * vec2(r - l, t - b);
+      gradient /= length(gradient) + 0.0001;
+      vec2 force = vec2(gradient.y, -gradient.x) * spin * 15.0 * u_velocity_scale;
+      vec2 velocity = texture(u_velocity, v_uv).xy + force * u_dt;
+      outColor = vec4(clamp(velocity, -95.0 * u_velocity_scale, 95.0 * u_velocity_scale), 0.0, 1.0);
+    }
+  `
+
+  const divergenceShader = common + `
+    uniform sampler2D u_velocity;
+    uniform vec2 u_texel;
+    void main() {
+      float l = texture(u_velocity, v_uv - vec2(u_texel.x, 0.0)).x;
+      float r = texture(u_velocity, v_uv + vec2(u_texel.x, 0.0)).x;
+      float b = texture(u_velocity, v_uv - vec2(0.0, u_texel.y)).y;
+      float t = texture(u_velocity, v_uv + vec2(0.0, u_texel.y)).y;
+      outColor = vec4(0.5 * (r - l + t - b), 0.0, 0.0, 1.0);
+    }
+  `
+
+  const pressureShader = common + `
+    uniform sampler2D u_pressure;
+    uniform sampler2D u_divergence;
+    uniform vec2 u_texel;
+    void main() {
+      float l = texture(u_pressure, v_uv - vec2(u_texel.x, 0.0)).r;
+      float r = texture(u_pressure, v_uv + vec2(u_texel.x, 0.0)).r;
+      float b = texture(u_pressure, v_uv - vec2(0.0, u_texel.y)).r;
+      float t = texture(u_pressure, v_uv + vec2(0.0, u_texel.y)).r;
+      float d = texture(u_divergence, v_uv).r;
+      outColor = vec4((l + r + b + t - d) * 0.25, 0.0, 0.0, 1.0);
+    }
+  `
+
+  const projectShader = common + `
+    uniform sampler2D u_pressure;
+    uniform sampler2D u_velocity;
+    uniform vec2 u_texel;
+    void main() {
+      float l = texture(u_pressure, v_uv - vec2(u_texel.x, 0.0)).r;
+      float r = texture(u_pressure, v_uv + vec2(u_texel.x, 0.0)).r;
+      float b = texture(u_pressure, v_uv - vec2(0.0, u_texel.y)).r;
+      float t = texture(u_pressure, v_uv + vec2(0.0, u_texel.y)).r;
+      vec2 velocity = texture(u_velocity, v_uv).xy - 0.5 * vec2(r - l, t - b);
+      outColor = vec4(velocity, 0.0, 1.0);
+    }
+  `
+
+  const advectPigmentShader = common + `
+    uniform sampler2D u_source;
+    uniform sampler2D u_velocity;
+    uniform vec2 u_velocity_texel;
+    uniform vec2 u_texel;
+    uniform float u_dt;
+    void main() {
+      vec2 velocity = texture(u_velocity, v_uv).xy;
+      vec2 position = clamp(v_uv - velocity * u_dt * u_velocity_texel, u_texel, 1.0 - u_texel);
+      outColor = texture(u_source, position);
+    }
+  `
+
+  const protectionShader = `
+    uniform vec4 u_protection_rects[4];
+    uniform vec4 u_protection_bounds;
+    uniform vec4 u_protection_settings;
+    vec2 protectInk(vec2 ink, vec2 uv, float aspect) {
+      if (u_protection_settings.w > 0.0 && all(greaterThanEqual(uv, u_protection_bounds.xy)) && all(lessThanEqual(uv, u_protection_bounds.zw))) {
+        vec2 point = uv * vec2(aspect, 1.0);
+        float edgeWarp = sin(point.x * 137.0 + sin(point.y * 83.0)) * sin(point.y * 151.0 + point.x * 47.0) * u_protection_settings.x * 0.1;
+        float protection = 0.0;
+        for (int i = 0; i < 4; i++) {
+          if (float(i) >= u_protection_settings.w) break;
+          vec4 rect = u_protection_rects[i] * vec4(aspect, 1.0, aspect, 1.0);
+          vec2 halfSize = (rect.zw - rect.xy) * 0.5;
+          float corner = min(u_protection_settings.y, min(halfSize.x, halfSize.y));
+          vec2 delta = abs(point - (rect.xy + rect.zw) * 0.5) - halfSize + corner;
+          float distance = length(max(delta, 0.0)) + min(max(delta.x, delta.y), 0.0) - corner;
+          distance += edgeWarp * smoothstep(0.0, u_protection_settings.x * 0.3, distance);
+          protection = max(protection, 1.0 - smoothstep(0.0, u_protection_settings.x, distance));
+        }
+        float ceiling = min(3.0, u_protection_settings.z / max(protection, 0.0001));
+        if (ceiling < 3.0 && ink.r > ceiling) {
+          ink.g *= ceiling / ink.r;
+          ink.r = ceiling;
+        }
+      }
+      return ink;
+    }
+  `
+
+  const pigmentShader = common + protectionShader + `
+    uniform sampler2D u_pigment;
+    uniform sampler2D u_forward;
+    uniform sampler2D u_backward;
+    uniform sampler2D u_velocity;
+    uniform vec2 u_velocity_texel;
+    uniform vec2 u_texel;
+    uniform float u_dt;
+    uniform float u_aspect;
+    uniform float u_time;
+    uniform vec4 u_drop;
+    uniform vec4 u_shape;
+    float hash(vec2 p) {
+      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+    }
+    float noise(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + 1.0), f.x), f.y);
+    }
+    void main() {
+      vec2 velocity = texture(u_velocity, v_uv).xy;
+      vec2 position = clamp(v_uv - velocity * u_dt * u_velocity_texel, u_texel, 1.0 - u_texel);
+      vec2 corner = floor(position / u_texel - 0.5) * u_texel + 0.5 * u_texel;
+      vec2 a = texture(u_pigment, corner).rg;
+      vec2 b = texture(u_pigment, corner + vec2(u_texel.x, 0.0)).rg;
+      vec2 c = texture(u_pigment, corner + vec2(0.0, u_texel.y)).rg;
+      vec2 d = texture(u_pigment, corner + u_texel).rg;
+      vec2 low = min(min(a, b), min(c, d));
+      vec2 high = max(max(a, b), max(c, d));
+      vec2 pigment = texture(u_forward, v_uv).rg + 0.5 * (texture(u_pigment, v_uv).rg - texture(u_backward, v_uv).rg);
+      pigment = clamp(pigment, low, high) * exp(-u_dt * 0.085);
+      pigment.g += pigment.r * u_dt;
+      if (u_drop.w > 0.0) {
+        vec2 delta = rotateDrop((v_uv - u_drop.xy) * vec2(u_aspect, 1.0), u_shape.x) / vec2(u_shape.y, 1.0 / u_shape.y);
+        float angle = atan(delta.y, delta.x);
+        float irregular = 1.0 + 0.18 * sin(angle * u_shape.w + u_shape.z) + 0.1 * cos(angle * (u_shape.w + 4.0) - u_shape.z * 0.7);
+        float radius = u_drop.z * irregular;
+        float distance = length(delta) / radius;
+        float paper = noise(delta * (300.0 + fract(u_shape.z) * 120.0) + vec2(u_shape.z * 7.0, u_shape.z * 17.0));
+        float ink = exp(-distance * distance * 1.8) * (0.55 + 0.7 * paper);
+        ink *= 1.0 - smoothstep(1.18, 1.46, distance);
+        pigment.r += ink * 1.5 * u_drop.w;
+      }
+      pigment = protectInk(pigment, v_uv, u_aspect);
+      outColor = vec4(min(pigment.r, 3.0), min(pigment.g, 45.0), 0.0, 1.0);
+    }
+  `
+
+  const waveShader = common + `
+    uniform sampler2D u_wave;
+    uniform vec2 u_texel;
+    uniform float u_aspect;
+    uniform vec4 u_drop;
+    uniform vec4 u_shape;
+    void main() {
+      vec2 height = texture(u_wave, v_uv).rg;
+      float l = texture(u_wave, v_uv - vec2(u_texel.x, 0.0)).r;
+      float r = texture(u_wave, v_uv + vec2(u_texel.x, 0.0)).r;
+      float b = texture(u_wave, v_uv - vec2(0.0, u_texel.y)).r;
+      float t = texture(u_wave, v_uv + vec2(0.0, u_texel.y)).r;
+      float next = (2.0 * height.r - height.g + 0.22 * (l + r + b + t - 4.0 * height.r)) * 0.991;
+      if (u_drop.w > 0.0) {
+        vec2 delta = (v_uv - u_drop.xy) * vec2(u_aspect, 1.0);
+        vec2 impact = rotateDrop(delta, u_shape.x) / vec2(mix(1.0, u_shape.y, 0.2), 1.0);
+        float radius = max(u_drop.z * 0.23, 0.0035);
+        next += exp(-dot(impact, impact) / (radius * radius)) * 0.12 * u_drop.w;
+      }
+      float edge = smoothstep(0.0, 0.035, min(min(v_uv.x, 1.0 - v_uv.x), min(v_uv.y, 1.0 - v_uv.y)));
+      outColor = vec4(clamp(next * edge, -1.0, 1.0), height.r, 0.0, 1.0);
+    }
+  `
+
+  const displayShader = common + protectionShader + `
+    uniform sampler2D u_pigment;
+    uniform sampler2D u_wave;
+    uniform vec2 u_pigment_texel;
+    uniform vec2 u_wave_texel;
+    uniform vec2 u_resolution;
+    uniform float u_aspect;
+    float hash(vec2 p) {
+      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+    }
+    vec2 samplePigment(vec2 uv) {
+      vec2 position = uv / u_pigment_texel - 0.5;
+      vec2 base = floor(position);
+      vec2 f = fract(position);
+      vec2 f2 = f * f;
+      vec2 f3 = f2 * f;
+      vec2 oneMinus = 1.0 - f;
+      vec2 w0 = oneMinus * oneMinus * oneMinus / 6.0;
+      vec2 w1 = (3.0 * f3 - 6.0 * f2 + 4.0) / 6.0;
+      vec2 w2 = (-3.0 * f3 + 3.0 * f2 + 3.0 * f + 1.0) / 6.0;
+      vec2 w3 = f3 / 6.0;
+      vec2 g0 = w0 + w1;
+      vec2 g1 = w2 + w3;
+      vec2 first = (base - 0.5 + w1 / g0) * u_pigment_texel;
+      vec2 second = (base + 1.5 + w3 / g1) * u_pigment_texel;
+      vec2 lower = mix(texture(u_pigment, first).rg, texture(u_pigment, vec2(second.x, first.y)).rg, g1.x);
+      vec2 upper = mix(texture(u_pigment, vec2(first.x, second.y)).rg, texture(u_pigment, second).rg, g1.x);
+      return mix(lower, upper, g1.y);
+    }
+    void main() {
+      float l = texture(u_wave, v_uv - vec2(u_wave_texel.x, 0.0)).r;
+      float r = texture(u_wave, v_uv + vec2(u_wave_texel.x, 0.0)).r;
+      float b = texture(u_wave, v_uv - vec2(0.0, u_wave_texel.y)).r;
+      float t = texture(u_wave, v_uv + vec2(0.0, u_wave_texel.y)).r;
+      vec2 slope = vec2(r - l, t - b);
+      vec2 position = clamp(v_uv + slope * 0.018, 0.0, 1.0);
+      vec2 ink = samplePigment(position);
+      ink = protectInk(ink, v_uv, u_aspect);
+      vec2 front = vec2(dFdx(ink.r), dFdy(ink.r)) * u_resolution * u_pigment_texel * 2.0;
+      float age = ink.g / max(ink.r, 0.0001);
+      float density = max(ink.r - 0.0015, 0.0);
+      float coverage = 1.0 - exp(-density * 3.35);
+      coverage = min(coverage + length(front) * 0.1, 1.0);
+      vec3 paper = mix(vec3(0.976, 0.973, 0.957), vec3(0.945, 0.958, 0.973), v_uv.y * 0.3);
+      vec3 pigment = mix(vec3(0.27, 0.36, 0.49), vec3(0.09, 0.14, 0.23), smoothstep(0.0, 0.8, density));
+      pigment = mix(pigment, vec3(0.39, 0.47, 0.59), min(age * 0.018, 0.25));
+      vec3 color = mix(paper, pigment, coverage);
+      float silver = dot(slope, vec2(-0.65, 0.76));
+      color += silver * 0.25 * (1.0 - coverage * 0.7);
+      color += (hash(gl_FragCoord.xy) - 0.5) * 0.0025;
+      outColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+    }
+  `
+
+  class InkSurface extends HTMLElement {
+    private canvas: HTMLCanvasElement | null = null
+    private gl: WebGL2RenderingContext | null = null
+    private passes: Record<string, Pass> = {}
+    private targets: Target[] = []
+    private vao: WebGLVertexArrayObject | null = null
+    private velocity: Pair | null = null
+    private pigment: Pair | null = null
+    private pigmentForward: Target | null = null
+    private pigmentBackward: Target | null = null
+    private curl: Target | null = null
+    private wave: Pair | null = null
+    private pressure: Pair | null = null
+    private divergence: Target | null = null
+    private observer: IntersectionObserver | null = null
+    private resizeObserver: ResizeObserver | null = null
+    private motion: MediaQueryList | null = null
+    private finePointer: MediaQueryList | null = null
+    private pending: Drop[] = []
+    private penPoint: PenPoint | null = null
+    private strokePath: PenPoint[] = []
+    private pointerStart: { x: number; y: number; time: number } | null = null
+    private autoResumeAt = 0
+    private hoverCount = 0
+    private hoverDistance = 0
+    private hoverStarted = false
+    private protectionRects: number[] = []
+    private protectionBounds = [0, 0, 0, 0]
+    private protectionSettings = [0, 0, 0.16, 0]
+    private protectionDirty = true
+    private autoCount = 0
+    private userDropCount = 0
+    private visible = true
+    private disposed = false
+    private lost = false
+    private raf = 0
+    private lastFrame = 0
+    private elapsed = 0
+    private nextDrop = 3.6
+    private dropCount = 0
+    private frame = 0
+    private aspect = 1.6
+    private velocityScale = 1
+    private cssWidth = 0
+    private cssHeight = 0
+    private randomState = 0x8a39fd21
+    private lastProfile = -1
+
+    connectedCallback() {
+      this.disposed = false
+      this.canvas = this.querySelector('canvas')
+      this.motion = matchMedia('(prefers-reduced-motion: reduce)')
+      this.finePointer = matchMedia('(any-hover: hover) and (any-pointer: fine)')
+      this.dataset.reduced = String(this.motion.matches)
+      this.motion.addEventListener('change', this.onMotion)
+      window.addEventListener('resize', this.invalidateProtection, { passive: true })
+      window.addEventListener('scroll', this.invalidateProtection, { passive: true })
+      document.fonts.addEventListener('loadingdone', this.invalidateProtection)
+      void document.fonts.ready.then(() => {
+        if (!this.disposed) this.invalidateProtection()
+      })
+      this.addEventListener('pointerdown', this.onPointerDown, { passive: true })
+      this.addEventListener('pointerup', this.onPointerUp, { passive: true })
+      this.addEventListener('pointermove', this.onPointerMove, { passive: true })
+      this.addEventListener('pointerleave', this.resetStroke)
+      this.addEventListener('pointercancel', this.onPointerCancel)
+      this.canvas?.addEventListener('webglcontextlost', this.onContextLost)
+      document.addEventListener('visibilitychange', this.sync)
+      this.observer = new IntersectionObserver(([entry]) => {
+        this.visible = entry.isIntersecting
+        this.sync()
+      })
+      this.observer.observe(this)
+      this.resizeObserver = new ResizeObserver(this.resize)
+      this.resizeObserver.observe(this)
+      if (this.motion.matches) this.useStatic('static')
+      else this.initialize()
+    }
+
+    private useStatic(mode: 'static' | 'fallback') {
+      this.stop()
+      this.dataset.ready = mode
+      this.dataset.mode = mode
+    }
+
+    private makePass(source: string): Pass {
+      const gl = this.gl!
+      const program = gl.createProgram()
+      if (!program) throw new Error('Ink program unavailable')
+      const shaders: WebGLShader[] = []
+      try {
+        for (const [type, text] of [[gl.VERTEX_SHADER, vertex], [gl.FRAGMENT_SHADER, source]] as const) {
+          const shader = gl.createShader(type)
+          if (!shader) throw new Error('Ink shader unavailable')
+          shaders.push(shader)
+          gl.shaderSource(shader, text)
+          gl.compileShader(shader)
+          if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error('Ink shader could not compile')
+          gl.attachShader(program, shader)
+        }
+        gl.linkProgram(program)
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error('Ink program could not link')
+      } catch (error) {
+        gl.deleteProgram(program)
+        throw error
+      } finally {
+        shaders.forEach(shader => gl.deleteShader(shader))
+      }
+      return { program, uniforms: new Map() }
+    }
+
+    private makeTarget(width: number, height: number): Target {
+      const gl = this.gl!
+      const texture = gl.createTexture()
+      const framebuffer = gl.createFramebuffer()
+      if (!texture || !framebuffer) throw new Error('Ink buffer unavailable')
+      gl.bindTexture(gl.TEXTURE_2D, texture)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, width, height, 0, gl.RGBA, gl.HALF_FLOAT, null)
+      gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0)
+      const target = { texture, framebuffer, width, height }
+      this.targets.push(target)
+      if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) throw new Error('Ink float buffers unsupported')
+      gl.viewport(0, 0, width, height)
+      gl.clearColor(0, 0, 0, 0)
+      gl.clear(gl.COLOR_BUFFER_BIT)
+      return target
+    }
+
+    private size(longEdge: number): [number, number] {
+      return this.aspect >= 1
+        ? [longEdge, Math.max(64, Math.round(longEdge / this.aspect))]
+        : [Math.max(64, Math.round(longEdge * this.aspect)), longEdge]
+    }
+
+    private pair(size: [number, number]): Pair {
+      return { read: this.makeTarget(...size), write: this.makeTarget(...size) }
+    }
+
+    private swap(pair: Pair) {
+      const previous = pair.read
+      pair.read = pair.write
+      pair.write = previous
+    }
+
+    private draw(name: string, target: Target | null, textures: Record<string, WebGLTexture>, values: Record<string, number | number[]> = {}) {
+      const gl = this.gl!
+      const pass = this.passes[name]
+      gl.useProgram(pass.program)
+      gl.bindFramebuffer(gl.FRAMEBUFFER, target?.framebuffer || null)
+      gl.viewport(0, 0, target?.width || this.canvas!.width, target?.height || this.canvas!.height)
+      const location = (name: string) => {
+        if (!pass.uniforms.has(name)) pass.uniforms.set(name, gl.getUniformLocation(pass.program, name))
+        return pass.uniforms.get(name)!
+      }
+      Object.entries(textures).forEach(([uniform, texture], unit) => {
+        gl.activeTexture(gl.TEXTURE0 + unit)
+        gl.bindTexture(gl.TEXTURE_2D, texture)
+        gl.uniform1i(location(uniform), unit)
+      })
+      for (const [uniform, value] of Object.entries(values)) {
+        const loc = location(uniform)
+        if (typeof value === 'number') gl.uniform1f(loc, value)
+        else if (value.length === 2) gl.uniform2fv(loc, value)
+        else if (value.length >= 4) gl.uniform4fv(loc, value)
+      }
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+    }
+
+    private initialize() {
+      if (this.disposed || this.lost || this.motion?.matches || !this.canvas || this.gl) return
+      try {
+        this.gl = this.canvas.getContext('webgl2', { alpha: false, antialias: false, depth: false, powerPreference: 'low-power' })
+        const gl = this.gl
+        if (!gl || !gl.getExtension('EXT_color_buffer_float')) throw new Error('Ink float rendering unavailable')
+        this.vao = gl.createVertexArray()
+        gl.bindVertexArray(this.vao)
+        const sources = { velocity: velocityShader, curl: curlShader, confine: confineShader, divergence: divergenceShader, pressure: pressureShader, project: projectShader, advectPigment: advectPigmentShader, pigment: pigmentShader, wave: waveShader, display: displayShader }
+        for (const [name, source] of Object.entries(sources)) this.passes[name] = this.makePass(source)
+        this.resize()
+        this.dataset.ready = 'true'
+        this.dataset.mode = 'fluid'
+        this.sync()
+      } catch {
+        this.release()
+        this.useStatic('fallback')
+      }
+    }
+
+    private resize = () => {
+      if (!this.gl || !this.canvas || !this.passes.display || this.disposed || this.lost) return
+      const rect = this.getBoundingClientRect()
+      if (rect.width < 1 || rect.height < 1) return
+      if (Math.abs(rect.width - this.cssWidth) < 1 && Math.abs(rect.height - this.cssHeight) < 1 && this.velocity) return
+      this.cssWidth = rect.width
+      this.cssHeight = rect.height
+      this.aspect = rect.width / rect.height
+      this.protectionDirty = true
+      const small = rect.width < 700
+      const pixelBudget = small ? 2000000 : 9000000
+      const requestedDpr = small ? Math.min(devicePixelRatio || 1, 1.25) : devicePixelRatio || 1
+      const dpr = Math.min(requestedDpr, Math.sqrt(pixelBudget / (rect.width * rect.height)))
+      this.canvas.width = Math.round(rect.width * dpr)
+      this.canvas.height = Math.round(rect.height * dpr)
+      this.clearTargets()
+      const displayEdge = Math.max(this.canvas.width, this.canvas.height)
+      const detailProgress = Math.min(1, Math.max(0, (displayEdge - 2560) / 1280))
+      const pigmentLimit = Math.round((1536 + 512 * detailProgress) / 64) * 64
+      const pigmentEdge = small ? 480 : Math.max(960, Math.min(pigmentLimit, Math.round(displayEdge * 0.65 / 64) * 64))
+      const simulationEdge = small ? 144 : Math.max(256, Math.min(512, Math.round(pigmentEdge / 3 / 32) * 32))
+      this.velocityScale = simulationEdge / (small ? 144 : 192)
+      const simulationSize = this.size(simulationEdge)
+      const pigmentSize = this.size(pigmentEdge)
+      this.velocity = this.pair(simulationSize)
+      this.pressure = this.pair(simulationSize)
+      this.divergence = this.makeTarget(...simulationSize)
+      this.curl = this.makeTarget(...simulationSize)
+      this.pigment = this.pair(pigmentSize)
+      this.pigmentForward = this.makeTarget(...pigmentSize)
+      this.pigmentBackward = this.makeTarget(...pigmentSize)
+      this.wave = this.pair(this.size(small ? 192 : 256))
+      this.dataset.simulationSize = simulationSize.join('x')
+      this.dataset.pigmentSize = pigmentSize.join('x')
+      this.dataset.displaySize = `${this.canvas.width}x${this.canvas.height}`
+      this.pending = []
+      this.resetStroke()
+      const first: DropInput = { x: small ? 0.55 : 0.67, y: 0.51, radius: small ? 0.063 : 0.06, strength: 1.0, kind: 'startup' }
+      const second: DropInput = { x: small ? 0.67 : 0.72, y: 0.42, radius: small ? 0.057 : 0.052, strength: 0.85, kind: 'startup' }
+      const third: DropInput = { x: small ? 0.59 : 0.68, y: 0.36, radius: small ? 0.04 : 0.036, strength: 0.65, kind: 'startup' }
+      for (let i = 0; i < 96; i += 1) {
+        if (i === 0) this.addDrop(first)
+        if (i === 28) this.addDrop(second)
+        if (i === 57) this.addDrop(third)
+        this.simulate(1 / 30)
+      }
+      this.nextDrop = this.elapsed + 2.4
+      this.render()
+    }
+
+    private random() {
+      let state = this.randomState
+      state ^= state << 13
+      state ^= state >>> 17
+      state ^= state << 5
+      this.randomState = state >>> 0
+      return this.randomState / 4294967296
+    }
+
+    private addDrop(input: DropInput) {
+      if (input.kind === 'user') this.pending = this.pending.filter(drop => drop.kind === 'user' || drop.kind === 'startup')
+      if (this.pending.length >= 5) return
+      const range = (min: number, max: number) => min + this.random() * (max - min)
+      let profile = Math.floor(this.random() * 4)
+      if (profile === this.lastProfile) profile = (profile + 1 + Math.floor(this.random() * 3)) % 4
+      this.lastProfile = profile
+      const names = ['spread', 'curl', 'drift', 'stretch'] as const
+      const handedness = this.random() < 0.5 ? -1 : 1
+      const driftAngle = range(0, Math.PI * 2)
+      const drift = profile === 2 ? range(12, 22) : range(0, 7)
+      const drop: Drop = {
+        ...input,
+        radius: Math.max(0.018, Math.min(0.085, input.radius * range(0.82, 1.18))),
+        strength: input.strength * range(0.78, 1.12),
+        seed: range(0, 1000),
+        profile: names[profile],
+        angle: range(0, Math.PI * 2),
+        aspect: profile === 3 ? range(1.3, 1.8) : range(0.78, 1.24),
+        lobes: Math.floor(range(2, 7)),
+        outward: range(12, 32),
+        spin: profile === 0 ? range(-3, 3) : handedness * (profile === 1 ? range(23, 38) : range(6, 21)),
+        strain: (this.random() < 0.5 ? -1 : 1) * (profile === 3 ? range(24, 38) : range(5, 16)),
+        spread: range(0.74, 1.28),
+        driftX: Math.cos(driftAngle) * drift,
+        driftY: Math.sin(driftAngle) * drift
+      }
+      this.pending.push(drop)
+    }
+
+    private simulate(dt: number) {
+      if (!this.velocity || !this.pressure || !this.divergence || !this.pigment || !this.pigmentForward || !this.pigmentBackward || !this.curl || !this.wave) return
+      if (this.protectionDirty) this.updateProtection()
+      this.queueHoverDrop()
+      const drop = this.pending.shift()
+      const splash = drop ? [drop.x, drop.y, drop.radius, drop.strength] : [0, 0, 0, 0]
+      const shape = drop ? [drop.angle, drop.aspect, drop.seed, drop.lobes] : [0, 1, 0, 3]
+      const flow = drop ? [drop.outward, drop.spin, drop.strain, drop.spread] : [0, 0, 0, 1]
+      const drift = drop ? [drop.driftX, drop.driftY] : [0, 0]
+      const texel = [1 / this.velocity.read.width, 1 / this.velocity.read.height]
+      this.elapsed += dt
+      this.draw('velocity', this.velocity.write, { u_velocity: this.velocity.read.texture }, { u_texel: texel, u_dt: dt, u_time: this.elapsed, u_aspect: this.aspect, u_velocity_scale: this.velocityScale, u_drop: splash, u_shape: shape, u_flow: flow, u_drift: drift })
+      this.swap(this.velocity)
+      this.draw('curl', this.curl, { u_velocity: this.velocity.read.texture }, { u_texel: texel })
+      this.draw('confine', this.velocity.write, { u_velocity: this.velocity.read.texture, u_curl: this.curl.texture }, { u_texel: texel, u_dt: dt, u_velocity_scale: this.velocityScale })
+      this.swap(this.velocity)
+      this.draw('divergence', this.divergence, { u_velocity: this.velocity.read.texture }, { u_texel: texel })
+      for (let i = 0; i < 7; i += 1) {
+        this.draw('pressure', this.pressure.write, { u_pressure: this.pressure.read.texture, u_divergence: this.divergence.texture }, { u_texel: texel })
+        this.swap(this.pressure)
+      }
+      this.draw('project', this.velocity.write, { u_velocity: this.velocity.read.texture, u_pressure: this.pressure.read.texture }, { u_texel: texel })
+      this.swap(this.velocity)
+      const dyeTexel = [1 / this.pigment.read.width, 1 / this.pigment.read.height]
+      const advection = { u_velocity_texel: texel, u_texel: dyeTexel, u_dt: dt }
+      this.draw('advectPigment', this.pigmentForward, { u_source: this.pigment.read.texture, u_velocity: this.velocity.read.texture }, advection)
+      this.draw('advectPigment', this.pigmentBackward, { u_source: this.pigmentForward.texture, u_velocity: this.velocity.read.texture }, { ...advection, u_dt: -dt })
+      this.draw('pigment', this.pigment.write, { u_pigment: this.pigment.read.texture, u_forward: this.pigmentForward.texture, u_backward: this.pigmentBackward.texture, u_velocity: this.velocity.read.texture }, {
+        ...advection, u_aspect: this.aspect, u_time: this.elapsed, u_drop: splash, u_shape: shape,
+        u_protection_settings: this.protectionSettings,
+        ...(this.protectionRects.length ? { u_protection_bounds: this.protectionBounds, 'u_protection_rects[0]': this.protectionRects } : {})
+      })
+      this.swap(this.pigment)
+      if (drop) {
+        this.dropCount += 1
+        this.dataset.dropCount = String(this.dropCount)
+        this.dataset.lastDrop = JSON.stringify({ ...drop, handedness: Math.abs(drop.spin) < 3 ? 0 : Math.sign(drop.spin) })
+        if (drop.kind === 'hover') {
+          this.dataset.hoverCount = String(++this.hoverCount)
+          this.dataset.strokeCount = String(this.hoverCount)
+          const radius = drop.radius * this.cssHeight
+          this.dataset.lastStroke = JSON.stringify({ count: 1, length: drop.trace?.length || 0, from: drop.trace?.from || [drop.x, drop.y], to: [drop.x, drop.y], radius: [radius, radius] })
+        }
+      }
+      if (drop?.kind === 'auto') this.dataset.autoCount = String(++this.autoCount)
+      if (drop?.kind === 'user') this.dataset.userDropCount = String(++this.userDropCount)
+      this.draw('wave', this.wave.write, { u_wave: this.wave.read.texture }, { u_texel: [1 / this.wave.read.width, 1 / this.wave.read.height], u_aspect: this.aspect, u_drop: splash, u_shape: shape })
+      this.swap(this.wave)
+    }
+
+    private render() {
+      if (!this.gl || !this.pigment || !this.wave || !this.canvas || this.lost) return
+      this.draw('display', null, { u_pigment: this.pigment.read.texture, u_wave: this.wave.read.texture }, {
+        u_pigment_texel: [1 / this.pigment.read.width, 1 / this.pigment.read.height],
+        u_wave_texel: [1 / this.wave.read.width, 1 / this.wave.read.height],
+        u_resolution: [this.canvas.width, this.canvas.height],
+        u_aspect: this.aspect,
+        u_protection_settings: this.protectionSettings,
+        ...(this.protectionRects.length ? { u_protection_bounds: this.protectionBounds, 'u_protection_rects[0]': this.protectionRects } : {})
+      })
+      this.frame += 1
+      this.dataset.frame = String(this.frame)
+    }
+
+    private tick = (now: number) => {
+      this.raf = 0
+      if (!this.canAnimate()) return
+      if (now - this.lastFrame >= 32) {
+        const dt = Math.min((now - this.lastFrame) / 1000, 0.05)
+        this.lastFrame = now
+        const autoPaused = performance.now() < this.autoResumeAt
+        this.dataset.autoPaused = String(autoPaused)
+        if (!autoPaused && this.elapsed >= this.nextDrop) {
+          const phase = this.dropCount % 5
+          const positions = [[0.64, 0.57], [0.76, 0.43], [0.58, 0.38], [0.8, 0.6], [0.69, 0.3]]
+          this.addDrop({ x: positions[phase][0] + (this.random() - 0.5) * 0.06, y: positions[phase][1] + (this.random() - 0.5) * 0.045, radius: this.cssWidth < 700 ? 0.037 : 0.029, strength: 0.85, kind: 'auto' })
+          this.nextDrop = this.elapsed + 3.6 + this.random() * 1.3
+        }
+        this.simulate(dt)
+        this.render()
+      }
+      this.raf = requestAnimationFrame(this.tick)
+    }
+
+    private canAnimate() {
+      return Boolean(this.gl && !this.disposed && !this.lost && this.visible && !document.hidden && !this.motion?.matches)
+    }
+
+    private sync = () => {
+      if (!this.canAnimate()) this.stop()
+      else if (!this.raf) {
+        this.lastFrame = performance.now()
+        this.raf = requestAnimationFrame(this.tick)
+      }
+    }
+
+    private stop() {
+      cancelAnimationFrame(this.raf)
+      this.raf = 0
+      this.resetStroke()
+    }
+
+    private resetStroke = () => {
+      this.penPoint = null
+      this.strokePath = []
+      this.hoverDistance = 0
+      this.hoverStarted = false
+    }
+
+    private invalidateProtection = () => {
+      this.protectionDirty = true
+    }
+
+    private updateProtection() {
+      this.protectionDirty = false
+      const hero = this.getBoundingClientRect()
+      if (hero.width < 1 || hero.height < 1) return
+      const rects: DOMRect[] = []
+      const lines = this.parentElement?.querySelectorAll<HTMLElement>('[data-home-poem-line]') || []
+      for (const line of lines) {
+        const range = document.createRange()
+        range.selectNodeContents(line)
+        for (const rect of Array.from(range.getClientRects())) {
+          if (rect.width > 0 && rect.height > 0 && rects.length < 3) rects.push(rect)
+        }
+      }
+      const link = this.parentElement?.querySelector<HTMLElement>('[data-ink-more]')
+      if (link?.getClientRects().length) rects.push(link.getBoundingClientRect())
+      const values: number[] = []
+      const bounds = [1, 1, 0, 0]
+      const feather = 30
+      const edgeJitter = feather * 0.1
+      const maxFeather = feather + edgeJitter
+      for (const rect of rects) {
+        const left = (rect.left - hero.left - 8) / hero.width
+        const bottom = 1 - (rect.bottom - hero.top + 8) / hero.height
+        const right = (rect.right - hero.left + 8) / hero.width
+        const top = 1 - (rect.top - hero.top - 8) / hero.height
+        values.push(left, bottom, right, top)
+        bounds[0] = Math.min(bounds[0], left - maxFeather / hero.width)
+        bounds[1] = Math.min(bounds[1], bottom - maxFeather / hero.height)
+        bounds[2] = Math.max(bounds[2], right + maxFeather / hero.width)
+        bounds[3] = Math.max(bounds[3], top + maxFeather / hero.height)
+      }
+      this.protectionRects = values
+      this.protectionBounds = bounds
+      this.protectionSettings = [feather / hero.height, 8 / hero.height, 0.16, rects.length]
+      this.dataset.protection = JSON.stringify({ count: rects.length, rects: values, bounds, cap: 0.16, padding: 8, feather, corner: 8, edgeJitter, maxFeather })
+    }
+
+    private protectedRects() {
+      return Array.from(document.querySelectorAll<HTMLElement>('[data-site-header], [data-menu-panel], [data-search-panel], [data-ink-more]'))
+        .filter(element => element.getClientRects().length > 0)
+        .map(element => element.getBoundingClientRect())
+    }
+
+    private crossesProtected(from: { x: number; y: number }, to = from, rects = this.protectedRects()) {
+      return rects.some(rect => {
+        let start = 0
+        let end = 1
+        for (const axis of ['x', 'y'] as const) {
+          const min = (axis === 'x' ? rect.left : rect.top) - 10
+          const max = (axis === 'x' ? rect.right : rect.bottom) + 10
+          const delta = to[axis] - from[axis]
+          if (Math.abs(delta) < 0.001) {
+            if (from[axis] < min || from[axis] > max) return false
+          } else {
+            const a = (min - from[axis]) / delta
+            const b = (max - from[axis]) / delta
+            start = Math.max(start, Math.min(a, b))
+            end = Math.min(end, Math.max(a, b))
+            if (start > end) return false
+          }
+        }
+        return true
+      })
+    }
+
+    private noteInteraction(kind: 'pen' | 'drop', now = performance.now()) {
+      this.autoResumeAt = now + 2600
+      this.nextDrop = this.elapsed
+      this.dataset.autoPaused = 'true'
+      this.dataset.lastInteraction = JSON.stringify({ kind, at: now })
+    }
+
+    private queueHoverDrop() {
+      if (this.strokePath.length < 2) return
+      const path = this.strokePath
+      this.strokePath = [path[path.length - 1]]
+      const lengths = [0]
+      for (let i = 1; i < path.length; i += 1) lengths.push(lengths[i - 1] + Math.hypot(path[i].x - path[i - 1].x, path[i].y - path[i - 1].y))
+      const length = lengths[lengths.length - 1]
+      if (length < 2) return
+      if (this.pending.length) {
+        this.hoverDistance = 0
+        return
+      }
+      this.hoverDistance += length
+      const spacing = Math.max(6, path[path.length - 1].radius * 0.55)
+      if (this.hoverStarted && this.hoverDistance < spacing) return
+      const distance = Math.max(0, length - Math.min(spacing, length) * 0.5)
+      let cursor = 1
+      while (cursor < path.length - 1 && lengths[cursor] < distance) cursor += 1
+      const a = path[cursor - 1]
+      const b = path[cursor]
+      if (this.crossesProtected(a, b)) return
+      const t = (distance - lengths[cursor - 1]) / Math.max(lengths[cursor] - lengths[cursor - 1], 0.001)
+      const rect = this.getBoundingClientRect()
+      this.addDrop({
+        x: (a.x + (b.x - a.x) * t - rect.left) / rect.width,
+        y: 1 - (a.y + (b.y - a.y) * t - rect.top) / rect.height,
+        radius: (a.radius + (b.radius - a.radius) * t) / rect.height,
+        strength: a.strength + (b.strength - a.strength) * t,
+        kind: 'hover',
+        trace: { length: this.hoverDistance, from: [(path[0].x - rect.left) / rect.width, 1 - (path[0].y - rect.top) / rect.height] }
+      })
+      this.hoverDistance %= spacing
+      this.hoverStarted = true
+    }
+
+    private onPointerMove = (event: PointerEvent) => {
+      const fineHover = this.finePointer?.matches && (event.pointerType === 'mouse' || (event.pointerType === 'pen' && event.buttons === 0))
+      const blockedControl = event.target instanceof Element && event.target.closest('a, button, input, textarea, select, [role="button"], [contenteditable="true"]')
+      const protectedRects = this.protectedRects()
+      const position = { x: event.clientX, y: event.clientY }
+      if (!fineHover || !this.canAnimate() || (event.buttons & 2) !== 0 || blockedControl || this.crossesProtected(position, position, protectedRects)) {
+        this.resetStroke()
+        return
+      }
+      const rect = this.getBoundingClientRect()
+      if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) {
+        this.resetStroke()
+        return
+      }
+      const previous = this.penPoint
+      const now = performance.now()
+      const distance = previous ? Math.hypot(event.clientX - previous.x, event.clientY - previous.y) : 0
+      if (previous && distance < 2) return
+      const speed = previous ? previous.speed * 0.65 + Math.min(2.5, distance / Math.max(8, now - previous.time)) * 0.35 : 0
+      const radius = Math.min(0.038, 0.019 + speed * 0.0076) * rect.height
+      const point: PenPoint = { x: event.clientX, y: event.clientY, time: now, radius, strength: 0.28 / (1 + speed * 0.6), speed }
+      this.noteInteraction('pen', now)
+      const crossed = previous && this.crossesProtected(previous, point, protectedRects)
+      if (crossed) this.resetStroke()
+      this.penPoint = point
+      if (!this.strokePath.length && previous && !crossed) this.strokePath.push(previous)
+      this.strokePath.push(point)
+      if (this.strokePath.length > 33) this.strokePath.splice(1, this.strokePath.length - 33)
+    }
+
+    private inject(clientX: number, clientY: number) {
+      if (!this.canAnimate()) return
+      if (this.crossesProtected({ x: clientX, y: clientY })) return
+      const rect = this.getBoundingClientRect()
+      const x = (clientX - rect.left) / rect.width
+      const y = 1 - (clientY - rect.top) / rect.height
+      if (x < 0 || x > 1 || y < 0.06 || y > 0.86) return
+      this.resetStroke()
+      this.noteInteraction('drop')
+      this.addDrop({ x, y, radius: this.cssWidth < 700 ? 0.036 : 0.028, strength: 0.95, kind: 'user' })
+    }
+
+    private onPointerDown = (event: PointerEvent) => {
+      if (event.pointerType === 'mouse') {
+        if (event.button === 0) this.inject(event.clientX, event.clientY)
+      } else this.pointerStart = { x: event.clientX, y: event.clientY, time: performance.now() }
+    }
+
+    private onPointerUp = (event: PointerEvent) => {
+      const start = this.pointerStart
+      this.pointerStart = null
+      if (!start || event.pointerType === 'mouse') return
+      if (performance.now() - start.time < 650 && Math.hypot(event.clientX - start.x, event.clientY - start.y) < 12) this.inject(event.clientX, event.clientY)
+    }
+
+    private onPointerCancel = () => {
+      this.pointerStart = null
+      this.resetStroke()
+    }
+
+    private onMotion = () => {
+      this.dataset.reduced = String(this.motion?.matches)
+      if (this.lost) {
+        this.useStatic('fallback')
+      } else if (this.motion?.matches) {
+        this.useStatic('static')
+      } else if (this.gl) {
+        this.dataset.ready = 'true'
+        this.dataset.mode = 'fluid'
+        this.sync()
+      } else this.initialize()
+    }
+
+    private onContextLost = (event: Event) => {
+      event.preventDefault()
+      this.lost = true
+      this.useStatic('fallback')
+    }
+
+    private clearTargets() {
+      const gl = this.gl
+      if (!gl) return
+      this.targets.forEach(target => {
+        gl.deleteTexture(target.texture)
+        gl.deleteFramebuffer(target.framebuffer)
+      })
+      this.targets = []
+      this.velocity = null
+      this.pressure = null
+      this.pigment = null
+      this.pigmentForward = null
+      this.pigmentBackward = null
+      this.curl = null
+      this.wave = null
+      this.divergence = null
+    }
+
+    private release() {
+      this.stop()
+      this.clearTargets()
+      if (this.gl) {
+        Object.values(this.passes).forEach(pass => this.gl!.deleteProgram(pass.program))
+        this.gl.deleteVertexArray(this.vao)
+      }
+      this.passes = {}
+      this.vao = null
+      this.gl = null
+    }
+
+    disconnectedCallback() {
+      this.disposed = true
+      this.stop()
+      this.observer?.disconnect()
+      this.resizeObserver?.disconnect()
+      this.motion?.removeEventListener('change', this.onMotion)
+      window.removeEventListener('resize', this.invalidateProtection)
+      window.removeEventListener('scroll', this.invalidateProtection)
+      document.fonts.removeEventListener('loadingdone', this.invalidateProtection)
+      this.removeEventListener('pointerdown', this.onPointerDown)
+      this.removeEventListener('pointerup', this.onPointerUp)
+      this.removeEventListener('pointermove', this.onPointerMove)
+      this.removeEventListener('pointerleave', this.resetStroke)
+      this.removeEventListener('pointercancel', this.onPointerCancel)
+      this.canvas?.removeEventListener('webglcontextlost', this.onContextLost)
+      document.removeEventListener('visibilitychange', this.sync)
+      this.release()
+    }
+  }
+
+  if (!customElements.get('ink-surface')) customElements.define('ink-surface', InkSurface)
+</script>
+
+<style>
+  ink-surface {
+    position: absolute;
+    inset: 0;
+    display: block;
+    overflow: hidden;
+    background: #f8f7f3;
+    touch-action: pan-y pinch-zoom;
+  }
+
+  .ink-still,
+  canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  canvas {
+    opacity: 0;
+  }
+
+  ink-surface[data-ready='true'] canvas {
+    opacity: 1;
+  }
+
+  ink-surface[data-ready='true'] .ink-still {
+    visibility: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    canvas {
+      display: none;
+    }
+  }
+</style>

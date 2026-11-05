@@ -1,0 +1,15 @@
+{
+  "sources": {
+    "iansui-regular.ttf": "https://raw.githubusercontent.com/ButTaiwan/iansui/main/fonts/ttf/Iansui-Regular.ttf",
+    "Iansui-OFL.txt": "https://raw.githubusercontent.com/ButTaiwan/iansui/main/OFL.txt"
+  },
+  "licenses": {
+    "Iansui": "SIL Open Font License 1.1"
+  },
+  "outputs": {
+    "stylesheet": "/fonts/iansui.css",
+    "unicodeRangeChunks": 51,
+    "license": "/fonts/Iansui-OFL.txt"
+  },
+  "processing": "Iansui is split by unicode-range with full source coverage preserved. A small UI character shard limits the initial glyph download. The full source font is retained outside public assets."
+}

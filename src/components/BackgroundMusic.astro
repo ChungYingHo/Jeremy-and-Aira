@@ -1,0 +1,213 @@
+<div data-background-music transition:persist="site-background-music" hidden>
+  <audio data-background-audio preload="none" loop aria-hidden="true"></audio>
+</div>
+
+<script>
+  import { MUSIC_EVENTS, MUSIC_SOURCE, MUSIC_VOLUME, type BackgroundMusicState } from '@/utils/backgroundMusic'
+
+  const preferenceKey = 'jeremy-background-music'
+  const positionKey = 'jeremy-background-music-position'
+  const root = document.querySelector<HTMLElement>('[data-background-music]')
+  const audio = root?.querySelector<HTMLAudioElement>('[data-background-audio]')
+
+  if (root && audio && !root.dataset.bound) {
+    root.dataset.bound = 'true'
+    audio.volume = MUSIC_VOLUME
+    audio.loop = true
+
+    let enabled = true
+    let playing = false
+    let blocked = false
+    let interrupted = false
+    let loading = false
+    let error = false
+    let request = 0
+    let lastPositionWrite = 0
+    let pendingPosition = 0
+    let gestureArmed = false
+
+    try {
+      enabled = localStorage.getItem(preferenceKey) !== 'off'
+      const saved = JSON.parse(sessionStorage.getItem(positionKey) || 'null')
+      if (saved?.source === MUSIC_SOURCE && Number.isFinite(saved.time) && saved.time >= 0) {
+        pendingPosition = saved.time
+      }
+    } catch {
+      // Playback remains available when browser storage is unavailable.
+    }
+
+    function publish() {
+      const state: BackgroundMusicState = { enabled, playing, blocked, interrupted, loading, error, volume: audio!.volume }
+      root!.dataset.enabled = String(enabled)
+      root!.dataset.playing = String(playing)
+      root!.dataset.blocked = String(blocked)
+      root!.dataset.interrupted = String(interrupted)
+      root!.dataset.loading = String(loading)
+      root!.dataset.error = String(error)
+      window.dispatchEvent(new CustomEvent(MUSIC_EVENTS.state, { detail: state }))
+    }
+
+    function savePosition() {
+      if (!Number.isFinite(audio!.currentTime) || !audio!.currentSrc) return
+      try {
+        sessionStorage.setItem(positionKey, JSON.stringify({ source: MUSIC_SOURCE, time: audio!.currentTime }))
+      } catch {
+        // Storage is optional; the persistent audio element keeps its live position.
+      }
+    }
+
+    function armGesture() {
+      if (gestureArmed || !enabled) return
+      gestureArmed = true
+      window.addEventListener('click', retryFromGesture, { capture: true, passive: true })
+      window.addEventListener('keydown', retryFromGesture, true)
+    }
+
+    function disarmGesture() {
+      if (!gestureArmed) return
+      gestureArmed = false
+      window.removeEventListener('click', retryFromGesture, true)
+      window.removeEventListener('keydown', retryFromGesture, true)
+    }
+
+    function retryFromGesture(event: Event) {
+      const target = event.target instanceof Element ? event.target : null
+      if (!enabled || !blocked || !event.isTrusted || target?.closest('[data-site-music]')) return
+      if (event instanceof MouseEvent && event.button !== 0) return
+      if (event instanceof KeyboardEvent && (event.altKey || event.ctrlKey || event.metaKey || ['Tab', 'Escape', 'Shift', 'Control', 'Alt', 'Meta'].includes(event.key))) return
+      void attemptPlayback()
+    }
+
+    async function attemptPlayback() {
+      if (!enabled || interrupted || loading) return
+      const ownRequest = ++request
+      error = false
+      blocked = false
+      loading = true
+      audio!.volume = MUSIC_VOLUME
+      if (!audio!.getAttribute('src')) audio!.src = MUSIC_SOURCE
+      if (audio!.error) audio!.load()
+      publish()
+      try {
+        await audio!.play()
+        if (ownRequest !== request || !enabled || interrupted) {
+          if (!enabled || interrupted) audio!.pause()
+          return
+        }
+        playing = !audio!.paused && !audio!.ended
+        loading = false
+        disarmGesture()
+        publish()
+      } catch (cause) {
+        if (ownRequest !== request) return
+        playing = false
+        loading = false
+        blocked = cause instanceof DOMException && cause.name === 'NotAllowedError'
+        error = !blocked && !(cause instanceof DOMException && cause.name === 'AbortError')
+        if (blocked && enabled) armGesture()
+        publish()
+      }
+    }
+
+    function toggleMusic() {
+      if (enabled && !playing && !loading) {
+        interrupted = false
+        void attemptPlayback()
+        return
+      }
+      enabled = !enabled
+      request++
+      interrupted = false
+      loading = false
+      error = false
+      blocked = false
+      try {
+        localStorage.setItem(preferenceKey, enabled ? 'on' : 'off')
+      } catch {
+        // The in-memory preference still applies to all client-side pages.
+      }
+      if (!enabled) {
+        disarmGesture()
+        audio!.pause()
+        playing = false
+        savePosition()
+        publish()
+      } else {
+        void attemptPlayback()
+      }
+    }
+
+    function pauseForMedia() {
+      if (!enabled) return
+      request++
+      interrupted = true
+      playing = false
+      loading = false
+      blocked = false
+      disarmGesture()
+      audio!.pause()
+      publish()
+    }
+
+    audio.addEventListener('loadedmetadata', () => {
+      if (pendingPosition <= 0 || !Number.isFinite(audio.duration)) return
+      audio.currentTime = pendingPosition < audio.duration - 0.5 ? pendingPosition : 0
+      pendingPosition = 0
+    })
+    audio.addEventListener('playing', () => {
+      if (!enabled || interrupted) {
+        audio.pause()
+        return
+      }
+      playing = true
+      blocked = false
+      loading = false
+      error = false
+      disarmGesture()
+      publish()
+    })
+    audio.addEventListener('pause', () => {
+      playing = false
+      loading = false
+      savePosition()
+      publish()
+    })
+    audio.addEventListener('waiting', () => {
+      playing = false
+      loading = enabled && !audio.paused
+      publish()
+    })
+    audio.addEventListener('error', () => {
+      playing = false
+      loading = false
+      error = true
+      disarmGesture()
+      publish()
+    })
+    audio.addEventListener('timeupdate', () => {
+      if (performance.now() - lastPositionWrite < 2000) return
+      lastPositionWrite = performance.now()
+      savePosition()
+    })
+    window.addEventListener(MUSIC_EVENTS.toggle, toggleMusic)
+    window.addEventListener(MUSIC_EVENTS.query, publish)
+    document.addEventListener(MUSIC_EVENTS.mediaPlay, pauseForMedia)
+    document.addEventListener('play', event => {
+      if (event.target !== audio && event.target instanceof HTMLMediaElement) pauseForMedia()
+    }, true)
+    document.addEventListener('astro:page-load', () => {
+      if (interrupted) {
+        interrupted = false
+        if (enabled) void attemptPlayback()
+      }
+      publish()
+    })
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) savePosition()
+    })
+    document.addEventListener('astro:before-preparation', savePosition)
+    window.addEventListener('pagehide', savePosition)
+    publish()
+    if (enabled) void attemptPlayback()
+  }
+</script>

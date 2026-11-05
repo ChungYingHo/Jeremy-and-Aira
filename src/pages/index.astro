@@ -1,285 +1,85 @@
 ---
-import Layout from '@/layouts/Layout.astro';
+import Layout from '@/layouts/Layout.astro'
+import ArticleList from '@/components/ArticleList.astro'
+import InkSurface from '@/components/InkSurface.astro'
+import { getPublishedEntries, entryTimestamp } from '@/utils/content'
+import { compareSortKeys } from '@/utils/sort'
+
+const [dailyPosts, notePosts] = await Promise.all([
+  getPublishedEntries('blog'),
+  getPublishedEntries('techbook')
+])
+const recentPosts = [...dailyPosts, ...notePosts].sort((a, b) => compareSortKeys(
+  { time: -entryTimestamp(a), sameDateSort: a.data.sameDateSort, title: a.data.title ?? '' },
+  { time: -entryTimestamp(b), sameDateSort: b.data.sameDateSort, title: b.data.title ?? '' },
+)).slice(0, 6)
 ---
 
-<Layout title="Home">
-  <main
-    id="canvas-area"
-    class="fixed inset-0 z-0 w-full h-full bg-paper text-ink overflow-hidden font-sans selection:bg-moss/20 selection:text-ink"
-  >
-    
-    <div id="splatter-container" class="absolute inset-0 pointer-events-none z-0"></div>
-
-    <div class="relative z-10 w-full h-full flex flex-col items-center justify-center pointer-events-none">
-      
-      <div 
-        id="greeting-container" 
-        class="text-center space-y-6 opacity-0 translate-y-4 transition-all duration-1000 ease-out"
-      >
-        <h2
-          id="greeting-sub"
-          class="text-xs md:text-sm font-semibold text-moss tracking-[0.35em] uppercase"
-        >
-          </h2>
-
-        <div class="flex flex-col items-center leading-none">
-          <span
-            class="text-[#37402e]"
-            style="font-family: 'Caveat', cursive; font-weight: 700; font-size: clamp(4.5rem, 15vw, 9.5rem); line-height: 0.9"
-          >Jeremy</span>
-          <span class="font-serif italic text-moss text-sm md:text-lg tracking-[0.35em] mt-2 pl-[0.35em]">solunastre studio</span>
-        </div>
-
-        <p
-          id="greeting-main"
-          class="font-serif italic text-xl md:text-2xl text-ink-soft tracking-wide pt-1"
-        >
-          </p>
-
-        <div class="pt-4 flex justify-center">
-          <div class="flex items-center gap-3 text-xs md:text-sm font-mono text-ink-soft tracking-widest uppercase bg-cream/90 px-6 py-2 rounded-full border border-line shadow-[0_4px_16px_-8px_rgba(45,42,37,0.2)]">
-            <span>Front-End Developer</span>
-            <span class="text-moss font-bold">|</span>
-            <span>Game Designer</span>
-          </div>
-        </div>
-
+<Layout visualHome immersive title="Jeremy" description="Jeremy 的個人部落格。生活、思考與書寫。">
+  <section class="ink-home" slot="cover" data-ink-cover aria-labelledby="home-heading" data-pagefind-ignore>
+    <InkSurface />
+    <div class="ink-intro" data-ink-intro>
+      <div class="home-poem" data-home-poem>
+        <p class="poem-preface">
+          <span data-home-poem-line>雪沫乳花浮午盞，</span>
+          <span data-home-poem-line>蓼茸蒿筍試春盤。</span>
+        </p>
+        <h1 id="home-heading" data-ink-intro-heading data-home-poem-line>人間有味是清歡。</h1>
       </div>
-
-      <div 
-        id="action-btn"
-        class="mt-16 pointer-events-auto opacity-0 translate-y-4 transition-all duration-1000 delay-300 ease-out"
-      >
-        <a
-          href="/about"
-          class="
-            group relative inline-flex items-center gap-3 px-10 py-4
-            bg-ink text-paper rounded-full
-            transition-all duration-300
-            hover:scale-105 hover:bg-moss hover:shadow-[0_8px_30px_-10px_rgba(95,115,85,0.6)]
-            animate-bounce-slow
-          "
-        >
-          <span class="text-xs md:text-sm font-bold tracking-widest">ENTER WORLD</span>
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-hover:translate-x-1">
-            <path d="M5 12h14"></path>
-            <path d="m12 5 7 7-7 7"></path>
-          </svg>
+      <div class="ink-intro-actions">
+        <a class="more-link" href="/about" data-ink-more>
+          <span>閱讀更多</span>
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4 12h16m-6-6 6 6-6 6" /></svg>
         </a>
       </div>
-
     </div>
-
-    <div class="absolute bottom-10 w-full text-center pointer-events-none opacity-50">
-      <p class="text-[10px] font-mono tracking-[0.5em] text-ink-faint">CLICK TO PAINT</p>
-    </div>
-
-  </main>
+  </section>
+  <div class="ink-home-content" data-pagefind-ignore>
+    <section class="home-writing" id="writing" aria-labelledby="writing-heading" data-recent-writing>
+      <div class="writing-inner">
+        <div class="section-heading">
+          <h2 id="writing-heading">最近的書寫</h2>
+        </div>
+        {recentPosts.length > 0 ? <ArticleList posts={recentPosts} visual showKind /> : <p class="empty-note">新的書寫，慢慢整理中。</p>}
+      </div>
+    </section>
+  </div>
 </Layout>
 
-<script>
-const greetingContainer = document.getElementById('greeting-container')
-const greetingMain = document.getElementById('greeting-main')
-const greetingSub = document.getElementById('greeting-sub')
-const actionBtn = document.getElementById('action-btn')
-
-const initPage = () => {
-  const hour = new Date().getHours()
-  let mainText = 'Welcome'
-  let subText = 'Hello'
-
-  if (hour >= 5 && hour < 12) {
-    subText = 'Good Morning'
-    mainText = 'Start Creating'
-  } else if (hour >= 12 && hour < 18) {
-    subText = 'Good Afternoon'
-    mainText = 'Keep Inspiring'
-  } else {
-    subText = 'Good Evening'
-    mainText = 'Dream Big'
-  }
-
-  if(greetingMain) greetingMain.innerText = mainText
-  if(greetingSub) greetingSub.innerText = subText
-
-  requestAnimationFrame(() => {
-    greetingContainer?.classList.remove('opacity-0', 'translate-y-4')
-    actionBtn?.classList.remove('opacity-0', 'translate-y-4')
-  })
-}
-
-const container = document.getElementById('splatter-container')
-const canvasArea = document.getElementById('canvas-area')
-// < 640px counts as phone — tablets keep desktop sizing
-const PHONE_BREAKPOINT = 640
-const MAX_BLOBS = window.innerWidth < PHONE_BREAKPOINT ? 10 : 20
-
-const COLORS = [
-  '#a8bfa0', '#d8a79e', '#dcc49a', '#a9c3d4',
-  '#b9aecb', '#9fc0b6', '#c98d72', '#8ba07e',
-]
-
-const random = (min: number, max: number) => Math.random() * (max - min) + min
-
-const createSplatter = (x: number, y: number, isInitial = false) => {
-  if (!container) return
-
-  const isPhone = window.innerWidth < PHONE_BREAKPOINT
-  const color = COLORS[Math.floor(Math.random() * COLORS.length)]
-
-  let size
-  if (isPhone) {
-    size = isInitial ? random(80, 160) : random(40, 90)
-  } else {
-    size = isInitial ? random(150, 350) : random(80, 220)
-  }
-
-  const group = document.createElement('div')
-  group.style.position = 'absolute'
-  group.style.left = `${x}px`
-  group.style.top = `${y}px`
-  group.style.pointerEvents = 'none'
-  group.style.zIndex = '0'
-  group.style.opacity = '1'
-
-  const mainBlob = document.createElement('div')
-  const r1 = random(35, 65)
-  const r2 = random(35, 65)
-  const r3 = random(35, 65)
-  const r4 = random(35, 65)
-  
-  mainBlob.style.width = `${size}px`
-  mainBlob.style.height = `${size}px`
-  mainBlob.style.backgroundColor = color
-  mainBlob.style.borderRadius = `${r1}% ${100-r1}% ${r3}% ${100-r3}% / ${r2}% ${r4}% ${100-r4}% ${100-r2}%`
-  mainBlob.style.transform = `translate(-50%, -50%) rotate(${random(0, 360)}deg) scale(0)`
-  mainBlob.style.opacity = '0.6'
-  mainBlob.style.mixBlendMode = 'multiply'
-  mainBlob.style.boxShadow = 'none'
-  mainBlob.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-
-  group.appendChild(mainBlob)
-
-  const dropletsCount = isPhone ? Math.floor(random(2, 5)) : Math.floor(random(4, 9))
-
-  for (let i = 0; i < dropletsCount; i++) {
-    const drop = document.createElement('div')
-    const dropSize = random(size * 0.08, size * 0.18)
-    const distance = isPhone
-      ? random(size * 0.5, size * 0.7)
-      : random(size * 0.55, size * 0.9)
-
-    const angle = random(0, Math.PI * 2)
-    
-    const dx = Math.cos(angle) * distance
-    const dy = Math.sin(angle) * distance
-
-    drop.style.position = 'absolute'
-    drop.style.width = `${dropSize}px`
-    drop.style.height = `${dropSize}px`
-    drop.style.backgroundColor = color
-    drop.style.borderRadius = '50%'
-    drop.style.left = '0'
-    drop.style.top = '0'
-    drop.style.transform = 'translate(-50%, -50%) scale(0)'
-    drop.style.opacity = '0.65'
-    drop.style.mixBlendMode = 'multiply'
-    drop.style.boxShadow = 'none'
-    drop.style.transition = 'transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-    
-    drop.dataset.tx = dx.toString()
-    drop.dataset.ty = dy.toString()
-
-    group.appendChild(drop)
-  }
-
-  container.appendChild(group)
-
-  requestAnimationFrame(() => {
-    mainBlob.style.transform = `translate(-50%, -50%) rotate(${random(0, 360)}deg) scale(1)`
-    Array.from(group.children).forEach((child: any, index) => {
-      if (index === 0) return
-      const tx = child.dataset.tx
-      const ty = child.dataset.ty
-      child.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(1)`
-    })
-  })
-
-  setTimeout(() => {
-    group.dataset.dying = 'true'
-    group.style.transition = 'opacity 1s ease-out'
-    group.style.opacity = '0'
-    setTimeout(() => {
-      if (container.contains(group)) {
-        container.removeChild(group)
-      }
-    }, 1000)
-  }, 5000)
-
-  if (container.children.length > MAX_BLOBS) {
-    const oldest = container.firstChild
-    if (oldest) container.removeChild(oldest)
-  }
-}
-
-let lastInteractionTime = Date.now()
-
-const resetTimer = () => {
-  lastInteractionTime = Date.now()
-}
-
-const startIdleLoop = () => {
-  setInterval(() => {
-    const now = Date.now()
-    const isPhone = window.innerWidth < PHONE_BREAKPOINT
-    const IDLE_LIMIT = isPhone ? 3 : 5
-
-    let activeCount = 0
-    if (container) {
-      for (let i = 0; i < container.children.length; i++) {
-        if (!container.children[i].hasAttribute('data-dying')) {
-          activeCount++
-        }
-      }
-    }
-
-    if (now - lastInteractionTime > 2000 && activeCount < IDLE_LIMIT) {
-      // spawn inset from the edges so phone-width splats don't clip
-      const margin = isPhone ? 0.2 : 0.1
-      const x = random(window.innerWidth * margin, window.innerWidth * (1 - margin))
-      const y = random(window.innerHeight * margin, window.innerHeight * (1 - margin))
-      createSplatter(x, y)
-    }
-  }, 1000)
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  initPage()
-
-  setTimeout(() => createSplatter(window.innerWidth * 0.25, window.innerHeight * 0.35, true), 500)
-  setTimeout(() => createSplatter(window.innerWidth * 0.75, window.innerHeight * 0.65, true), 1200)
-  setTimeout(() => createSplatter(window.innerWidth * 0.5, window.innerHeight * 0.5, true), 2000)
-  
-  startIdleLoop()
-})
-
-if (canvasArea) {
-  canvasArea.addEventListener('mousedown', (e) => {
-    resetTimer()
-    if ((e.target as HTMLElement).closest('a')) return
-    createSplatter(e.clientX, e.clientY)
-  })
-    
-  canvasArea.addEventListener('mousemove', resetTimer)
-  canvasArea.addEventListener('touchstart', resetTimer)
-}
-
-</script>
-
 <style>
-  @keyframes bounce-slow {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+  .ink-home { position: relative; height: 100vh; height: 100svh; overflow: hidden; isolation: isolate; background: var(--color-paper); }
+  .ink-intro { position: absolute; z-index: 2; top: 31svh; left: max(var(--site-shell-gutter), calc((100% - var(--site-shell-max)) / 2)); width: min(32rem, calc(100% - 2 * var(--site-shell-gutter))); color: var(--color-ink); pointer-events: none; }
+  .home-poem { font-family: var(--font-poem); font-weight: 400; }
+  .home-poem, .more-link { text-shadow: 0 0 10px color-mix(in srgb, var(--color-paper) 24%, transparent); }
+  .poem-preface { margin: 0 0 16px; font-family: inherit; font-size: clamp(26px, 2.1vw, 32px); font-weight: 400; line-height: 1.85; letter-spacing: .045em; }
+  .poem-preface span { display: block; white-space: nowrap; }
+  .ink-intro h1 { margin: 0; font-family: inherit; font-size: clamp(48px, 3.7vw, 56px); font-weight: 400; line-height: 1.65; letter-spacing: .035em; white-space: nowrap; }
+  .ink-intro-actions { margin-top: 26px; }
+  .more-link { display: inline-flex; align-items: center; gap: 28px; min-height: 46px; color: var(--color-ink); font-family: var(--font-body); font-size: 14px; line-height: 1.7; letter-spacing: .08em; text-decoration: none; pointer-events: auto; }
+  .more-link span { padding-block: 5px; border-bottom: 1px solid var(--color-line); transition: border-color 180ms ease-out; }
+  .more-link svg { flex-shrink: 0; transition: transform 180ms ease-out; }
+  .more-link:hover span { border-color: currentColor; }
+  .more-link:hover svg { transform: translateX(3px); }
+  .more-link:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 6px; }
+  .ink-home-content { background: var(--color-paper); color: var(--color-ink); }
+  .home-writing { padding: 88px 0 112px; scroll-margin-top: 112px; }
+  .writing-inner { width: min(1040px, calc(100% - 120px)); margin-inline: auto; }
+  .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 28px; margin-bottom: 32px; }
+  h2 { font-family: var(--font-body); font-size: clamp(25px, 2.4vw, 32px); line-height: 1.5; font-weight: 400; margin: 0; letter-spacing: .01em; }
+  .empty-note { margin: 0; padding: 32px 0; color: var(--color-ink-soft); font-size: 16px; }
+  @media(max-width: 767px) {
+    .ink-intro { top: max(124px, 22svh); }
+    .poem-preface { margin-bottom: 12px; font-size: 20px; line-height: 1.8; letter-spacing: .035em; }
+    .ink-intro h1 { font-size: 36px; line-height: 1.65; letter-spacing: .025em; }
+    .ink-intro-actions { margin-top: 20px; }
+    .more-link { gap: 24px; }
+    .home-writing { padding: 52px 0 72px; }
+    .writing-inner { width: calc(100% - 48px); }
+    .section-heading { align-items: baseline; gap: 16px; margin-bottom: 24px; }
+    h2 { font-size: 25px; }
   }
-  .animate-bounce-slow { animation: bounce-slow 3s infinite ease-in-out; }
+  @media(max-width: 360px) { .poem-preface { font-size: 18px; } .ink-intro h1 { font-size: 30px; } }
+  @media(max-height: 620px) { .ink-intro { top: max(124px, 22svh); } .poem-preface { font-size: 18px; line-height: 1.65; margin-bottom: 10px; } .ink-intro h1 { font-size: 30px; line-height: 1.55; } .ink-intro-actions { margin-top: 18px; } }
+  @media(max-height: 620px) and (min-width: 768px) { .ink-intro { top: max(140px, 25svh); } .poem-preface { font-size: 24px; } .ink-intro h1 { font-size: 46px; } .ink-intro-actions { margin-top: 22px; } }
+  @media(prefers-reduced-motion: reduce) { .more-link svg, .more-link span { transition: none; transform: none !important; } }
 </style>

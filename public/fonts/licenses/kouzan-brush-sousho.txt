@@ -1,0 +1,29 @@
+Kouzan Brush Font Sousho / 衡山毛筆フォント草書
+Author and original copyright name: 青柳衡山 / Kouzan Aoyagi
+
+Official publisher: Musashi System / 武蔵システム
+Official font page: https://opentype.jp/kouzansousho.htm
+Official download: https://opentype.jp/bin/KouzanSousho.zip
+Publisher version: 2017-04-11
+Retrieved: 2026-11-05
+
+Publisher's permission statement (Japanese, as published on the official page):
+
+無料でご利用できます。
+商用利用可能で制限はありません。
+ロゴ等へも自由にご利用いただけます。
+無保証です。お客様の責任でご利用ください。
+雑誌・書籍への掲載・CD収録も自由です。
+
+The publisher permits free use, commercial use without restrictions, use in
+logos, publication in magazines/books, and inclusion on distributed CDs.
+This is the publisher's own permission statement, not an SIL OFL license.
+The original author and copyright names are retained in the web font.
+
+This project self-hosts an exact-text WOFF2 subset for the homepage poem.
+fontTools removed TrueType hinting and legacy gasp/mort tables; the latter
+include an invalid legacy gasp table that modern fontTools cannot decode.
+All 23 required Unicode code points are present. Glyph outlines are identical
+to the official TrueType source. No simplified or alternate-codepoint glyphs
+were substituted. Font names are preserved; the CSS family is a local alias.
+Source file hashes and processing details: ../kouzan-poem-subset.source.json

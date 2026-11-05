@@ -1,112 +1,30 @@
 ---
 import Layout from '@/layouts/Layout.astro'
-import type { CollectionEntry } from 'astro:content'
-import { parseDateFromSlug } from '@/utils/date'
+import ArticleList from '@/components/ArticleList.astro'
 import { getPublishedEntries, entryTimestamp } from '@/utils/content'
-
-// Strips MDX noise (imports, ::: directives, JSX tags) and markdown syntax for a plain-text excerpt
-const getPostExcerpt = (post: CollectionEntry<'blog'>) => {
-  const body = post.body || ''
-  return body
-    .replace(/^(import|export)\s.+$/gm, '')
-    .replace(/(`{3,}|~{3,})[\s\S]*?\1/g, '')
-    .replace(/^:{3,}\s*\w*.*$/gm, '')
-    .replace(/`(.+?)`/g, '$1')
-    .replace(/<\/?[A-Za-z][^>\n]*>/g, '')
-    .replace(/^#+\s+(.*)/gm, '$1')
-    .replace(/!\[.*?\]\(.*?\)/g, '')
-    .replace(/\[(.*?)\]\(.*?\)/g, '$1')
-    .replace(/(\*\*|__)(.*?)\1/g, '$2')
-    .replace(/(\*|_)(.*?)\1/g, '$2')
-    .replace(/\n+/g, ' ')
-    .trim()
-    .substring(0, 140) + '...'
-}
+import { compareSortKeys } from '@/utils/sort'
 
 const posts = await getPublishedEntries('blog')
-
-// Newest first, unlike the ascending order used by menus and prev/next
-const sortedPosts = posts.sort((a, b) => entryTimestamp(b) - entryTimestamp(a))
-
-const getDateParts = (date: Date | string | undefined, slug: string) => {
-  const validDate = date ? new Date(date) : parseDateFromSlug(slug)
-  if (!validDate || isNaN(validDate.getTime())) return { year: '', dateStr: '' }
-
-  return {
-    year: validDate.getFullYear().toString(),
-    dateStr: validDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })
-  }
-}
+const sortedPosts = [...posts].sort((a, b) => compareSortKeys(
+  { time: entryTimestamp(b), sameDateSort: b.data.sameDateSort, title: b.data.title ?? '' },
+  { time: entryTimestamp(a), sameDateSort: a.data.sameDateSort, title: a.data.title ?? '' },
+))
 ---
 
-<Layout title="Blog">
-  <div class="max-w-4xl mx-auto px-5 md:px-6 py-10 md:py-20 animate-fade-in-up relative">
-
-    <header class="mb-10 md:mb-20 pl-4 border-l-2 md:border-l-4 border-moss">
-      <h1 class="font-serif text-5xl md:text-7xl font-semibold tracking-tight text-ink mb-2 leading-none">
-        Blog
-      </h1>
-      <p class="flex items-center gap-3 md:gap-4">
-        <span class="w-6 md:w-10 h-[1px] bg-moss-soft"></span>
-        <span class="text-ink-soft text-2xl md:text-3xl" style="font-family: 'Caveat', cursive; font-weight: 600">Fragments &amp; Musings</span>
-      </p>
-    </header>
-
-    <div class="relative border-l border-line ml-2 md:ml-0 space-y-8 md:space-y-12 pb-12">
-      
-      {sortedPosts.map((post) => {
-        const { year, dateStr } = getDateParts(post.data.date, post.slug)
-        
-        return (
-          <div class="relative pl-6 md:pl-12 group">
-            
-            <div class="absolute -left-[5px] top-2 w-[9px] h-[9px] rounded-full bg-paper border border-ink-faint group-hover:bg-moss group-hover:border-moss transition-all duration-300 z-10"></div>
-
-            <a href={`/blog/${post.slug}`} class="block group/card">
-              <article class="relative p-5 md:p-6 -ml-3 md:-ml-4 rounded-xl transition-all duration-500 hover:bg-cream border border-transparent hover:border-line hover:shadow-[0_4px_24px_-12px_rgba(58,53,44,0.25)]">
-
-                <div class="flex items-center gap-3 mb-3">
-                  <span class="font-mono text-xs font-bold text-moss bg-moss/10 px-2 py-1 rounded border border-moss/25">
-                    {year}
-                  </span>
-                  <span class="font-mono text-sm text-ink-faint group-hover/card:text-ink-soft transition-colors">
-                    {dateStr}
-                  </span>
-                </div>
-
-                <h2 class="font-serif text-xl md:text-3xl font-semibold text-ink mb-3 md:mb-4 transition-colors duration-300 group-hover/card:text-moss leading-tight">
-                  {post.data.title}
-                </h2>
-
-                <p class="text-ink-soft text-sm md:text-base leading-relaxed line-clamp-2 md:line-clamp-3 mb-4 md:mb-6 max-w-2xl group-hover/card:text-ink transition-colors">
-                  {getPostExcerpt(post)}
-                </p>
-
-                <div class="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-4 mt-auto">
-
-                  {/* Tags */}
-                  <div class="flex flex-wrap gap-2">
-                    {post.data.tags && post.data.tags.slice(0, 3).map(tag => (
-                      <span class="text-[10px] font-mono text-ink-faint before:content-['#'] group-hover/card:text-moss transition-colors">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div class="text-[10px] md:text-xs font-bold text-ink-faint uppercase tracking-widest flex items-center gap-2 group-hover/card:text-moss transition-colors">
-                    Read
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform duration-300 group-hover/card:translate-x-1"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                  </div>
-                </div>
-
-              </article>
-            </a>
-          </div>
-        )
-      })}
-
-      <div class="absolute -left-[3px] bottom-0 w-[5px] h-[5px] rounded-full bg-ink-faint/50"></div>
-    </div>
-
+<Layout title="文章" description="Jeremy 的文章與隨筆。日常、想像，與沿途的風景。">
+  <div class="journal-page">
+    <header><h1>文章與隨筆</h1><div class="journal-intro"><p>把日常寫下來，也讓想法慢慢生長。</p><span>{sortedPosts.length} 篇書寫</span></div></header>
+    {sortedPosts.length > 0 ? <ArticleList posts={sortedPosts} /> : <p class="empty-note">新的書寫，慢慢整理中。</p>}
   </div>
 </Layout>
+
+<style>
+  .journal-page { max-width: 960px; margin-inline: auto; }
+  header { padding: 48px 0 50px; }
+  h1 { font-family: var(--font-body); font-size: clamp(2.2rem, 4.2vw, 3.1rem); font-weight: 400; letter-spacing: .01em; line-height: 1.5; margin: 0 0 26px; }
+  .journal-intro { display: flex; justify-content: space-between; align-items: end; gap: 24px; }
+  .journal-intro p { color: var(--color-ink-soft); font-size: 16px; line-height: 1.9; margin: 0; }
+  .journal-intro > span { font-size: 12px; color: var(--color-ink-soft); white-space: nowrap; }
+  .empty-note { padding: 35px 0; border-top: 1px solid var(--color-line); }
+  @media(max-width: 640px) { header { padding: 28px 0 34px; } h1 { font-size: 2.2rem; margin-bottom: 18px; } .journal-intro { display: block; } .journal-intro p { font-size: 15px; } .journal-intro > span { display: block; margin-top: 18px; } }
+</style>

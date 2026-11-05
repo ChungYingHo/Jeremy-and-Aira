@@ -1,0 +1,80 @@
+---
+import type { CollectionEntry } from 'astro:content'
+import type { CollectionType } from '@/models/menu'
+import { MENU_COLLECTIONS } from '@/models/menu'
+import { entryTimestamp } from '@/utils/content'
+import { formatDisplayDate } from '@/utils/date'
+
+interface Props {
+  posts: CollectionEntry<CollectionType>[]
+  baseUrl?: string
+  compact?: boolean
+  visual?: boolean
+  showKind?: boolean
+}
+const { posts, baseUrl, compact = false, visual = false, showKind = false } = Astro.props
+const entryBaseUrl = (post: CollectionEntry<CollectionType>) => baseUrl
+  ?? MENU_COLLECTIONS.find(collection => collection.collectionName === post.collection)?.baseUrl
+  ?? `/${post.collection}`
+const entryKind = (post: CollectionEntry<CollectionType>) => post.collection === 'techbook'
+  ? '筆記'
+  : post.collection === 'blog' ? '日常' : null
+const excerpt = (body: string) => body
+  .replace(/^(import|export)\s.+$/gm, '')
+  .replace(/(`{3,}|~{3,})[\s\S]*?\1/g, '')
+  .replace(/^:{3,}\s*\w*.*$/gm, '')
+  .replace(/<\/?[A-Za-z][^>\n]*>/g, '')
+  .replace(/!\[.*?\]\(.*?\)/g, '')
+  .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+  .replace(/[#*_`>]/g, '')
+  .replace(/\s+/g, ' ').trim()
+---
+
+<div class:list={['article-list', { compact, visual }]}>
+  {posts.map(post => (
+    <a class="article-row" href={`${entryBaseUrl(post)}/${post.slug}`} data-entry-collection={post.collection}>
+      <div class="article-meta">
+        <time datetime={new Date(entryTimestamp(post)).toISOString()}>{formatDisplayDate(new Date(entryTimestamp(post)))}</time>
+        {showKind && entryKind(post) && <span class="article-kind" data-article-kind>{entryKind(post)}</span>}
+      </div>
+      <article>
+        <h3>{post.data.title}</h3>
+        {!compact && !visual && <p>{excerpt(post.body || '').slice(0, 155)}</p>}
+        {!visual && post.data.tags?.length > 0 && <div class="article-tags">{post.data.tags.slice(0, 3).map(tag => <span>{tag}</span>)}</div>}
+      </article>
+      <svg class="article-arrow" aria-hidden="true" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M4 12h15m-6-6 6 6-6 6" /></svg>
+    </a>
+  ))}
+</div>
+
+<style>
+  .article-list { display: grid; }
+  .article-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 24px; align-items: start; column-gap: 34px; padding: 36px 0 38px; border-bottom: 1px solid var(--color-line); color: var(--color-ink); text-decoration: none; }
+  .article-meta { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  time { padding-top: 5px; font-size: 12px; font-variant-numeric: tabular-nums; line-height: 1.8; color: var(--color-ink-soft); }
+  .article-kind { color: var(--color-ink-soft); font-size: 12px; line-height: 1.7; }
+  article { min-width: 0; }
+  h3 { font-family: var(--font-body); font-size: clamp(20px, 1.8vw, 24px); font-weight: 400; line-height: 1.65; margin: 0; text-wrap: pretty; overflow-wrap: anywhere; transition: color 180ms ease-out; }
+  p { font-size: 15px; line-height: 1.95; color: var(--color-ink-soft); margin: 15px 0 0; max-width: 70ch; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .article-tags { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 17px; font-size: 12px; color: var(--color-ink-soft); line-height: 1.7; }
+  .article-arrow { margin-top: 11px; transition: transform 220ms ease-out, color 180ms ease-out; }
+  .article-row:hover h3, .article-row:hover .article-arrow { color: var(--color-moss); }
+  .article-row:hover .article-arrow { transform: translateX(4px); }
+  .visual .article-row { align-items: center; padding: 30px 0 32px; }
+  .visual time { padding-top: 0; }
+  .visual .article-arrow { margin-top: 0; }
+  .compact .article-row { padding-block: 23px; }
+  @media(max-width: 760px) {
+    .article-row { grid-template-columns: minmax(0, 1fr) 22px; gap: 9px 20px; padding: 25px 0 28px; }
+    .article-meta { grid-column: 1; flex-direction: row; align-items: baseline; gap: 14px; }
+    time { padding-top: 0; font-size: 12px; }
+    article { grid-column: 1; }
+    h3 { font-size: 20px; line-height: 1.65; }
+    p { font-size: 14px; line-height: 1.9; margin-top: 10px; }
+    .article-arrow { grid-column: 2; grid-row: 2; margin-top: 7px; width: 21px; }
+    .article-tags { font-size: 11px; margin-top: 14px; gap: 7px 14px; }
+    .visual .article-row { padding: 24px 0; }
+    .visual .article-arrow { margin-top: 5px; align-self: start; }
+  }
+  @media(prefers-reduced-motion: reduce) { h3, .article-arrow { transition: none; transform: none !important; } }
+</style>

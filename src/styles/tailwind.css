@@ -4,16 +4,29 @@
 }
 
 @theme {
-  --color-paper: #f6f4f0;
-  --color-cream: #fcfbf8;
-  --color-ink: #2d2a25;
-  --color-ink-soft: #5d574d;
-  --color-ink-faint: #8f8a80;
-  --color-moss: #5f7355;
-  --color-moss-soft: #8ba07e;
-  --color-clay: #b3674a;
-  --color-line: #e4e1da;
+  --color-paper: #f4f3ef;
+  --color-cream: #f0f1f3;
+  --color-ink: #263248;
+  --color-ink-soft: #505e73;
+  --color-ink-faint: #5c6678;
+  --color-moss: #405574;
+  --color-moss-soft: #405574;
+  --color-accent: #263248;
+  --color-brand: #263248;
+  --color-clay: #9e5b4e;
+  --color-line: #d0d3d8;
+  --color-teal: #536784;
+  --color-lilac: #f0f1f4;
+  --color-peach: #f2ad94;
+  --color-sky: #f2f4f7;
+  --color-sage: #e1e5ec;
 
-  --font-serif: 'Lora', 'Noto Serif TC', 'Georgia', serif;
+  --color-code-surface: #eef0f4;
+
+  --font-serif: 'Urbanist', 'Noto Sans TC', sans-serif;
+  --font-display: 'Urbanist', 'Noto Sans TC', sans-serif;
+  --font-heading: 'Urbanist', 'Noto Sans TC', sans-serif;
+  --font-handwriting: 'Iansui', 'Noto Sans TC', serif;
+  --font-body: 'Urbanist', 'Noto Sans TC', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'Cascadia Mono', Consolas, monospace;
 }

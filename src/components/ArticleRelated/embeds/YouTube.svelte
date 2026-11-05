@@ -7,6 +7,7 @@
   $: posterUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
 
   function playVideo() {
+    document.dispatchEvent(new CustomEvent('site:media-play', { detail: { source: 'youtube' } }))
     isPlaying = true
   }
 </script>

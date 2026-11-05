@@ -1,5 +1,10 @@
+<script>
+  import DiagramViewport from '@/components/ArticleRelated/DiagramViewport.svelte'
+</script>
+
 <div class="w-full max-w-3xl mx-auto my-8 bg-cream rounded-xl border border-line shadow-sm overflow-hidden">
-  <svg viewBox="0 0 320 420" class="w-full" xmlns="http://www.w3.org/2000/svg">
+  <DiagramViewport label="DNS 網域解析流程圖" minWidth={600}>
+  <svg viewBox="0 0 400 420" class="w-full" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <marker id="dns-arrow" markerWidth="8" markerHeight="8" refX="4" refY="3" orient="auto">
         <path d="M0,0 L0,6 L8,3 z" fill="#6e94b5"/>
@@ -64,4 +69,5 @@
     <line x1="160" y1="304" x2="160" y2="330" stroke="#6e94b5" stroke-width="1.5" stroke-dasharray="3,3"/>
     <text x="160" y="360" font-family="sans-serif" font-size="9" fill="#8f8a80" text-anchor="middle">結果通常會被快取，下次查詢更快</text>
   </svg>
+  </DiagramViewport>
 </div>

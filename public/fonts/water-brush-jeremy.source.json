@@ -1,0 +1,192 @@
+{
+  "family": "Water Brush",
+  "designer": "Robert Leuschke",
+  "weight": 400,
+  "style": "normal",
+  "source": "https://github.com/google/fonts/tree/main/ofl/waterbrush",
+  "download": "https://raw.githubusercontent.com/google/fonts/main/ofl/waterbrush/WaterBrush-Regular.ttf",
+  "upstream": "https://github.com/googlefonts/water-brush",
+  "upstreamCommit": "b7a36104b4ba7d489ba4f34a14c7e39dccbab86f",
+  "license": "SIL Open Font License 1.1",
+  "licensePath": "/fonts/licenses/water-brush-OFL.txt",
+  "retrieved": "2026-11-05",
+  "subsetText": "Jeremy",
+  "missingCodepoints": [],
+  "sourceSha256": "2cbdccbca5d4be005fe4edd8895b91618a7f96639eaeeb4987ad83e81afc71a7",
+  "subsetSha256": "f9b11a1af496ab1d33e9a0814419784362590644f0906d65d6a1a7e3217f923f",
+  "bytes": 3524,
+  "shaping": "HarfBuzz 0.57.0; Latin LTR; kern/liga/calt enabled; original and subset glyph names, advances and offsets match",
+  "shapedGlyphs": [
+    [
+      "J",
+      0,
+      502,
+      0,
+      0,
+      0
+    ],
+    [
+      "e",
+      1,
+      244,
+      0,
+      0,
+      0
+    ],
+    [
+      "r",
+      2,
+      229,
+      0,
+      0,
+      0
+    ],
+    [
+      "e",
+      3,
+      244,
+      0,
+      0,
+      0
+    ],
+    [
+      "m",
+      4,
+      553,
+      0,
+      0,
+      0
+    ],
+    [
+      "y",
+      5,
+      434,
+      0,
+      0,
+      0
+    ]
+  ],
+  "svgGeometry": "Original font glyph outlines positioned by the same HarfBuzz shaping; Y flipped for SVG",
+  "wordInkBounds1000Em": [
+    -79,
+    -783,
+    2251,
+    328
+  ],
+  "jInkBounds1000Em": [
+    -79,
+    -783,
+    553,
+    178
+  ],
+  "canonicalWordmarks": [
+    "/brand-wordmark.svg",
+    "/topnav-wordmark.svg",
+    "/hero-wordmark.svg"
+  ],
+  "canonicalMark": "/brand-mark.svg",
+  "faviconSvg": "/favicon.svg",
+  "processing": "Exact-name WOFF2 subset retains OpenType layout; hinting removed; original family metadata retained",
+  "originalAndSubsetOutlinesIdentical": {
+    "J": true,
+    "e": true,
+    "r": true,
+    "m": true,
+    "y": true
+  },
+  "rasterization": "Canonical Water Brush J outlines rasterized with sharp. Favicon PNG/ICO presentation is recorded in faviconPresentation; unchanged Apple/512 icons retain the original transparent canonical-mark rasterization.",
+  "rasterAssets": {
+    "favicon-16x16.png": {
+      "bytes": 556,
+      "size": [
+        16,
+        16
+      ],
+      "sha256": "c315664e622ca1c8d85a9177625a267571d12c23bea68df82288c5564adf79b9"
+    },
+    "favicon-32x32.png": {
+      "bytes": 1169,
+      "size": [
+        32,
+        32
+      ],
+      "sha256": "9704b48d4a397386e09072130855535555651fdfffc58b4014f1c5ce1655c02b"
+    },
+    "apple-touch-icon.png": {
+      "bytes": 4360,
+      "size": [
+        180,
+        180
+      ],
+      "sha256": "7aa0b5458f0a3e39fe6dccd1eb978bd0135d74ff6dd0a6f04c871bc21ba44163"
+    },
+    "icon-512.png": {
+      "bytes": 15128,
+      "size": [
+        512,
+        512
+      ],
+      "sha256": "2f6b92ae51efd1c61fa68763e8c43e3d28f791d0c952e3b30531b7e9f0bc3943"
+    },
+    "favicon.ico": {
+      "bytes": 6088,
+      "size": [
+        64,
+        64
+      ],
+      "sha256": "369aeae3ffaa81045fca5b975f51b60471389c58b495540843aeb798eb19a2d3"
+    }
+  },
+  "faviconPresentation": {
+    "updated": "2026-11-05",
+    "variant": "paper-ink",
+    "sourceMark": "/brand-mark.svg",
+    "pathCommandsUnchanged": true,
+    "reason": "Transparent dark ink was illegible on dark browser tabs. A universal paper backplate does not depend on browser theme matching system prefers-color-scheme.",
+    "viewBox": [
+      0,
+      0,
+      64,
+      64
+    ],
+    "backplate": {
+      "fill": "#f4f3ef",
+      "inset": 0.5,
+      "cornerRadius": 14
+    },
+    "glyph": {
+      "fill": "#263248",
+      "sourceInkBounds": [
+        -79,
+        -783,
+        553,
+        178
+      ],
+      "heightFraction": 0.82,
+      "scale": 0.05460978147762747,
+      "translation": [
+        19.05748178980229,
+        48.519458896982314
+      ],
+      "opticalStrokeFontUnits": 16,
+      "opticalStrokeAt16px": 0.21843912591050987
+    },
+    "rasterization": "SVG rasterized by sharp at 600dpi then resized per target. ICO contains the exact same independent 16/32/48/64px PNG buffers, not resized copies of the untouched 512px app icon.",
+    "svgSha256": "894db826e97ad629de5d6a5a30edff838fbe5a38a0aea52c377c4604c6779ffc",
+    "icoSizes": [
+      16,
+      32,
+      48,
+      64
+    ],
+    "unchangedAssets": [
+      "public/brand-mark.svg",
+      "public/brand-wordmark.svg",
+      "public/topnav-wordmark.svg",
+      "public/hero-wordmark.svg",
+      "public/apple-touch-icon.png",
+      "public/icon-512.png",
+      "public/fonts/water-brush-jeremy.woff2"
+    ]
+  }
+}
