@@ -2,9 +2,9 @@
 
 - 用途：個人主部落格（Jeremy-and-Aira）主題曲；與 Solunastre 工作室〈昭離〉及千歲曲庫分開。
 - 版本：v2；提示詞修訂日：2026-11-05。
-- 狀態：已通過獨立文字審核；尚未生成、未試聽。
+- 狀態：v2 原稿已通過獨立文字審核；成曲來源已入庫，未進行音樂試聽評價。
 - 純器樂；Lyrics 留空。
-- 實際生成模型、生成日期、作品識別碼、Suno 連結與音檔：待製作後記錄，未提供。
+- 實際生成模型、時間、來源與音檔：見下方「成曲來源紀錄」；原稿與平台實際欄位分開保存。
 
 ## 題意與來源
 
@@ -47,3 +47,40 @@ Vocals, singing, humming, chanting, choir, vocal pads, field recordings, rain, b
 ## Lyrics
 
 留空。
+
+## 成曲來源紀錄
+
+- 入庫日：2026-11-05；本次只複製保存，未接網站播放器或部署，Downloads 原件保留。
+- 曲名：人間有味是清歡；作品識別碼：`daa8df3d-0197-4993-bbc7-7d70ff1ad4cb`。
+- [Suno 分享連結](https://suno.com/s/t6sWWn5xPVt4Q8Ki)／[作品原始頁](https://suno.com/song/daa8df3d-0197-4993-bbc7-7d70ff1ad4cb)。
+- 平台作品建立時間（UTC）：`2026-11-05T01:17:06.223Z`；台北時間：`2026-11-05 09:17:06`（Asia/Taipei）。
+- 模型顯示：`V6`；major model version：`v6`；內部模型名稱：`chirp-hawk`。
+- 生成任務：`gen`；`is_remix=false`；平台標記 `make_instrumental=true`；實際 Lyrics 為空字串。
+- 平台／WAV／MP3 時長均為 **244.72 秒**（約 4 分 05 秒）。
+- [WAV 原音](../../sources/music/qinghuan/2026-11-05-daa8df3d/qinghuan.wav)／[MP3 原音](../../sources/music/qinghuan/2026-11-05-daa8df3d/qinghuan.mp3)／[完整來源 JSON](../../sources/music/qinghuan/2026-11-05-daa8df3d/source.json)／[來源說明](../../sources/music/qinghuan/2026-11-05-daa8df3d/README.md)。
+- 原始下載檔名為 `人間有味是清歡.wav`、`人間有味是清歡.mp3`；副本未轉碼。檔內匯出時間另保存在 source.json，與平台作品建立時間分列。
+
+### 平台實際 Styles
+
+以下為 Suno 公開作品 metadata 的實際欄位；與上方 v2 原稿不同，差異原因未知，不推定為 Enhance 或其他操作。
+
+```text
+Contemporary acoustic chamber-folk, supple four around 104 BPM, instrumental, clear attacks and softly overlapping tails with woody timbres, natural room depth, subtle breathing dynamics; warm fingerpicked guitar keeps a steady pulse beneath a clear zhongruan lead, gently rising short phrases answered by rounded settled phrases, pentatonic turns and delicate ornaments, mellow clarinet carries complete phrases before handing the theme back to plucked strings, sparse upright bass on selected beats, diatonic harmony with added sixths and slowly resolving suspensions, light steps and open phrase endings, common tones smooth the handovers; return the familiar theme with richer resonance, then settle warmly.
+```
+
+### 平台實際 Exclude
+
+與 v2 原稿逐字相同。
+
+```text
+Vocals, singing, humming, chanting, choir, vocal pads, field recordings, rain, birds, teacup and sipping effects, weeping melodies, chilly ambience, sugary lullabies, toy-like sounds, festive parade dances, rigid marches, showy virtuoso runs, trailer impacts, pounding drums, piercing highs, muddy bass, sudden volume jumps.
+```
+
+### 檔案完整性與驗證
+
+| 副本 | 原始位元組數 | SHA-256 |
+|---|---:|---|
+| `qinghuan.mp3` | 5827655 | `8e4e297abbcdd5940bc5174d0242278f2b789887ed79b84564aa8694fa1d6b79` |
+| `qinghuan.wav` | 47000080 | `9b2a5805e468c7fcbed88721769ef1a880efea134ca1f84127a6c8d591a0e839` |
+
+兩份原件與副本 SHA-256 相同；檔內作品編號與公開來源一致，ffprobe 與完整 ffmpeg 解碼退出碼均為 0。獨立來源／副本驗證：通過。以上是來源與技術驗證，未作音樂試聽評價，也不判定網站採用或完成播放器接線。

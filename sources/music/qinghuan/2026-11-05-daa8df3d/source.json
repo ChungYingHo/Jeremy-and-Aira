@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "title": "人間有味是清歡",
+  "purpose": "個人主部落格（Jeremy-and-Aira）主題曲來源素材",
+  "role": "generated_theme_source",
+  "website_integration": "not_connected",
+  "adoption_status": "not_changed_by_archival",
+  "provider": "Suno",
+  "source": {
+    "share_url": "https://suno.com/s/t6sWWn5xPVt4Q8Ki",
+    "canonical_url": "https://suno.com/song/daa8df3d-0197-4993-bbc7-7d70ff1ad4cb",
+    "song_id": "daa8df3d-0197-4993-bbc7-7d70ff1ad4cb",
+    "platform_title": "人間有味是清歡",
+    "http_status": 200,
+    "platform_created_at_utc": "2026-11-05T01:17:06.223Z",
+    "platform_created_at_taipei": "2026-11-05 09:17:06 Asia/Taipei",
+    "platform_duration_seconds": 244.72,
+    "model_display": "V6",
+    "major_model_version": "v6",
+    "model_name": "chirp-hawk",
+    "task": "gen",
+    "is_remix": false,
+    "make_instrumental": true,
+    "uses_latest_model": true
+  },
+  "draft_snapshot": {
+    "version": "v2",
+    "revision_date": "2026-11-05",
+    "source_document": "docs/music/qinghuan.md",
+    "source_git_commit": "ab65f37",
+    "mood": "午後的光落在桌邊，茶盞裡浮著細細的沫，手邊是翻到一半的書與剛好的春日滋味。旋律輕輕揚起，帶著出門走過一小段路的好心情；吉他的和弦溫柔地向前，中阮清亮的幾個音落在其間，像一個熟悉的念頭，忽然有了新鮮的說法。\n\n音樂有輕巧的步伐，也有慢慢品味的從容。木管接過旋律，說完自己的句子，再讓撥弦自然回答。小小的轉音帶一點東方韻味，和聲則像午後的光，柔和地換著角度。清楚的音頭之後，餘韻彼此滲開，像墨在紙上暈出深淺不同的痕跡。\n\n熟悉的主題再回來時，細節比先前豐富，心情卻依然輕鬆。不同聲音在同一張桌邊相處得自在，平常的一天也因此有了自己的滋味。最後，旋律舒服地落定，留下一點木質餘響。茶還溫著，書還能再讀幾頁，眼前這一刻，已經很值得喜歡。",
+    "style_zh": "原創當代原聲室內民謠器樂，清鮮、輕盈而知足，帶著午後的溫暖。約每分鐘104拍，以有彈性的四拍律動前行。溫潤木吉他的分解和弦承托中阮清楚的主旋律：輕輕上揚的短句，接一個圓潤落定的答句。五聲轉折與細緻裝飾自然穿插在歌唱般的旋律裡。柔和單簧管接續完整樂句，再把主題交回撥弦；稀疏原聲低音提琴托住選定的拍點。和聲以自然順階的行進、附加六度與緩慢解決的懸留，提供溫暖的活動空間。步伐輕巧，旋律從容，句尾留有呼吸。發展時維持吉他的脈動與共同音，讓聲部平順交接。以更豐富、清楚的共鳴帶回熟悉主題，再溫暖地落定。清楚起音、柔和交疊的尾韻如墨暈開，木質音色、自然室內深度與細緻舒展的力度。",
+    "style_en": "Contemporary acoustic chamber-folk instrumental, fresh, lightly buoyant and contented, with afternoon warmth. Around 104 BPM in supple four. Warm fingerpicked guitar supports a clear zhongruan melody: gently rising short phrases and a rounded, settled answer. Pentatonic turns and delicate ornaments mingle naturally within a singing tune. Mellow clarinet continues complete phrases, then returns the theme to plucked strings; sparse upright bass supports selected beats. Diatonic movement, added sixths and slowly resolving suspensions give the harmony warm breathing room. Light steps beneath an unhurried melody, with space at phrase endings. Keep the guitar pulse and common tones through smooth handovers. Return the familiar theme with richer, clear resonance, then settle warmly. Clear attacks and softly overlapping tails bloom like ink on paper; woody timbres, natural room depth and subtle breathing dynamics.",
+    "exclude_zh": "人聲、演唱、哼唱、吟唱、合唱、人聲鋪底、環境實錄、雨聲、鳥鳴、茶杯與飲茶音效、悲泣旋律、陰冷氛圍、過甜搖籃曲、玩具音色、喜慶遊行舞曲、僵硬進行曲、炫技急奏、預告片撞擊音效、猛烈鼓聲、刺耳高音、混濁低音、突然爆量。",
+    "exclude_en": "Vocals, singing, humming, chanting, choir, vocal pads, field recordings, rain, birds, teacup and sipping effects, weeping melodies, chilly ambience, sugary lullabies, toy-like sounds, festive parade dances, rigid marches, showy virtuoso runs, trailer impacts, pounding drums, piercing highs, muddy bass, sudden volume jumps.",
+    "lyrics": ""
+  },
+  "actual_prompt": {
+    "style": "Contemporary acoustic chamber-folk, supple four around 104 BPM, instrumental, clear attacks and softly overlapping tails with woody timbres, natural room depth, subtle breathing dynamics; warm fingerpicked guitar keeps a steady pulse beneath a clear zhongruan lead, gently rising short phrases answered by rounded settled phrases, pentatonic turns and delicate ornaments, mellow clarinet carries complete phrases before handing the theme back to plucked strings, sparse upright bass on selected beats, diatonic harmony with added sixths and slowly resolving suspensions, light steps and open phrase endings, common tones smooth the handovers; return the familiar theme with richer resonance, then settle warmly.",
+    "exclude": "Vocals, singing, humming, chanting, choir, vocal pads, field recordings, rain, birds, teacup and sipping effects, weeping melodies, chilly ambience, sugary lullabies, toy-like sounds, festive parade dances, rigid marches, showy virtuoso runs, trailer impacts, pounding drums, piercing highs, muddy bass, sudden volume jumps.",
+    "lyrics": "",
+    "style_matches_draft": false,
+    "exclude_matches_draft": true,
+    "difference_reason": "unknown; platform metadata differs from the approved draft; no cause inferred"
+  },
+  "files": [
+    {
+      "filename": "qinghuan.mp3",
+      "original_filename": "人間有味是清歡.mp3",
+      "source_absolute_path": "C:/Users/User/Downloads/人間有味是清歡.mp3",
+      "bytes": 5827655,
+      "sha256": "8e4e297abbcdd5940bc5174d0242278f2b789887ed79b84564aa8694fa1d6b79",
+      "embedded_comment": "made with suno; created=2026-11-05T01:19:53Z; id=daa8df3d-0197-4993-bbc7-7d70ff1ad4cb",
+      "embedded_song_id": "daa8df3d-0197-4993-bbc7-7d70ff1ad4cb",
+      "container": "mp3",
+      "duration_seconds": 244.72,
+      "audio_stream": {
+        "codec_name": "mp3",
+        "codec_type": "audio",
+        "sample_rate": "48000",
+        "channels": 2
+      },
+      "validation": {
+        "ffprobe_exit_code": 0,
+        "ffmpeg_full_decode_exit_code": 0,
+        "copy_sha256_match": true
+      }
+    },
+    {
+      "filename": "qinghuan.wav",
+      "original_filename": "人間有味是清歡.wav",
+      "source_absolute_path": "C:/Users/User/Downloads/人間有味是清歡.wav",
+      "bytes": 47000080,
+      "sha256": "9b2a5805e468c7fcbed88721769ef1a880efea134ca1f84127a6c8d591a0e839",
+      "embedded_comment": "made with suno; created=2026-11-05T01:20:10Z; id=daa8df3d-0197-4993-bbc7-7d70ff1ad4cb",
+      "embedded_song_id": "daa8df3d-0197-4993-bbc7-7d70ff1ad4cb",
+      "container": "wav",
+      "duration_seconds": 244.72,
+      "audio_stream": {
+        "codec_name": "pcm_s16le",
+        "codec_type": "audio",
+        "sample_rate": "48000",
+        "channels": 2
+      },
+      "validation": {
+        "ffprobe_exit_code": 0,
+        "ffmpeg_full_decode_exit_code": 0,
+        "copy_sha256_match": true
+      }
+    }
+  ],
+  "archive": {
+    "date": "2026-11-05",
+    "downloads_originals": "retained; copied only",
+    "source_dates_note": "Platform creation timestamps are kept separately from the later created timestamps embedded in exported files."
+  },
+  "verification": {
+    "source_share_uuid_matches_downloads": true,
+    "full_audio_decode_exit_codes": [
+      0,
+      0
+    ],
+    "perceptual_listening": "not_performed",
+    "independent_review": "passed",
+    "independent_review_scope": "Original/copy hashes, embedded IDs, public metadata, complete audio decode, approved draft preservation and local links verified by a separate agent. Other concurrent website edits were not part of this batch."
+  }
+}
