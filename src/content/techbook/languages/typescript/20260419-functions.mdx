@@ -1,9 +1,9 @@
 ---
 title: "[TypeScript] 函式型別"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["TypeScript", "function", "overload", "this"]
-changelog: ['2026-06-11']
+changelog: ['2026-06-11', '2026-11-05']
 sameDateSort: 4
 ---
 
@@ -93,15 +93,15 @@ const cb: Callback = (n) => n * 2   // ✅ 回傳值會被忽略，不會報錯
 
 ```typescript
 // 1. 寫多個簽章（重載宣告）
-function pick(arr: string[], n: number): string
-function pick(arr: number[], n: number): number
+function pick(arr: string[], n: number): string | undefined
+function pick(arr: number[], n: number): number | undefined
 // 2. 寫實作簽章（對外不可見，型別必須相容所有重載）
 function pick(arr: any[], n: number): any {
   return arr[n]
 }
 
-const a = pick(['a', 'b'], 0)   // string
-const b = pick([1, 2], 0)       // number
+const a = pick(['a', 'b'], 0)   // string | undefined
+const b = pick([1, 2], 0)       // number | undefined
 ```
 
 注意：
@@ -109,10 +109,10 @@ const b = pick([1, 2], 0)       // number
 - 實作簽章的型別**不會**被外部看到，呼叫端只看得到上面的重載
 - 多數情況用 union / 泛型就能搞定，重載多用在 union 解決不了的場景
 
-對比可用 union 的版本：
+這個例子其實更適合用泛型，不是 union；同時保留越界時的 undefined：
 
 ```typescript
-function pickU<T>(arr: T[], n: number): T {
+function pickU<T>(arr: T[], n: number): T | undefined {
   return arr[n]
 }
 ```
@@ -133,7 +133,7 @@ interface Deck {
 }
 ```
 
-`this: Deck` 不是真實參數，呼叫時不用傳，編譯後也會消失。它只是告訴 TS：這個函式必須透過某個 `Deck` instance 呼叫（例如 `deck.pick()`）。所以把方法抓出來單獨呼叫——`const fn = deck.pick; fn()`——會直接編譯錯誤，因為 `this` 綁不到 `Deck`。
+`this: Deck` 不是真實參數，呼叫時不用傳，編譯後也會消失。它只是告訴 TS：這個函式必須透過某個 `Deck` instance 呼叫（例如 `deck.createCardPicker()`）。所以把方法抓出來單獨呼叫——`const fn = deck.createCardPicker; fn()`——會直接編譯錯誤，因為 `this` 綁不到 `Deck`。
 
 ## 函式型別的子類型規則
 
@@ -148,7 +148,8 @@ type Animal = { name: string }
 type Dog = Animal & { bark: () => void }
 
 let f1: (a: Animal) => Dog = (a) => ({ name: a.name, bark: () => {} })
-let f2: (d: Dog) => Animal = f1   // ❌ 嚴格模式下不行
+let f2: (d: Dog) => Animal = f1   // ✅ f1 接受更廣、回傳更窄
+// let bad: (a: Animal) => Dog = f2 // ❌ 相反方向不安全
 ```
 
 把 `strictFunctionTypes` 關掉，TS 才會放寬這條檢查；至於方法簽章（method shorthand）天生就比較寬鬆——這是歷史包袱。
@@ -179,7 +180,7 @@ identity('hi')           // 推導出 T = string
 
 ```typescript
 function firstOrNull<T>(arr: T[]): T | null {
-  return arr.length > 0 ? arr[0] : null
+  return arr[0] ?? null   // 空陣列／nullish 元素視為沒有結果
 }
 
 const n = firstOrNull([1, 2, 3])    // T 推導為 number, 回傳 number | null
@@ -241,3 +242,8 @@ function f({ a, b }: { a: number; b: string }) {}
 不能寫成 `function f({ a: number, b: string })`，那會變成「把 a 重新命名為 number」。
 
 上面那個 `identity<T>` 已經摸到泛型的門口，下一篇就把泛型完整拆開講。
+
+## 參考文件
+
+- [TypeScript：More on Functions](https://www.typescriptlang.org/docs/handbook/2/functions.html)
+- [TypeScript：noUncheckedIndexedAccess](https://www.typescriptlang.org/tsconfig/noUncheckedIndexedAccess.html)

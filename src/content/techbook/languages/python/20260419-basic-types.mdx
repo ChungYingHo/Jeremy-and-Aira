@@ -1,9 +1,9 @@
 ---
 title: "[Python] 基本語法與型別"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["Python", "type", "list", "tuple", "dict", "set"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 2
 ---
 
@@ -54,7 +54,7 @@ big = 10_000_000      # 底線分隔，純粹可讀性
 hex_n = 0xff
 bin_n = 0b1010
 
-# 整數無精度上限
+# 整數可任意精度（仍受可用記憶體限制）
 n = 2 ** 100   # OK，不會溢位
 ```
 
@@ -115,7 +115,7 @@ True or False     # True
 not True          # False
 ```
 
-falsy 值：`False`、`None`、`0`、`0.0`、`''`、`[]`、`{}`、`()`、`set()`。其餘都是 truthy。
+falsy 值：`False`、`None`、`0`、`0.0`、`''`、`[]`、`{}`、`()`、`set()`。其他內建空容器也是假值；自訂類別可透過 `__bool__` 或 `__len__` 定義真假，不能只靠這份清單窮舉。
 
 ```python
 if []:
@@ -169,11 +169,11 @@ xs[::2]      # [10, 30, 50]（step）
 xs[::-1]     # [50, 40, 30, 20, 10]（反轉）
 ```
 
-切片**回傳新 list**，不會改原本。
+切片**回傳新 list**，不會改原本，但只是淺拷貝：巢狀可變物件仍共用參照。
 
 ## tuple
 
-不可變的 list。常用來裝「固定結構的小組合」：
+不可變序列，不能新增或替換其中的參照；若元素本身是 list，其內容仍可修改。常用來裝「固定結構的小組合」：
 
 ```python
 point = (1, 2)
@@ -264,7 +264,7 @@ a - b      # {1}         （差集）
 a ^ b      # {1, 4}      （對稱差）
 ```
 
-去重一行搞定：`unique = list(set(items))`。
+不要求順序且元素可雜湊時，可用 `unique = list(set(items))`。要保留第一次出現的順序，可用 `list(dict.fromkeys(items))`；list 這類不可雜湊元素不能直接當 set 元素或 dict key。
 
 ## comprehension：簡潔產生集合
 
@@ -310,6 +310,10 @@ tuple([1, 2])        # (1, 2)
 set([1, 1, 2])       # {1, 2}
 ```
 
-判斷型別**一律用 `isinstance`**，不要用 `type(x) == int`，因為前者支援子類別。
+一般型別相容性判斷優先用 `isinstance`，因為支援子類別。若真的要求精確型別，可用 `type(x) is int`；例如 bool 是 int 的子類，`isinstance(True, int)` 也會是 True。
 
 下一篇進流程控制與函式，這篇的 `list`、`dict`、`tuple` 會在 `for` 走訪、解包、預設參數那邊接續用。
+
+## 參考文件
+
+- [Python 3.13：Built-in Types](https://docs.python.org/3.13/library/stdtypes.html)

@@ -1,9 +1,9 @@
 ---
 title: "[Rust] 變數與型別"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["Rust", "let", "mut", "shadowing", "type", "const"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 2
 ---
 
@@ -97,7 +97,7 @@ let bin = 0b1010;
 ```
 
 :::warning
-整數溢位行為：debug 模式下會 panic，release 模式下會 wrapping（繞回）。
+整數加減乘等溢位檢查預設在 debug 開、release 關，Cargo 的 overflow-checks 設定可以改。除以零與有號最小值除以 -1 等情況另有規則；不能把所有運算一概當成 release 自動 wrapping。
 要明確處理溢位，用 `checked_add`、`wrapping_add`、`saturating_add`、`overflowing_add` 等方法。
 
 ```rust
@@ -161,7 +161,7 @@ let second = t.1;
 
 ### Array
 
-固定長度、同型別、stack 上：
+固定長度、同型別；一般區域變數常放在 stack，但 array 也能放在 Box 等 heap 物件中：
 
 ```rust
 let arr: [i32; 5] = [1, 2, 3, 4, 5];
@@ -191,7 +191,7 @@ Rust 區分**表達式（expression）**與**語句（statement）**：
 - 表達式有值（`5 + 3`、`if x > 0 { 1 } else { -1 }`）
 - 語句沒值，以分號結尾（`let x = 5;`）
 
-函式內最後一行**不加分號**，就是把該表達式當回傳值。加了分號就變成語句，回傳 `()`，會編譯錯誤。
+函式內最後一行**不加分號**，就是把該表達式當回傳值。加了分號後該區塊的值會是 `()`；只有原本要求其他回傳型別（如 add 的 i32）時才因此編譯錯誤，回傳 unit 的函式則可以。
 :::
 
 ## 控制流程
@@ -258,3 +258,8 @@ let s = "42".parse::<i32>().unwrap();  // ✅ turbofish
 `.parse()` 是泛型方法（`fn parse<F>() -> Result<F, _>`），編譯器得知道你要 parse 成什麼——要嘛在變數上標 `: i32`，要嘛用 turbofish 寫 `parse::<i32>()`，兩個都沒給它就只能報錯。
 
 變數、型別、函式與控制流程都備齊了，下一篇進 Rust 最招牌的觀念——所有權與借用。前面 `String` 與 `&str` 埋下的「擁有」與「借用」之分，會在那裡正式說清楚。
+
+## 參考文件
+
+- [Rust Book：Data Types](https://doc.rust-lang.org/book/ch03-02-data-types.html)
+- [Cargo：overflow-checks profile setting](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks)

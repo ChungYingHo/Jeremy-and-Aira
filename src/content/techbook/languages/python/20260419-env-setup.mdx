@@ -1,9 +1,9 @@
 ---
 title: "[Python] 環境建置"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["Python", "venv", "pip", "uv"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 1
 ---
 
@@ -11,7 +11,7 @@ Python 本體裝起來很簡單，但實務上每個專案要獨立的虛擬環�
 
 ## 在 Windows 安裝 Python
 
-到 [python.org](https://www.python.org/downloads/) 下載 `.exe`，安裝時務必勾 **Add Python to PATH**。裝完開新的 PowerShell 驗證：
+本文以 Python 3.13 為示範基準，不代表最新版。到 [python.org](https://www.python.org/downloads/) 取得適用的 Windows 安裝方式；若使用傳統安裝程式，可勾 **Add Python to PATH**。裝完開新的 PowerShell 驗證：
 
 ```powershell
 python --version
@@ -57,13 +57,13 @@ python -m venv .venv
 deactivate
 ```
 
-PowerShell 第一次跑啟用腳本如果被擋，是執行原則的限制。一次性開放當前使用者：
+PowerShell 第一次跑啟用腳本如果被擋，是執行原則的限制。若要只在目前 PowerShell 視窗放寬，可用 Process scope（組織原則仍可能覆蓋）：
 
 ```powershell
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 ```
 
-啟用後 `python`、`pip` 都指向 `.venv` 內，與全域分離。
+啟用後 PATH 優先使用 `.venv`。也可以完全不啟用，直接用 `.venv\Scripts\python.exe -m pip ...` 或執行程式，避免改執行原則。
 
 :::tip
 `.venv` 一律加進 `.gitignore`，不應 commit。
@@ -73,14 +73,14 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
 ```powershell
 pip install requests              # 裝最新
-pip install requests==2.32.0      # 指定版本
+pip install requests==2.32.5      # 指定版本
 pip install "requests>=2.30,<3"   # 範圍
 pip install -U requests           # 升級
 pip uninstall requests
 
 pip list                          # 列出已裝套件
 pip show requests                 # 套件資訊
-pip freeze > requirements.txt     # 鎖定版本到檔案
+pip freeze > requirements.txt     # 匯出目前環境套件版本（不是完整 lockfile）
 pip install -r requirements.txt   # 從檔案安裝
 ```
 
@@ -91,7 +91,7 @@ pip install -r requirements.txt   # 從檔案安裝
 `requirements.txt`（傳統）：
 
 ```
-requests==2.32.0
+requests==2.32.5
 flask>=3.0,<4
 ```
 
@@ -116,7 +116,7 @@ dev = ["pytest", "ruff", "mypy"]
 `uv` 一條命令搞定 Python、虛擬環境、依賴：
 
 ```powershell
-# 在資料夾起新專案（會建 .venv 與 pyproject.toml）
+# 建立專案檔；.venv 與 uv.lock 會在 add／sync／run 等操作建立
 uv init my-app
 cd my-app
 
@@ -132,7 +132,7 @@ uv run python main.py
 uv run pytest
 ```
 
-`uv.lock` 是版本鎖定檔，commit 進 git 確保所有人裝到一樣的版本。
+`uv.lock` 應提交，讓解析結果可重現；CI 可用 `uv sync --locked` 避免默默更新鎖檔。平台條件仍可能使實際安裝的套件不同。上面的 Requests 版本只是固定版本範例，不是要求長期停留該版。
 
 ## 第一支程式
 
@@ -179,7 +179,7 @@ ipython
 
 ## 編輯器與 Linter
 
-VS Code 配 `Python` extension 即可（內建 Pylance LSP）。常用工具：
+VS Code 可安裝 Microsoft 的 Python 與 Pylance 擴充套件（Pylance 不屬於 VS Code 本體）。常用工具：
 
 | 工具 | 用途 |
 | :--- | :--- |
@@ -195,4 +195,10 @@ uv run ruff check .          # lint
 uv run ruff format .         # 格式化
 ```
 
-裝完 Python、開得起 venv、跑得起第一支 `hello.py`，環境就算就緒。下一篇進基本型別與資料結構，前面 `def greet(name)` 的 type hint 會在「型別提示」那篇正式展開。
+裝完 Python、開得起 venv、跑得起第一支 `hello.py`，環境就算就緒。下一篇進基本型別與資料結構，後面函式加入的 type hint 會在「型別提示」那篇正式展開。
+
+## 參考文件
+
+- [Python 3.13：venv](https://docs.python.org/3.13/library/venv.html)
+- [uv：Working on projects](https://docs.astral.sh/uv/guides/projects/)
+- [Requests：Release History](https://requests.readthedocs.io/en/latest/community/updates/)

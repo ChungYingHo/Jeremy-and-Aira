@@ -1,13 +1,13 @@
 ---
 title: "[Java] 列舉與字串"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-20"
 tags: ["Java", "enum", "String", "StringBuilder", "text block"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 5
 ---
 
-兩個常用但容易被小看的型別，放一起講。`enum` 不是 int 的別名，它本身就是 class——能帶欄位、帶方法，甚至能當策略物件用。`String` 則是 immutable，所有 `replace` / `toUpperCase` 都會產生新物件；先理解這點，才知道 `StringBuilder` 是來幹嘛的。
+兩個常用但容易被小看的型別，放一起講。`enum` 不是 int 的別名，它本身就是 class——能帶欄位、帶方法，甚至能當策略物件用。`String` 則是 immutable，`replace` / `toUpperCase` 不會修改原物件；先理解這點，才知道 `StringBuilder` 是來幹嘛的。
 
 ## enum 基本
 
@@ -26,17 +26,18 @@ if (s == Status.DONE) { ... }     // 用 == 比較沒問題（單例）
 ## enum 在 switch
 
 ```java
-switch (status) {
+Status status = Status.RUNNING;
+String label = switch (status) {
     case PENDING -> "等候中";
     case RUNNING -> "執行中";
     case DONE    -> "完成";
     case FAILED  -> "失敗";
-}
+};
 ```
 
 case 裡直接寫常數名就好，不用加 `Status.` 前綴。
 
-Java 21+ 的 switch 還支援 pattern matching，窮舉檢查也更明確——少寫一個 case 編譯器會直接告訴你。
+這裡是 switch expression（Java 14 正式加入），要產生完整結果，所以 enum 的常數必須涵蓋齊全，或提供 `default`。一般傳統 switch statement 不一定有同樣的窮舉要求；Java 21 則另外正式加入 pattern matching for switch。
 
 ## enum 帶屬性與方法
 
@@ -89,7 +90,7 @@ s.ordinal()              // 在宣告中的索引（少用，重排會壞）
 
 ## EnumSet / EnumMap
 
-針對 enum 特化的集合，比 HashSet / HashMap 快很多：
+針對 enum 特化的集合，使用緊湊的內部表示，通常很適合這種固定範圍的 key：
 
 ```java
 EnumSet<Status> active = EnumSet.of(Status.PENDING, Status.RUNNING);
@@ -99,7 +100,7 @@ EnumMap<Status, String> labels = new EnumMap<>(Status.class);
 labels.put(Status.DONE, "完成");
 ```
 
-只要 key 是 enum，一律用這兩個。
+元素／key 是 enum 時可以優先考慮這兩個；仍要看 null、並行存取等需求，不能只憑型別就一律替換。
 
 ## String 是不可變的
 
@@ -109,7 +110,7 @@ s.toUpperCase();         // 回傳新字串，s 本身沒變
 s = s.toUpperCase();     // 想改要重新賦值
 ```
 
-每個 String 操作都產生新物件。所以重複拼接會很傷，要改用 `StringBuilder`（後面會講）。
+操作不會改變原字串，但不保證每次配置新物件，例如無須替換時可能直接回傳原物件。迴圈中反覆累加成長中的字串，才特別需要留意配置與複製成本。
 
 ## String pool
 
@@ -127,7 +128,7 @@ a.equals(c);             // true（內容比較）
 
 **字串比較永遠用 `.equals()`，不要用 `==`。**
 
-`s.intern()` 會把字串放回池中並回傳池中那個。少用，現在 JVM 自動處理得很好。
+`s.intern()` 回傳內容相等的池中代表物件，必要時把目前物件加入池中。一般內容比較不需要先 intern，直接用 `.equals()` 就好。
 
 ## 常用 String 方法
 
@@ -155,7 +156,7 @@ Integer.parseInt("123");      // 123
 
 ## StringBuilder：可變字串
 
-頻繁拼接、迴圈裡組字串，一律用 `StringBuilder`，省掉每次都生一個新 String 的成本：
+迴圈裡逐步組出一段字串，適合用 `StringBuilder`；少量固定的 `+` 拼接通常直接寫就很清楚，不必全部改掉：
 
 ```java
 StringBuilder sb = new StringBuilder();
@@ -224,9 +225,11 @@ String json = """
 String sql = """
     SELECT *
     FROM users
-    WHERE id = %d
-    """.formatted(userId);
+    WHERE id = ?
+    """;
 ```
+
+SQL 範例只示範多行排版；執行時應用 `PreparedStatement` 綁定 `userId`，不要把外部輸入用 `formatted` 拼進查詢。一般非 SQL 文字才適合用這種方式代入內容。
 
 ## char 與 Unicode 注意
 
@@ -243,6 +246,12 @@ String sql = """
 "abc😀".codePoints().forEach(System.out::println);
 ```
 
-一般場景不太會遇到，做文字處理（截斷、計數）才要小心。
+code point 也不等於使用者看到的一個字：組合音標、膚色與多個 emoji 組成的序列可能包含多個 code point。做畫面字數或截斷時，還要考慮 grapheme cluster，不能只改用 `codePointCount` 就當作完全解決。
 
 下一篇進檔案 IO——舊的 `java.io` 與新的 `java.nio.file`（`Path` / `Files`），以及為什麼新程式碼一律用後者。
+
+## 參考文件
+
+- [Java 21：Switch Expressions](https://docs.oracle.com/en/java/javase/21/language/switch-expressions-and-statements.html)
+- [Java 21：String API](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html)
+- [Oracle JDBC：Prepared Statements](https://docs.oracle.com/javase/tutorial/jdbc/basics/prepared.html)

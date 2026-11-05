@@ -1,9 +1,9 @@
 ---
 title: '[Algorithm] 淘汰與搜尋法'
-author: 'Jeremy & Claude'
+author: 'Jeremy & Claude & Codex'
 date: '2026-04-08'
 tags: [algorithm, prune and search, binary search, quickselect, median of medians, bin packing]
-changelog: ['2026-04-08']
+changelog: ['2026-04-08', '2026-11-05']
 ---
 
 import CounterfeitCoinDiagram from '@/components/ArticleRelated/algorithm/CounterfeitCoinDiagram.svelte'
@@ -14,7 +14,7 @@ import MedianOfMediansDiagram from '@/components/ArticleRelated/algorithm/Median
 
 每次比較或測試，都讓一整塊搜尋空間被證明「不可能含答案」，就整塊丟掉、只在剩下的地方繼續找。丟掉的不再回頭——這就是淘汰與搜尋。能用這個招式的關鍵，是你要有一個便宜（$O(1)$ 或 $O(n)$）的測試，一次就能把問題規模砍成 $1/c$。砍得越狠、每輪越便宜，整體就越快。
 
-一次比較能產生幾種互斥結果，就決定了底數 $c$：是非題切兩半、三值天平切三份。選擇不是隨便訂的，是被工具解析度逼出來的。
+一次測試有幾種結果，限制了它能區分多少可能性；但只有各分支足夠平衡，才有固定比例的淘汰保證。是非題不一定剛好切半，pivot 的品質就會影響 Quickselect 的淘汰比例。
 
 ## 各適用情境
 
@@ -28,7 +28,7 @@ import MedianOfMediansDiagram from '@/components/ArticleRelated/algorithm/Median
 
 #### 複雜度
 
-每輪秤一次（$O(1)$），規模砍成三分之一。總共 $T(n) = T(n/3) + O(1) = O(\log_3 n)$。如果工具只能回答是/否，那就變 $O(\log_2 n)$。
+以**秤量次數**為成本，每輪秤一次、候選規模至多剩 $\lceil n/3 \rceil$，最壞需要 $\lceil\log_3 n\rceil$ 次。這不包含搬動或加總硬幣的成本；下方 Python 用 `sum` 模擬天平，實際執行時間是 $O(n)$，不能把每次 `sum` 當常數時間。
 
 #### 範例
 
@@ -52,19 +52,28 @@ import MedianOfMediansDiagram from '@/components/ArticleRelated/algorithm/Median
 
 ```python
 def find_fake_light(coins):
-    if len(coins) == 1:
-        return coins[0]
-    k = len(coins) // 3
-    left, right, rest = coins[:k], coins[k:2*k], coins[2*k:]
-    ls, rs = sum(left), sum(right)
-    if len(left) == len(right):
+    if not coins:
+        raise ValueError('coins must not be empty')
+
+    def search(indices):
+        if len(indices) == 1:
+            return indices[0]
+        k = (len(indices) + 1) // 3
+        left = indices[:k]
+        right = indices[k:2*k]
+        rest = indices[2*k:]
+        ls = sum(coins[i] for i in left)
+        rs = sum(coins[i] for i in right)
         if ls < rs:
-            return find_fake_light(left)
+            return search(left)
         if ls > rs:
-            return find_fake_light(right)
-        return find_fake_light(rest)
-    return find_fake_light(left + right + rest)
+            return search(right)
+        return search(rest)
+
+    return search(list(range(len(coins))))
 ```
+
+輸入是硬幣重量，假設恰有一枚較輕、其餘等重；回傳原陣列索引，不是重量。`k` 的取法也涵蓋只剩兩枚的情況，此時直接一枚對一枚。
 
 </details>
 
@@ -78,7 +87,7 @@ def find_fake_light(coins):
 
 用天平兩次找出偽幣並判斷輕重。
 
-資訊量檢查：$4 \times 2 = 8$ 種情況，$3^2 = 9$ 種結果路徑，$8 \leq 9$ 足夠。
+資訊量檢查：$4 \times 2 = 8$ 種情況，$3^2 = 9$ 種結果路徑，符合必要條件；是否真能解仍須給出合法的秤量策略，如下所示。
 
 **第一次秤量 $W_1$**：$\{A, B, C\}$ 對 $\{T_1, T_2, T_3\}$
 
@@ -96,8 +105,8 @@ def find_fake_light(coins):
 
 正確性驗證（8 種情況全覆蓋）：
 
-| 偽幣 | 方向 | $W_1$ | $W_2$ | 結果 | 判定 |
-| :---: | :---: | :---: | :---: | :---: | :--- |
+| 偽幣 | 方向 | $W_1$ | $W_2$ | 判定 |
+| :---: | :---: | :---: | :---: | :--- |
 | A | 重 | 左重 | A vs B 左重 | A 重 ✓ |
 | A | 輕 | 左輕 | A vs B 左輕 | A 輕 ✓ |
 | B | 重 | 左重 | A vs B 右重 | B 重 ✓ |
@@ -109,7 +118,7 @@ def find_fake_light(coins):
 
 關鍵技巧：用參考真幣壓住不確定性。第一次秤把「偽幣身分」與「偏向」耦合進同一個結果——平衡代表偽幣是 $D$（方向待查）、不平衡代表方向已定、只剩 3 枚嫌疑犯。第二次秤量剛好各處理 3 種結果，資訊量完美耗盡。
 
-若沒有參考真幣，4 枚未知方向的硬幣**無法**用兩次秤量同時找出偽幣與方向——任何第一次秤量都會把 8 種情況壓成 3 種結果，必有一支裝超過 3 種，第二次切不開。原始 12 硬幣問題（無參考真幣）需要 3 次秤量。
+若沒有參考真幣，4 枚未知方向的硬幣**無法**用兩次秤量同時找出偽幣與方向：第一次若秤 1 對 1，平衡支留下另外兩枚各輕或重的 4 種可能；若秤 2 對 2，任一不平衡支也有 4 種可能。第二次至多分成 3 種結果，無法分清這 4 種。原始 12 硬幣問題（無參考真幣）需要 3 次秤量。
 
 </details>
 
@@ -132,7 +141,9 @@ $k$ 次秤量可解的硬幣數：
 
 #### 演算法策略
 
-$n$ 個晶片，好晶片嚴格多於一半。兩個晶片互測時：兩好互報「好」、一好一壞時好的誠實、兩壞隨便回。我們兩兩配對，若兩邊都說對方好就保留其中一個（另一個丟掉）；只要有人說對方壞就兩個都丟。一輪下來，剩下的集合裡好晶片還是嚴格多數——遞迴做就行。
+$n$ 個晶片，好晶片嚴格多於一半。兩個晶片互測時：好晶片的回報誠實，壞晶片的回報任意。對**偶數個**晶片兩兩配對，若兩邊都說對方好就保留其中一個；只要有人說對方壞就兩個都丟，保留集合仍有嚴格好晶片多數。
+
+奇數個時不能直接把落單者保留。例如兩好一壞，兩好配對縮成一好，再留下壞晶片就失去嚴格多數。本篇先讓全體測試落單候選，以多數票判定：若好就直接回傳，若壞就丟掉它，再對剩下的偶數集合配對。
 
 關鍵觀察：都說對方好的兩片必為**同類**（同好或同壞），不可能一好一壞，因為好的會揭發壞的。
 
@@ -153,14 +164,23 @@ $n$ 個晶片，好晶片嚴格多於一半。兩個晶片互測時：兩好互�
    - (5,6) 有人說對方壞 → 全丟
    - (7,8) 互報好 → 保留 7，丟 8
 3. 剩下 $\{1, 3, 7\}$，好晶片仍嚴格多於一半。
-4. 繼續配對 (1,3)、7 落單 → 測試、再篩選，直到剩一片。
+4. 剩下 3 片時先讓全體測試 7。若多數回報好就回傳 7；否則丟掉 7，此時 1、3 都是好的，再做偶數配對。
 
 <details>
 <summary>Python 實作</summary>
 
 ```python
 def chip_test(chips, is_good):
+    if not chips:
+        raise ValueError('chips must not be empty')
+    chips = list(chips)
     while len(chips) > 1:
+        if len(chips) % 2 == 1:
+            candidate = chips[-1]
+            votes = sum(is_good(chip, candidate) for chip in chips)
+            if votes > len(chips) // 2:
+                return candidate
+            chips = chips[:-1]
         kept = []
         i = 0
         while i + 1 < len(chips):
@@ -170,8 +190,6 @@ def chip_test(chips, is_good):
             if a_says and b_says:
                 kept.append(a)
             i += 2
-        if len(chips) % 2 == 1:
-            kept.append(chips[-1])
         chips = kept
     return chips[0]
 ```
@@ -252,18 +270,18 @@ def binary_search(arr, target):
 
 選一個 pivot 把陣列切成「比 pivot 小」「等於 pivot」「比 pivot 大」三堆。看 $k$ 落在哪一堆，就只遞迴那一堆，另外兩堆整個丟掉。兩種變體差在 pivot 怎麼挑：
 
-- **BFPRT（Median of Medians）**：每 5 個一組取中位數，再對這些中位數遞迴求中位數當 pivot。稍慢但保證每輪砍掉至少 $3n/10$，最差還是 $O(n)$。
+- **BFPRT（Median of Medians）**：每 5 個一組取中位數，再對這些中位數遞迴求中位數當 pivot。保證每輪排除至少 $3n/10 - O(1)$ 個，最差仍是 $O(n)$；常數項來自不滿 5 個的一組與取整。
 - **Randomized Select**：隨手抽一個當 pivot。期望 $O(n)$、運氣差時會退化成 $O(n^2)$（機率極低）。
 
 #### 複雜度
 
-- **BFPRT**：$T(n) = T(n/5) + T(7n/10) + O(n) = O(n)$。
+- **BFPRT**：$T(n) \leq T(\lceil n/5\rceil) + T(7n/10 + O(1)) + O(n) = O(n)$。
   - $T(n/5)$：對 $n/5$ 個中位數遞迴求 MoM
-  - $T(7n/10)$：每輪保證砍掉 $\geq 3n/10$，剩下 $\leq 7n/10$
+  - $T(7n/10 + O(1))$：扣除取整與末組後，遞迴分支至多剩這個規模
   - $O(n)$：分組、取中位數、分堆都是線性
 - **Randomized Select**：期望 $O(n)$、最差 $O(n^2)$。
 
-為什麼每組 5 個？組大小 3 時 $1/3 + 2/3 = 1$ 不收斂；組大小 5 是「最小可線性」的選擇；組大小 7 常數更大不划算。
+為什麼每組 5 個？這個基本分析中，3 個一組只得到 $T(n) \leq T(n/3) + T(2n/3) + O(n)$，無法由它證出線性上界；5 個一組的子問題比例和小於 1，便能證出 $O(n)$。這不是宣稱所有改良的三分組策略都不可能線性；7 個一組也能線性，實際常數仍取決於實作。
 
 #### 範例
 
@@ -320,6 +338,8 @@ MoM = **8** → pivot。
 
 ```python
 def median_of_medians(arr, k):
+    if not 1 <= k <= len(arr):
+        raise ValueError('k must be between 1 and len(arr)')
     if len(arr) <= 5:
         return sorted(arr)[k - 1]
     groups = [sorted(arr[i:i + 5]) for i in range(0, len(arr), 5)]
@@ -338,6 +358,8 @@ def median_of_medians(arr, k):
 import random
 
 def randomized_select(arr, k):
+    if not 1 <= k <= len(arr):
+        raise ValueError('k must be between 1 and len(arr)')
     if len(arr) == 1:
         return arr[0]
     pivot = random.choice(arr)
@@ -415,22 +437,22 @@ $n$ 個物品、大小 $s_i \leq C$，箱容量 $C$，目標用最少箱子裝�
 - **Best Fit (BF)**：選剩餘空間最少且還裝得下的箱子。
 - **First Fit Decreasing (FFD)**：先把物品由大到小排序，再跑 FF。
 
-直覺：先放大的物品、小的用來填縫，所以 FFD 最好。要精確最佳解時用 Branch and Bound——對決策樹上下界不可能比目前最佳解好的子樹整個剪掉，這就是淘汰思想。
+直覺：先放大的物品、小的用來填縫，FFD 有較好的最壞情況保證，但不代表每筆資料都比其他策略好。要精確最佳解可用 Branch and Bound——以合法上下界剪掉不可能改善目前解的子樹；它不保證每輪淘汰固定比例，最壞仍可能是指數時間，與前面的 prune-and-search 線性分析不同。
 
 #### 複雜度
 
-- NF / FF / BF：$O(n \log n)$（找可用箱子要 $O(\log n)$，總共 $n$ 個物品）
-- FFD：$O(n \log n)$（排序主導）
+- NF：只看目前箱子，$O(n)$
+- 下方逐箱掃描的 FF / FFD：最壞 $O(n^2)$；FF 用按箱序的區間樹、BF 用剩餘容量的平衡搜尋樹，才可將查找降至 $O(\log n)$，總時間 $O(n \log n)$
 
 近似比（OPT 為最佳解箱子數）：
 
-| 策略 | 近似比 |
+| 策略 | 使用箱數 $A$ 的保證 |
 | :--- | :--- |
 | Next Fit | $A \leq 2 \cdot \text{OPT}$ |
 | First Fit | $A \leq 1.7 \cdot \text{OPT} + 2$ |
 | First Fit Decreasing | $A \leq \tfrac{11}{9} \cdot \text{OPT} + \tfrac{6}{9}$ |
 
-WG（Wasted Gap）= 箱子關閉時的剩餘容量；WE（Wasted Element）= 被所有現有箱子拒絕而被迫開新箱的物品。WG 累積越少、WE 越少發生，近似比就越好。
+下表記錄剩餘容量與開新箱的時機。這些數字可以幫助追蹤範例，但近似保證須對所有合法輸入證明，不能由單次執行的空隙大小推出。
 
 #### 範例
 
@@ -438,7 +460,7 @@ WG（Wasted Gap）= 箱子關閉時的剩餘容量；WE（Wasted Element）= 被
 
 **步驟**：排序後由大到小 $[0.7, 0.5, 0.5, 0.4, 0.3, 0.2, 0.2, 0.1]$。
 
-| 步 | 物品 | 動作 | 箱況（剩餘容量） | WE |
+| 步 | 物品 | 動作 | 箱況（剩餘容量） | 額外開箱 |
 | :---: | :---: | :--- | :--- | :---: |
 | 1 | 0.7 | 開 Bin1 | Bin1: 0.3 | — |
 | 2 | 0.5 | Bin1(0.3) 塞不下 → 開 Bin2 | Bin1: 0.3, Bin2: 0.5 | +1 |
@@ -449,16 +471,16 @@ WG（Wasted Gap）= 箱子關閉時的剩餘容量；WE（Wasted Element）= 被
 | 7 | 0.2 | Bin3 可塞 | Bin3: 0.2 | — |
 | 8 | 0.1 | Bin3 可塞 | Bin3: 0.1 | — |
 
-最終：3 個箱子、總 WG = 0.1。物品總大小 2.9、下界 $\lceil 2.9/1 \rceil = 3$ → FFD 打到最佳。
+最終：3 個箱子、總剩餘容量 0.1。物品總大小 2.9、下界 $\lceil 2.9/1 \rceil = 3$ → FFD 打到最佳。
 
 <details>
 <summary>Python 實作（NF、FF、FFD）</summary>
 
 ```python
 def next_fit(items, C):
-    bins = [0]
+    bins = []
     for x in items:
-        if bins[-1] + x > C:
+        if not bins or bins[-1] + x > C:
             bins.append(x)
         else:
             bins[-1] += x
@@ -490,11 +512,11 @@ def first_fit_decreasing(items, C):
 
 物品 $[0.5, 0.7, 0.5, 0.2, 0.4, 0.2, 0.3, 0.1]$、$C = 1.0$：
 
-- **NF**：0.5→Bin1（剩 0.5）；0.7→Bin1 塞不下開 Bin2（剩 0.3）；0.5→Bin2 塞不下開 Bin3（剩 0.5）；... 最終約 4~5 箱，浪費最多。
-- **FF**：不排序、照原順序從頭找可用箱。大致 3~4 箱。
+- **NF**：各箱已用容量為 $[0.5, 0.7, 0.7, 1.0]$，共 4 箱。
+- **FF**：不排序、照原順序從頭找可用箱，各箱已用容量為 $[1.0, 1.0, 0.9]$，共 3 箱。
 - **FFD**：如上例，3 箱，最佳。
 
-結論：FFD 在這組資料上是最佳，也符合近似比最緊的直覺。
+這組資料中 FF 和 FFD 都達到 3 箱的最佳解，NF 則用了 4 箱。手算採精確小數；程式驗證可用整數十分之一單位，避免浮點邊界影響放置判斷。
 
 </details>
 
@@ -507,7 +529,7 @@ def first_fit_decreasing(items, C):
 | 二元搜尋 | 列 `left / right / mid / a[mid] / 動作` 表；注意 0-/1-indexed、$\lfloor\rfloor$ vs $\lceil\rceil$、找不到時 `left > right` |
 | BFPRT | 5 個一組求中位數 → MoM → 分堆 → 比較 $k$ 與 $\lvert L\rvert, \lvert L\rvert+\lvert E\rvert$ 決定遞迴哪堆 |
 | Randomized Select | 期望 $O(n)$、最差 $O(n^2)$；跟 BFPRT 的差異要會比 |
-| Bin Packing | 背 FFD 近似比 $\leq \tfrac{11}{9} \cdot \text{OPT} + \tfrac{6}{9}$；會手算 WG、WE、NF/FF/BF/FFD 比較 |
+| Bin Packing | 區分箱數保證與近似比；會追蹤剩餘容量、NF/FF/BF/FFD 與實作成本 |
 | 晶片測試 | 兩兩互測、成對淘汰；$T(n) = T(n/2) + O(n) = O(n)$ |
 
 :::tip
@@ -520,3 +542,7 @@ def first_fit_decreasing(items, C):
 
 1. 存在低成本的比較或測試，能判定「哪部分必不含答案」
 2. 每輪能淘汰固定比例（$1/c$），整體複雜度 $T(n) = T(n/c) + O(f(n))$
+
+晶片範例的 `is_good(a, b)` 表示「a 對 b 的回報」，不是直接偷看 b 的真實狀態；自測也遵循好晶片誠實、壞晶片任意的模型。選擇問題的手算為展示分堆會繼續展開，小於等於 5 個時 Python 實作則直接排序回傳。
+
+延伸核對：[MIT 6.046 Median Finding](https://ocw.mit.edu/courses/6-046j-design-and-analysis-of-algorithms-spring-2015/7463c413c944ed72b46a3c3d02b49448_MIT6_046JS15_lec02.pdf)、[Johnson 裝箱演算法論文](https://www.sciencedirect.com/science/article/pii/S0022000074800267)、[Dósa：FFD 的緊界](https://doi.org/10.1007/978-3-540-74450-4_1)。

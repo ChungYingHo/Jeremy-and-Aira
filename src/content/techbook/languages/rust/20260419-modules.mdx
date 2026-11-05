@@ -1,9 +1,9 @@
 ---
 title: "[Rust] 模組系統"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["Rust", "module", "crate", "package", "use", "pub"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 7
 ---
 
@@ -20,14 +20,7 @@ sameDateSort: 7
 | **Crate** | 編譯單位，產出一個 library 或一個 binary |
 | **Module** | 在 crate 內組織程式碼的單位，控制可見性與命名空間 |
 
-```
-Workspace
-└── Package（Cargo.toml）
-    ├── Crate（lib.rs，library）
-    │   ├── Module（mod foo）
-    │   └── Module（mod bar）
-    └── Crate（main.rs，binary）
-```
+例如一個 workspace 包含多個 package；其中某個 package 可以同時有 `src/lib.rs` 與 `src/main.rs` 兩個 crate，各自在內部宣告模組。
 
 ## Crate root
 
@@ -52,13 +45,7 @@ Rust 2018 edition 起**優先用 `src/foo.rs`**（平行檔案）。`src/foo/mod
 
 範例專案結構：
 
-```
-src/
-├── main.rs
-├── garden.rs
-└── garden/
-    └── vegetables.rs
-```
+範例檔案是 `src/main.rs`、`src/garden.rs` 與 `src/garden/vegetables.rs`。
 
 `src/main.rs`：
 
@@ -95,7 +82,7 @@ mod garden {
 
 ## pub：可見性
 
-預設**所有東西都是私有的**——模組、函式、struct、struct 欄位、enum 變體通通是。
+一般模組項目預設私有，例如模組、函式、struct 與其欄位；但 enum 的變體跟隨 enum 的可見性，trait 的 associated items 也有特別規則，不能一概說全部私有。
 
 ```rust
 mod kitchen {
@@ -118,7 +105,7 @@ fn main() {
 pub fn foo() {}              // 對所有人公開
 pub(crate) fn bar() {}       // 整個 crate 內可見，但不對外
 pub(super) fn baz() {}       // 父模組可見
-pub(in crate::path) fn x() {} // 限定路徑可見
+pub(in crate::path) fn x() {} // 示意：path 必須是此項目所在的祖先模組
 ```
 
 ### struct 與 enum 的 pub 差異
@@ -218,7 +205,7 @@ pub fn eat_at_restaurant() {
 use std::collections::HashMap;
 use std::io::Read;
 
-let m = HashMap::new();
+let m: HashMap<String, i32> = HashMap::new();
 ```
 
 ### as：避免衝突
@@ -274,8 +261,10 @@ rand = "0.8"
 
 ```bash
 cargo add serde --features derive
-cargo add rand
+cargo add rand@0.8
 ```
+
+這裡刻意沿用 rand0.8 API；不帶版本的 cargo add 可能選到新版，不能直接混用下面的 thread_rng／gen_range 範例。
 
 程式裡：
 
@@ -302,21 +291,15 @@ use std::io::{Read, Write};
 
 ## 一個合理的 library crate 結構
 
-```
-my_lib/
-├── Cargo.toml
-└── src/
-    ├── lib.rs              // 對外 API（用 pub use 集中暴露）
-    ├── error.rs            // 錯誤型別
-    ├── client.rs           // HTTP client
-    ├── client/
-    │   ├── auth.rs
-    │   └── retry.rs
-    └── models/
-        ├── mod.rs          // 或 src/models.rs
-        ├── user.rs
-        └── post.rs
-```
+| 專案相對路徑 | 用途 |
+| :--- | :--- |
+| `Cargo.toml` | 套件描述 |
+| `src/lib.rs` | 對外 API 與 pub use |
+| `src/error.rs` | 錯誤型別 |
+| `src/client.rs` | Client 與子模組宣告 |
+| `src/client/auth.rs`、`src/client/retry.rs` | Client 子模組 |
+| `src/models/mod.rs`（或 `src/models.rs`） | Models 模組宣告與重新匯出 |
+| `src/models/user.rs`、`src/models/post.rs` | 資料型別 |
 
 `src/lib.rs`：
 
@@ -341,13 +324,11 @@ use my_lib::{Client, User, Result};
 
 `Cargo.toml` 裡 package 名是 `my_app`：
 
-```
-src/
-├── lib.rs        // library crate（package 同名 my_app）
-├── main.rs       // binary crate
-└── bin/
-    └── tool.rs   // 額外 binary：my_app-tool
-```
+| 路徑 | 預設 target 名稱 |
+| :--- | :--- |
+| `src/lib.rs` | library `my_app` |
+| `src/main.rs` | binary `my_app` |
+| `src/bin/tool.rs` | 額外 binary `tool`（不會自動加 package 前綴） |
 
 `src/main.rs` 用 library 的東西：
 
@@ -363,7 +344,7 @@ fn main() {
 跑時：
 
 ```bash
-cargo run                     # 跑 src/main.rs
+cargo run --bin my_app        # 多個 binary 時明確指定 src/main.rs
 cargo run --bin tool          # 跑 src/bin/tool.rs
 ```
 
@@ -377,3 +358,9 @@ cargo run --bin tool          # 跑 src/bin/tool.rs
 | `module ... does not exist` | `mod foo;` 但找不到 `src/foo.rs` |
 
 模組系統打通後，最後一篇 trait 把「行為」這個維度補進來——也就是 Rust 怎麼做多型、抽象與泛型約束。
+
+## 參考文件
+
+- [Rust Reference：Visibility and Privacy](https://doc.rust-lang.org/reference/visibility-and-privacy.html)
+- [Cargo：Targets](https://doc.rust-lang.org/cargo/reference/cargo-targets.html)
+- [rand0.8.5：Rng](https://docs.rs/rand/0.8.5/rand/trait.Rng.html)

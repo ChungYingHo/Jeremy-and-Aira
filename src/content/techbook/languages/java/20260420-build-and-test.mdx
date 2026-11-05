@@ -1,9 +1,9 @@
 ---
 title: "[Java] 建置工具與測試"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-20"
 tags: ["Java", "Maven", "Gradle", "JUnit", "test"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 8
 ---
 
@@ -18,23 +18,16 @@ Java 系列收尾。語法、OOP、集合、stream 都寫完之後，要讓專�
 | 速度 | 普通 | 快（增量編譯、daemon） |
 | 適合 | 標準專案、團隊熟悉度高 | 大型 / Android / 自定建置流程 |
 
-新專案的話，Spring Boot 系多用 Maven、Android / Kotlin 系多用 Gradle。會其中一個，另一個的 README 看得懂就行。
+Spring Boot 專案兩者都能用，Android 專案則主要使用 Gradle。先跟團隊或既有專案的選擇走；會其中一個，再讀另一個的設定檔就比較有方向。
 
 ## Maven 標準目錄
 
-```
-my-app/
-├── pom.xml
-└── src/
-    ├── main/
-    │   ├── java/
-    │   │   └── com/example/App.java
-    │   └── resources/
-    │       └── application.properties
-    └── test/
-        └── java/
-            └── com/example/AppTest.java
-```
+| 路徑 | 用途 |
+| :--- | :--- |
+| `pom.xml` | 專案與依賴設定 |
+| `src/main/java/com/example/App.java` | 應用程式 |
+| `src/main/resources/application.properties` | 隨應用程式打包的資源 |
+| `src/test/java/com/example/AppTest.java` | 測試 |
 
 `src/main/java` 放程式、`src/main/resources` 放 properties 等資源、`src/test/java` 放測試。約定優於設定。
 
@@ -51,8 +44,7 @@ my-app/
     <packaging>jar</packaging>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -64,10 +56,27 @@ my-app/
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+            </plugin>
+        </plugins>
+    </build>
 </project>
 ```
 
 `groupId`（組織）、`artifactId`（專案）、`version` 三項組成一個 GAV 座標，Maven Central 上每個 library 都有自己的 GAV。
+
+這裡固定使用 Java 21 與 JUnit 5.10.0，不代表它們是最新版。`release` 同時限制語法、class 檔版本與可用的 Java API；明確指定 Surefire 版本，則避免舊版 Maven 預設測試插件沒有發現 Jupiter 測試，卻讓人以為測試已跑過。
 
 ## Maven 常用指令
 
@@ -116,7 +125,9 @@ repositories {
 }
 
 dependencies {
-    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+    testImplementation(platform("org.junit:junit-bom:5.10.0"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.test {
@@ -138,11 +149,11 @@ application {
 ./gradlew dependencies   # 依賴樹
 ```
 
-`./gradlew` 是 Gradle Wrapper，跟著倉庫一起 commit，所有人就會用同一版 Gradle，連事先安裝都不用。
+`./gradlew` 是 Gradle Wrapper，連同 wrapper 設定一起 commit，讓大家使用專案指定的 Gradle 版本；Windows 用 `gradlew.bat`。第一次執行會下載該版本的 Gradle，仍需網路與合適的 JDK。這份範例要求 JDK 21；Wrapper 本身不會替你安裝 JDK，toolchain 的自動下載需要另外設定。
 
 ## JUnit 5 基礎
 
-JUnit 5（Jupiter）是現代標準。不少舊專案還在用 JUnit 4，語法不一樣，要分清楚。
+以下沿用 JUnit 5 / Jupiter 的 API。不少舊專案還在用 JUnit 4，語法不一樣，要分清楚。
 
 ```java
 import org.junit.jupiter.api.*;
@@ -173,18 +184,22 @@ class CalculatorTest {
 
     @Test
     @Disabled("修好之後再開")
-    void notReadyYet() { ... }
+    void notReadyYet() { /* 待實作 */ }
 }
 ```
+
+這裡假設已有 `Calculator`，提供整數 `add` 與 `div` 方法；其他片段中的 `...` 同樣表示省略的專案程式碼，不是可直接編譯的 Java 語法。
 
 ## 生命週期 annotation
 
 | | 何時 |
 | :--- | :--- |
-| `@BeforeAll` | 整個 class 跑前一次（必須 `static`） |
+| `@BeforeAll` | 整個 class 跑前一次（預設生命週期下須 `static`） |
 | `@BeforeEach` | 每個 `@Test` 前 |
 | `@AfterEach` | 每個 `@Test` 後 |
-| `@AfterAll` | 整個 class 跑完一次（必須 `static`） |
+| `@AfterAll` | 整個 class 跑完一次（預設生命週期下須 `static`） |
+
+若類別標註 `@TestInstance(TestInstance.Lifecycle.PER_CLASS)`，JUnit 會共用該類別的測試實例，`@BeforeAll`／`@AfterAll` 就能使用非 `static` 方法；同時也要留意測試之間共享的可變狀態。
 
 ## assertion
 
@@ -211,6 +226,8 @@ assertAll(
 ```
 
 ## 參數化測試
+
+除了前面的 Jupiter API，這些片段還需要 `org.junit.jupiter.params.ParameterizedTest`、`org.junit.jupiter.params.provider.*` 與 `java.util.stream.Stream` 的 import。
 
 ```java
 @ParameterizedTest
@@ -241,7 +258,7 @@ static Stream<Arguments> provideCases() {
 }
 ```
 
-`Arguments.of(arg1, arg2, ...)` 的參數順序對應 test method 的參數順序——`fromMethod(int input, String expected)` 對上 `Arguments.of(1, "one")`。JUnit 在 runtime 用反射按順序塞進去，型別不符會丟 `ParameterResolutionException`。
+`Arguments.of(arg1, arg2, ...)` 的參數順序對應 test method 的參數順序——`fromMethod(int input, String expected)` 對上 `Arguments.of(1, "one")`。JUnit 會依序解析、必要時轉換參數；無法轉成測試方法要求的型別時，測試會在參數解析階段失敗。
 
 ## 巢狀測試
 
@@ -321,3 +338,10 @@ IDE（IntelliJ / VS Code）點綠色三角就能跑單一測試。CI 上用 `mvn
 - 不要測 framework 的事，測自己寫的邏輯
 
 Java 系列到此結束——從介面與抽象、例外、集合、泛型、enum / String、檔案 IO、Lambda / Stream，到 Maven / Gradle / JUnit / Mockito，寫真實 Java 專案會碰到的基礎都串完了。下一階段可以挑方向深入：Spring Boot（Web / 資料）、Android，或更貼近 JVM 的 Kotlin / Scala——哪條路都通。
+
+## 參考
+
+- [Maven：指定 Java 目標版本](https://maven.apache.org/guides/mini/guide-java-target.html)
+- [Surefire：執行 JUnit Platform 測試](https://maven.apache.org/surefire/maven-surefire-plugin/examples/junit-platform.html)
+- [JUnit 5.10：生命週期與建置工具設定](https://docs.junit.org/5.10.0/user-guide/)
+- [Gradle：Java 測試設定](https://docs.gradle.org/current/userguide/java_testing.html)

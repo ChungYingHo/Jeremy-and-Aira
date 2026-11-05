@@ -1,9 +1,9 @@
 ---
 title: "[Java] 介面與抽象類別"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-20"
 tags: ["Java", "interface", "abstract", "default method"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 1
 ---
 
@@ -84,7 +84,7 @@ new User().greet();    // "Hi, Jeremy"
 
 如果兩個介面有同名的 default method，一個 class 同時 implement 兩者會編譯錯誤（diamond problem）。解法是自己覆寫該方法，用 `Interface.super.method()` 指明要哪一個，例如 `Walker.super.move()`。
 
-## static method 與 private method（Java 9+）
+## static method（Java 8+）與 private method（Java 9+）
 
 ```java
 interface MathUtil {
@@ -117,7 +117,7 @@ interface Limits {
 | 多重支援 | 單一繼承 | 多重實作 |
 | 欄位 | 可有狀態（instance field） | 只能 `static final` 常數 |
 | 建構子 | 有 | 無 |
-| 方法可見性 | 任意 | 只能 `public`（含 `default`） |
+| 方法可見性 | public／protected／package-private／private；抽象方法不能 private | public；Java 9+ 另可有 private 輔助方法 |
 | 適合場景 | 共用狀態 + 共用實作 | 純行為契約、跨類型共用能力 |
 
 實務取捨：能用 interface 解的都優先 interface，需要共用狀態或建構邏輯才動 abstract class。
@@ -152,11 +152,11 @@ final class Square implements Shape {}
 non-sealed class Triangle implements Shape {}
 ```
 
-子型別必須是 `final`、`sealed` 或 `non-sealed` 三選一。配合 `switch` pattern matching 寫窮舉處理特別清楚。
+直接子類別必須 final、sealed 或 non-sealed；record 隱含 final，enum 也有語言規定的隱含修飾。直接子介面則用 sealed 或 non-sealed。配合 Java 21 的 switch pattern matching 可以做窮舉處理。各區塊的 Circle 是獨立範例，不能原樣合併成同名類別。
 
 ## record 與 interface
 
-`record` 是 Java 16+ 的「不可變資料類別」，可以實作介面：
+`record` 是 Java 16+ 的精簡資料載體，可以實作介面；component 欄位為 final，但持有的 List 等可變物件仍可能改變，不保證深層不可變：
 
 ```java
 interface HasArea {
@@ -184,3 +184,8 @@ class Dog extends Animal {
 漏寫 `@Override` 然後拼錯，會變成「定義了一個新方法」，bug 很難發現。
 
 下一篇接 Java 另一個面向程式設計的核心——例外處理：checked vs unchecked、try-with-resources、何時該包裝何時該重拋。
+
+## 參考文件
+
+- [JLS 21：Interfaces](https://docs.oracle.com/javase/specs/jls/se21/html/jls-9.html)
+- [Java 21：Record Classes](https://docs.oracle.com/en/java/javase/21/language/records.html)

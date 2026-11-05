@@ -1,9 +1,9 @@
 ---
 title: "[Python] 物件導向"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["Python", "class", "inheritance", "dunder", "dataclass"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 4
 ---
 
@@ -13,7 +13,7 @@ sameDateSort: 4
 
 ```python
 class User:
-    def __init__(self, name, age):    # constructor
+    def __init__(self, name, age):    # 初始化方法
         self.name = name              # instance attribute
         self.age = age
 
@@ -116,7 +116,7 @@ a._A__secret           # ✅ 仍然拿得到
 ```python
 class Circle:
     def __init__(self, r):
-        self._r = r
+        self.radius = r    # 初始化也走驗證 setter
 
     @property
     def area(self):
@@ -241,23 +241,27 @@ class Vec:
         return f'Vec({self.x}, {self.y})'
 
     def __add__(self, other):
+        if not isinstance(other, Vec):
+            return NotImplemented
         return Vec(self.x + other.x, self.y + other.y)
 
     def __eq__(self, other):
+        if not isinstance(other, Vec):
+            return NotImplemented
         return self.x == other.x and self.y == other.y
 
-    def __hash__(self):
-        return hash((self.x, self.y))
+    __hash__ = None    # 座標可變，不適合拿來當 hash key
 
 a = Vec(1, 2)
 b = Vec(3, 4)
 print(a + b)            # Vec(4, 6)
-{a, Vec(1, 2)}          # {Vec(1, 2)}（去重）
+a == Vec(1, 2)         # True
+# {a}                  # TypeError：刻意讓可變 Vec 不可雜湊
 ```
 
-實作 `__eq__` 通常要一起實作 `__hash__`，否則 instance 無法放進 set / dict key。
+實作 `__eq__` 之後，要決定物件是否適合雜湊。這裡 Vec 的座標可變，保留不可雜湊才安全；否則放進 set 後修改座標會破壞查找。
 
-為什麼要一起實作？Python 規定「相等的物件必須有相同 hash」（反之不需要）。若只覆寫 `__eq__` 不管 `__hash__`，Python 會自動把 `__hash__` 設為 `None`——instance 不能放進 `set`、不能當 `dict` 的 key。想保持 hashable 就要兩個都寫。
+為什麼要一起實作？Python 規定「相等的物件必須有相同 hash」（反之不需要）。若只覆寫 `__eq__` 不管 `__hash__`，Python 會自動把 `__hash__` 設為 `None`——instance 不能放進 `set`、不能當 `dict` 的 key。只有相等性所依賴的狀態能保持穩定，才適合另提供一致的 `__hash__`；不應為了能放進 set 就替可變物件硬加。
 
 ## dataclass：少寫樣板
 
@@ -283,8 +287,8 @@ class Config:
     port: int = 8080
 ```
 
-- `frozen=True`：immutable，賦值會丟錯
-- `slots=True`：用 `__slots__`，省記憶體、限制不能新增未宣告屬性
+- `frozen=True`：阻擋一般欄位賦值，但不是深層不可變，欄位持有的 list 仍可變
+- `slots=True`（Python 3.10+）：產生 `__slots__`；沒有繼承來的 `__dict__` 時，可省記憶體並限制動態新增屬性
 - 也支援 `field(default_factory=list)` 處理可變預設值
 
 ## abstract base class
@@ -314,3 +318,8 @@ m = MemoryStorage() # ✅
 繼承後沒實作所有 `@abstractmethod` 就無法實例化。
 
 下一篇進模組與套件，把這篇散在單檔的 class 怎麼跨多檔組織、怎麼包成可發布的 package 講清楚。
+
+## 參考文件
+
+- [Python 3.13：Data Model（hash 與可變物件）](https://docs.python.org/3.13/reference/datamodel.html)
+- [Python 3.13：dataclasses](https://docs.python.org/3.13/library/dataclasses.html)

@@ -39,6 +39,7 @@ const changelog = (entry.data.changelog || [])
   type="article"
   publishedTime={publishDate.toISOString()}
   author={authorData.name}
+  authors={authorData.members}
   tags={tags}
 >
 
@@ -63,11 +64,11 @@ const changelog = (entry.data.changelog || [])
           title="關於作者"
         >
           {authorData.coAuthorImgs ? (
-            <div class="flex items-center -space-x-3">
+            <div class="flex shrink-0 items-center -space-x-3">
               {authorData.coAuthorImgs.map((img, i) => (
                 <img
                   src={img}
-                  alt={authorData.name}
+                  alt={authorData.members?.[i]?.name ?? authorData.name}
                   class="post-avatar"
                   style={`z-index: ${authorData.coAuthorImgs!.length - i}`}
                 />
@@ -451,10 +452,10 @@ initArticlePage()
   .post-title { color: var(--color-ink); font-family: var(--font-heading); font-size: clamp(2rem, 3.5vw, 3rem); font-weight: 500; line-height: 1.45; letter-spacing: -0.02em; text-wrap: balance; overflow-wrap: anywhere; margin: 0 0 1.75rem; }
   .post-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 1.75rem; color: var(--color-ink-soft); font-size: 0.8125rem; font-weight: 400; }
   .post-meta time { font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
-  .post-author { display: inline-flex; gap: 0.75rem; align-items: center; }
+  .post-author { display: inline-flex; gap: 0.75rem; align-items: center; min-width: 0; max-width: 100%; }
   .post-author:hover { color: var(--color-moss); }
   .post-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-cream); box-shadow: none; }
-  .post-author-name { font-size: 0.8125rem; font-weight: 400; }
+  .post-author-name { min-width: 0; overflow-wrap: anywhere; font-size: 0.8125rem; font-weight: 400; }
   .post-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; color: var(--color-ink-soft); font-size: 0.75rem; }
   .post-tags li:not(:last-child)::after { content: '·'; padding-left: 0.5rem; color: var(--color-ink-faint); }
   .post-reading-layout { position: relative; }

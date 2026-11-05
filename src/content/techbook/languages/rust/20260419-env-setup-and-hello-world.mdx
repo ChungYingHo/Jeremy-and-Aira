@@ -1,9 +1,9 @@
 ---
 title: "[Rust] 環境建置"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["Rust", "rustup", "cargo", "Hello World"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 1
 ---
 
@@ -33,16 +33,16 @@ Rust 不像直譯語言裝個 runtime 就能開跑，它是「編譯器 + 套件
 
 ```powershell
 rustc --version
-# rustc 1.86.0 (xxxxxxxxx 2026-xx-xx)
+# rustc <已安裝版本>（實際輸出依工具鏈而定）
 
 cargo --version
-# cargo 1.86.0 (xxxxxxxxx 2026-xx-xx)
+# cargo <已安裝版本>（版本號不必與 rustc 的日期資訊相同）
 ```
 
 兩個指令都吐版本號就 OK。
 
 :::tip
-日後升級用 `rustup update`；要在 stable / nightly 之間切就 `rustup default stable` 或 `rustup default nightly`。Rust 採滾動發行，每六週一個 stable，跟著升不會出事。
+日後升級用 `rustup update`；要在 stable / nightly 之間切就 `rustup default stable` 或 `rustup default nightly`。Rust 通常每六週發布 stable；升級仍應跑專案測試並確認相依套件。本文 Cargo.toml 用 edition2024，至少需要 Rust1.85；edition 與工具鏈版本是兩件事。
 :::
 
 ## VS Code 設定
@@ -67,13 +67,11 @@ cd hello_rust
 
 這會生出一個標準骨架：
 
-```
-hello_rust/
-├── Cargo.toml      # 專案描述（角色類似 package.json）
-├── .gitignore
-└── src/
-    └── main.rs     # 程式進入點
-```
+| 專案相對路徑 | 用途 |
+| :--- | :--- |
+| `Cargo.toml` | 專案與相依套件描述 |
+| `.gitignore` | Git 忽略規則（依 VCS 設定產生） |
+| `src/main.rs` | 程式進入點 |
 
 `Cargo.toml`：
 
@@ -137,7 +135,7 @@ fn main() {
     let age = 30;
     println!("{} is {} years old", name, age);
 
-    // 具名插值（Rust 2021+）
+    // 直接捕捉變數名稱（Rust1.58+，不是 edition2021 限定）
     println!("{name} is {age} years old");
 
     // 印出除錯格式（後面會用來看 Vec、struct 等）
@@ -167,3 +165,9 @@ cargo doc --open           # 產生並打開文件
 ```
 
 裝完工具鏈、跑得起 `cargo run`、看得懂 `Cargo.toml` 與 `main.rs` 的角色就算就緒。下一篇進變數、可變性與基本型別，這裡的 `cargo run` 會從頭用到尾。
+
+## 參考文件
+
+- [Rust：Installation](https://doc.rust-lang.org/book/ch01-01-installation.html)
+- [Rust：Edition2024](https://doc.rust-lang.org/edition-guide/rust-2024/index.html)
+- [Rust1.58：Captured identifiers](https://blog.rust-lang.org/2022/01/13/Rust-1.58.0/)

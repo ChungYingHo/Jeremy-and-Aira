@@ -1,9 +1,9 @@
 ---
 title: "[Docker] 容器化技術"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-03-22"
 tags: [env, docker, container]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", "2026-11-05"]
 sameDateSort: 0
 ---
 
@@ -11,7 +11,7 @@ sameDateSort: 0
 
 「我電腦上跑得好好的，怎麼上了 server 就掛了？」——作業系統不同、語言版本不同、系統函式庫不同，傳統部署的災難大多從這裡來。
 
-**容器（Container）** 的解法是：把應用程式和它需要的一切（執行環境、套件、設定檔）打包成一個獨立單元。不管搬到哪台機器，跑起來的行為都一樣。
+**容器（Container）** 把應用程式、執行環境與套件封裝，減少環境差異；但仍須有相容的 OS 核心與 CPU 架構，外部服務、掛載檔案及設定也會影響行為，並非任意機器都完全一樣。
 
 而且這個打包是輕量級的隔離——只帶程式執行需要的東西，不用模擬一整個作業系統。
 
@@ -19,12 +19,11 @@ sameDateSort: 0
 
 | | 虛擬機 (VM) | 容器 (Container) |
 | :--- | :--- | :--- |
-| 隔離層級 | 完整模擬硬體，跑獨立的 OS | 共用 Host OS 核心，只隔離應用程式 |
-| 啟動速度 | 分鐘級 | 秒級至毫秒級 |
-| 大小 | GB 等級 | MB 等級 |
-| 用途 | 需要完全隔離的環境 | 應用程式部署與開發環境 |
+| 隔離層級 | 虛擬化硬體，每台 VM 有獨立核心 | 一般容器共用執行它的核心，以 OS 機制隔離程序 |
+| 啟動與大小 | 通常較多資源，依 OS／映像而異 | 通常較輕量，映像也可能達 GB；首次還需下載 |
+| 用途 | 需要獨立 OS／核心的工作負載 | 應用程式部署與開發環境 |
 
-差別的根源就一句話：虛擬機模擬完整硬體、跑一個獨立 OS；容器直接共用 Host OS 的核心，只隔離應用層。所以容器才能那麼小、那麼快。
+差別的核心是 VM 各有客體 OS 核心，容器通常共用核心；VM 常透過硬體輔助虛擬化，並非每條指令都模擬。Windows／macOS 上的 Docker Desktop 執行 Linux 容器時，通常由 Linux VM 提供該核心。參見 [Docker 容器概念](https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-a-container/)。
 
 ## Docker 的核心概念
 
@@ -40,25 +39,29 @@ Container 是 Image 的執行實例。同一個 Image 可以同時跑出多個 C
 
 ### Dockerfile
 
-描述「怎麼建構這個 Image」的腳本，每一行指令都會在 Image 上疊一層：
+描述「怎麼建構這個 Image」的腳本；`RUN`、`COPY` 等建立檔案系統層，`CMD` 等則設定映像中繼資料，不是每行都新增檔案層。以下假設專案有 `package-lock.json` 與 `index.js`：
 
 ```dockerfile
-# 從官方 Node.js 20 image 開始
-FROM node:20-alpine
+# 使用仍受支援的 Node.js 24 系列
+FROM node:24-alpine
 
 # 設定工作目錄
 WORKDIR /app
 
-# 複製 package.json 並安裝依賴
-COPY package.json .
-RUN npm install
+# 先複製套件清單與鎖定檔
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 
 # 複製其餘程式碼
 COPY . .
 
+USER node
+
 # 啟動指令
 CMD ["node", "index.js"]
 ```
+
+`node:20` 已於 2026 年 4 月結束支援，本例改用 Node.js 24；實際版本依[官方支援週期](https://nodejs.org/en/about/previous-releases)選擇。`npm ci --omit=dev` 適合不需額外編譯的執行範例；需建置的專案應另設建置階段。請在 `.dockerignore` 排除 `node_modules`、`.git` 及本機機密設定，避免 `COPY . .` 覆蓋已安裝套件或把私有檔案包進映像。
 
 ### Docker Compose
 
@@ -74,13 +77,15 @@ services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_PASSWORD: secret
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
     volumes:
       - db_data:/var/lib/postgresql/data
 
 volumes:
   db_data:
 ```
+
+這是本機示範：先提供 `POSTGRES_PASSWORD` 環境變數再執行 `docker compose up`。nginx 顯示預設頁，不會自動連到資料庫；具名 volume 保存 PostgreSQL 資料，執行 `docker compose down -v` 則會刪除它。正式環境的密碼供應與備份須另設計。
 
 ## Docker 解決了什麼
 
@@ -102,24 +107,27 @@ Image 建好之後要怎麼帶到別台機器？答案是推到 **Registry**—�
 
 ```bash
 # 1. 登入（使用 GitHub personal access token）
-echo $GHCR_TOKEN | docker login ghcr.io -u <username> --password-stdin
+printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
 # 2. 把本機 image 打上遠端 tag
-docker tag my-app:latest ghcr.io/<username>/my-app:1.0.0
+docker tag my-app:latest "ghcr.io/$GHCR_USER/my-app:1.0.0"
 
 # 3. 推到 Registry
-docker push ghcr.io/<username>/my-app:1.0.0
+docker push "ghcr.io/$GHCR_USER/my-app:1.0.0"
 
 # 4. 在另一台機器拉下來直接跑
-docker pull ghcr.io/<username>/my-app:1.0.0
-docker run ghcr.io/<username>/my-app:1.0.0
+docker pull "ghcr.io/$GHCR_USER/my-app:1.0.0"
+docker run "ghcr.io/$GHCR_USER/my-app:1.0.0"
 ```
 
 幾個關於 tag 的細節：
 
+上例是 Bash 指令，假設已建好 `my-app:latest`，並設定小寫 namespace `GHCR_USER` 與有套件寫入權限的 `GHCR_TOKEN`；不要把 token 寫進映像或公開文件。
+
 - Tag 格式是 `<registry>/<namespace>/<image>:<version>`
 - 省略 `<registry>` 的話，預設就是 Docker Hub
 - 同一個 image 可以打多個 tag 同時推送（例如 `1.0.0` 和 `latest`）
+- Tag 可被重新指向其他映像；需要固定內容時使用 digest（`image@sha256:...`）
 
 ## 和雲端的關係
 
@@ -131,4 +139,4 @@ Docker 負責在一台機器上跑容器。但當規模大到要自動擴縮容�
 - **Google Cloud Run / GKE**：Google 的容器服務
 - **Azure Container Apps / AKS**：Microsoft 的容器服務
 
-這些服務吃的都是 Docker Image——你把 Image 推上去，部署和維運交給平台處理。
+這些服務可執行相容的容器映像（常見為 Docker／OCI 格式）；可用架構、入口、網路及儲存設定依平台不同。平台代管的範圍也不同，應用程式、映像更新、資料與權限仍需管理。

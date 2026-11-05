@@ -1,14 +1,14 @@
 ---
 title: '[Algorithm] 處理 NP-完備問題'
-author: 'Jeremy & Claude'
+author: 'Jeremy & Claude & Codex'
 date: '2026-04-16'
 tags: [algorithm, backtracking, branch-and-bound, approximation, heuristic]
-changelog: ['2026-04-16']
+changelog: ['2026-04-16', '2026-11-05']
 ---
 
 ## 演算法概念
 
-知道一個問題是 NP-complete 代表「不可能又快又精確」，但不代表沒得做。實務上有三條退路：**精確但只在小規模跑得動**（回溯法、分支設限法）、**多項式但只保證近似**（近似演算法）、**沒理論保證但實務表現好**（heuristics）。選哪一條取決於輸入規模、是否能容忍誤差、以及問題結構。這篇把前兩條主軸講透，近似演算法挑五個經典，最後以 heuristic 收尾。
+若問題是 NP-complete，除非 P=NP，否則沒有涵蓋所有輸入的多項式時間精確演算法；個別實例仍可能很好解。實務可考慮**精確搜尋**（回溯、分支設限）、**有品質保證的近似**，以及**沒有通用最優保證的 heuristic**。選哪一條取決於輸入、容許誤差與問題結構。
 
 ## 各適用情境
 
@@ -55,7 +55,7 @@ def backtrack(state):
 判斷「新放的 `(row, col)` 會不會撞對角線」只要看 `row - col`、`row + col` 是否已在 set 裡。
 
 - 第 0 列：試 `col = 0`，放下 → `cols = {0}`、`diag1 = {0}`、`diag2 = {0}`
-- 第 1 列：`col = 0` 撞 `cols`；`col = 1` 撞 `diag2`（和 $= 2$ 不衝突，但 `row - col = 0` 撞 `diag1`）；`col = 2` 可放 → 記錄後遞迴
+- 第 1 列：`col = 0` 撞 `cols`；`col = 1` 的 `row - col = 0` 撞 `diag1`；`col = 2` 可放 → 記錄後遞迴
 - ……若某層所有 `col` 都被剪掉，回到上層換 `col` 再試
 - 到 `row == n` 時代表 $n$ 列都放好了，記錄一組解
 
@@ -126,7 +126,7 @@ def subset_sum(nums, target):
 
 **題目 3：Graph Coloring（$k$ 染色）**
 
-給無向圖 `graph`（頂點數 $n$）和色數 $k$，問能否用 $k$ 色染所有頂點，使每條邊兩端顏色不同。
+給無向圖 `graph`（頂點編號 $0\ldots n-1$，鄰接串列雙向列出）和色數 $k$，問能否用 $k$ 色染所有頂點，使每條邊兩端顏色不同。若有自環則不可能合法著色。
 
 **步驟**：逐個頂點 `v` 從 0 到 $n-1$，試顏色 `c` 從 1 到 $k$，若 `v` 的所有鄰居都不是 `c` 就塗上；塗完繼續下一個頂點。某頂點試完所有顏色都失敗，就回頭改前一個。
 
@@ -136,6 +136,8 @@ def subset_sum(nums, target):
 ```python
 def can_color(graph, k):
     n = len(graph)
+    if any(v in graph[v] for v in range(n)):
+        return False
     color = [0] * n                 # color[v] = 0 代表還沒染；1..k 代表已染的顏色
     def ok(v, c):
         return all(color[u] != c for u in graph[v])
@@ -201,7 +203,7 @@ Bound「越緊越好」的意思：下界越大 / 上界越小，剪枝越兇；
 
 #### 複雜度
 
-跟回溯一樣：最壞指數，平均靠 bound 的緊度決定。實務上小到中等規模（$n \le 30 \sim 50$）表現非常好，遠快過純暴力。
+跟回溯一樣，最壞仍可能指數時間。bound、分支順序與輸入結構都會影響實際速度；「30 到 50 個」不是跨問題通用的可行門檻，需要量測自己的實例。
 
 #### 範例
 
@@ -213,7 +215,7 @@ $n$ 個物品（第 $i$ 個價值 $v_i$、重量 $w_i$），背包容量 $W$，�
 
 1. 先按**單位重量價值** $v_i / w_i$（每公斤值多少錢）**由大到小排序**
 2. 在某個決策點，已經選的總重是 `cur_w`、總價 `cur_v`；上界 = `cur_v` + 剩餘容量用剩下物品**貪心（允許切物品）**填滿的價值
-3. 允許切物品的貪心只會更好不會更差，所以這個值是**嚴格上界**；如果連它都 $\le$ `best`，砍
+3. 允許切物品的最佳值不低於整件拿的最佳值，所以是**有效上界**（可相等，不一定嚴格大於）；如果連它都 $\le$ `best`，砍
 
 **步驟（以 $n=3$、$W=10$、物品按 $v/w$ 降序為例）**：
 
@@ -229,12 +231,12 @@ $n$ 個物品（第 $i$ 個價值 $v_i$、重量 $w_i$），背包容量 $W$，�
   - **選 B**（cur_w=6, cur_v=160）→ 上界 160 + 120·(4/6) = 240，展開
     - **選 C**（cur_w=12 超重）→ 砍
     - **不選 C**（cur_w=6, cur_v=160）→ leaf，`best = 160`
-  - **不選 B**（cur_w=2, cur_v=60）→ 上界 60 + 120·(8/6) = 220 > 160，展開
+  - **不選 B**（cur_w=2, cur_v=60）→ 剩下 C 最多拿整件，上界 $60 + 120 = 180 > 160$，展開
     - **選 C**（cur_w=8, cur_v=180）→ leaf，`best = 180`
     - **不選 C**（cur_w=2, cur_v=60）→ leaf，60 不更新
-- **不選 A**（cur_w=0, cur_v=0）→ 上界 100 + 120 = 220 > 180，展開……（細節略）
+- **不選 A**（cur_w=0, cur_v=0）→ 上界 $100 + 120 = 220 > 180$；選 B、C，重 $4+6=10$、價值 220，更新 `best = 220`
 
-最終 `best = 180`（拿 A + C）。
+最終 `best = 220`（拿 B + C）。不能在左子樹找到 180 就把仍可能改善的右子樹略掉。
 
 <details>
 <summary>Python 實作</summary>
@@ -242,7 +244,10 @@ $n$ 個物品（第 $i$ 個價值 $v_i$、重量 $w_i$），背包容量 $W$，�
 ```python
 def knapsack_bb(items, W):
     # items = [(value, weight)]
-    items.sort(key=lambda x: -x[0] / x[1])     # 按 v/w 由大到小
+    from fractions import Fraction
+    if W < 0 or any(v < 0 or w <= 0 for v, w in items):
+        raise ValueError('use nonnegative capacity/value and positive weight')
+    items = sorted(items, key=lambda x: -Fraction(x[0], x[1]))
     n = len(items)
     best = 0                                    # 目前最佳總價值
 
@@ -255,7 +260,7 @@ def knapsack_bb(items, W):
             if w + wt <= W:
                 w += wt; bound += v
             else:
-                bound += v * (W - w) / wt      # 切最後一塊
+                bound += Fraction(v * (W - w), wt)
                 break
         return bound
 
@@ -282,17 +287,17 @@ def knapsack_bb(items, W):
 
 輸入 $n$ 個城市 + 距離矩陣 $d$（$d_{ij}$ 是城市 $i$ 到 $j$ 的距離）。求最短 Hamilton cycle。
 
-常見 bounding 做法（minimization 下界）：
+對非負、對稱距離，可用下列較容易驗證的部分路徑下界。令 $s$ 為起點、$u$ 為當前路徑尾端，$R$ 為未訪城市：
 
 ```text
-bound(node) = 當前路徑已固定的成本
-            + Σ （每個尚未加入 cycle 的城市 v 的「兩條最輕連出邊」平均）
-            ÷ 2
+R 非空：bound = 已固定路徑成本 + MST(R)
+               + min{d(u, v): v in R} + min{d(v, s): v in R}
+R 為空：bound = 已固定路徑成本 + d(u, s)
 ```
 
-除以 2 的原因：每條邊在最終 cycle 中會被兩端各算一次，平均下來等於邊權的一半。
+任何完成路線都要從 $u$ 進入 $R$、連過所有未訪城市、最後回 $s$；中間連接的成本至少是 $R$ 的 MST，兩端連接也各不小於對應最小邊，所以這是合法下界。這個公式不適用於任意非對稱 TSP。
 
-搜尋順序用 best-first（priority queue 依 bound 排序）效果最好；小到中等規模（$n \le 30 \sim 40$）能算到精確最佳解。
+best-first 可優先展開下界較小的節點，但不保證總是最快，也可能需要很多記憶體；可解規模取決於輸入與 bound，沒有通用的城市數門檻。
 
 #### 回溯 vs 分支設限
 
@@ -355,7 +360,7 @@ $\rho = 2$ 意思是「永遠不會超過最佳的 2 倍（或至少是最佳的
 - 所以 $\text{OPT} \ge |M|$
 - 我們放了 $2|M|$ 個點 → $\text{ALG} = 2|M| \le 2 \cdot \text{OPT}$
 
-簡單到不可思議，但 2 已經是目前最好的常數近似。
+這是簡潔的常數近似與 matching 下界證明；這裡不以它宣稱所有研究版本的最新最佳界。
 
 <details>
 <summary>Python 實作</summary>
@@ -375,7 +380,7 @@ def vertex_cover_2_approx(edges):
 
 **題目 2：Metric TSP 的 2-approximation（MST-based）**
 
-限制條件：距離滿足**三角不等式** $d(a,c) \le d(a,b) + d(b,c)$——對 Euclidean 距離、道路距離都成立。
+限制條件：完整、非負、對稱的距離滿足**三角不等式** $d(a,c) \le d(a,b) + d(b,c)$。Euclidean 距離符合；無向道路網的最短路距離也符合，但單行道路形成的距離未必對稱。
 
 **策略**：
 
@@ -390,7 +395,7 @@ def vertex_cover_2_approx(edges):
 - 跳過重複點（shortcut）靠三角不等式不會變長
 - 所以 $\text{ALG} \le 2 \cdot \text{cost}(T) \le 2 \cdot \text{OPT}$
 
-Christofides 演算法把它壓到 $\frac{3}{2}$-近似（多一步 minimum weight matching），是 metric TSP 目前最好的常數近似。
+Christofides 演算法藉由奇度頂點的 minimum weight perfect matching 得到 $\frac{3}{2}$-近似，是經典結果；研究上已有略低於 $3/2$ 的保證，參見[Karlin、Klein、Oveis Gharan 的論文](https://arxiv.org/abs/2007.01409)。
 
 **題目 3：Set Cover 的貪婪近似**
 
@@ -405,16 +410,16 @@ Christofides 演算法把它壓到 $\frac{3}{2}$-近似（多一步 minimum weig
 
 **First-Fit Decreasing**：物品先**由大到小排序**，每個物品塞進「第一個放得下」的既有 bin（從左到右掃），放不下就開新 bin。
 
-- 近似比 $\text{ALG} \le \frac{11}{9}\cdot\text{OPT} + \frac{6}{9}$
+- 箱數保證 $\text{ALG} \le \frac{11}{9}\cdot\text{OPT} + \frac{6}{9}$，故漸近近似比為 $11/9$（參見 [Dósa 原始論文](https://doi.org/10.1007/978-3-540-74450-4_1)）
 - 實務表現非常好，是 bin packing 的標配
 
 **題目 5：Knapsack 的 FPTAS**
 
-Knapsack 的 DP 是 pseudo-polynomial（$O(nW)$ 或 $O(nV)$，$V$ 是最大價值），大 instance 還是會爆。FPTAS 用「**價值 rescale**」技巧——把價值除以一個精心挑的 $K$、四捨五入後跑 DP，以損失一點精度換大幅加速。
+Knapsack 的 DP 是 pseudo-polynomial（$O(nW)$，或價值向 DP 的 $O(n\sum_i v_i)$），數值很大時仍可能不可行。FPTAS 用「**價值 rescale**」技巧——把價值除以 $K$、**向下取整**後跑 DP，以有界的精度損失換取多項式時間。
 
 **步驟**：
 
-1. 令 $V_\max = \max_i v_i$（所有物品裡最大的單一價值）
+1. 先丟掉重量超過容量的物品；假設價值非負、重量為正、$0<\varepsilon<1$。令 $V_\max$ 為剩餘物品最大價值（若沒有正價值可選就回傳空解），因此 $V_\max \leq \mathrm{OPT}$
 2. 設 $K = \dfrac{\varepsilon \cdot V_\max}{n}$（rescale 粒度；$\varepsilon$ 是使用者指定的容許誤差）
 3. 新價值 $v'_i = \lfloor v_i / K \rfloor$（縮小後的整數值）
 4. 用 $O(n \cdot \sum v'_i)$ 的標準 DP 解新 instance
@@ -425,12 +430,19 @@ Knapsack 的 DP 是 pseudo-polynomial（$O(nW)$ 或 $O(nV)$，$V$ 是最大價�
 - DP 時間 $O(n^3 / \varepsilon)$——對 $n$ 和 $1/\varepsilon$ 都是多項式
 - 可證答案滿足 $\text{ALG} \ge (1-\varepsilon) \cdot \text{OPT}$
 
+這裡以「至少最佳值的 $1-\varepsilon$」表達最大化誤差；依前面的比值定義，對應 $\rho \leq 1/(1-\varepsilon)$。調整誤差參數後可寫成慣用的 $(1+\varepsilon)$-近似方案。
+
 <details>
 <summary>Python 實作骨架</summary>
 
 ```python
 def knapsack_fptas(items, W, epsilon):
     # items = [(value, weight)]；epsilon 是容許誤差（例 0.1 = 10%）
+    if not 0 < epsilon < 1:
+        raise ValueError('epsilon must be between 0 and 1')
+    items = [(v, w) for v, w in items if w <= W]
+    if not items or max(v for v, w in items) == 0:
+        return []
     n = len(items)
     V_max = max(v for v, w in items)
     K = epsilon * V_max / n
@@ -444,7 +456,7 @@ def knapsack_fptas(items, W, epsilon):
 </details>
 
 :::note
-FPTAS 只可能出現在「**弱 NP-complete**」問題上（如 knapsack、subset sum，數值輸入），TSP（一般距離）、Max Clique 這些「**強 NP-hard**」問題在 $\text{P} \neq \text{NP}$ 下連 PTAS 都不存在。這條分界線叫 **APX-hardness**。
+對標準整數目標的強 NP-hard 最佳化問題，若 FPTAS 能藉足夠小的誤差求出精確解，就會導致 P=NP；但**強 NP-hard 不代表沒有 PTAS**，Euclidean TSP 就有 PTAS。沒有 PTAS 的結論需要額外的近似困難性證明，例如適當規約下的 APX-hardness；不能把這幾個分類當成同義詞。
 :::
 
 ---
@@ -494,10 +506,10 @@ FPTAS 只可能出現在「**弱 NP-complete**」問題上（如 knapsack、subs
 1. **回溯忘了 undo**：離開分支前必須還原狀態；不然兄弟分支會被污染
 2. **近似比 $\rho$ 方向**：最小化是 $\text{ALG}/\text{OPT}$、最大化是 $\text{OPT}/\text{ALG}$，都 $\ge 1$
 3. **bound 方向反**：min 用下界、max 用上界；反了會剪掉最佳解
-4. **FPTAS 不是萬能**：只「弱 NP-hard」問題有（Knapsack、Subset Sum）；強 NP-hard（一般 TSP、Max Clique）連 PTAS 都不存在
+4. **FPTAS 不是萬能**：Knapsack 有 FPTAS；強 NP-hard、APX-hard 與是否有 PTAS 是不同判準，不能混為一談
 5. **Vertex Cover 2-approx 取點要兩端都放**：只放一端會破壞 $\text{ALG} = 2|M|$ 的結構
 6. **Metric TSP 限定三角不等式**：一般 TSP 沒有常數近似（除非 P=NP）
-7. **Christofides = 1.5-approx**：是 metric TSP 目前最好的常數近似（需要 minimum weight matching）
+7. **Christofides = 1.5-approx**：經典對稱 metric TSP 保證，需要奇度頂點的 minimum weight perfect matching；不是最新最佳界的宣稱
 :::
 
 ## 整理
@@ -512,4 +524,8 @@ FPTAS 只可能出現在「**弱 NP-complete**」問題上（如 knapsack、subs
 | 巨大規模或結構亂 | Heuristic / local search / metaheuristic |
 | 特殊輸入分布 | 針對輸入特徵設計 custom heuristic |
 
-演算法系列到此告一段落——從複雜度分析、排序、貪婪、淘汰搜尋、分而治之、動態規劃，到 NP-completeness 理論與因應。這條路的邏輯一致：**先看問題能不能快（P）、不能快就看能不能驗（NP）、再不行就接受「夠好」**。後面若要再深入，可以挑專題：圖論進階（max flow、matching）、線性規劃、隨機演算法、平攤分析、近期的量子演算法。每條路都通。
+演算法系列從複雜度、排序與各種設計策略，走到 NP-completeness 與因應方法。面對問題先定義輸入、目標與限制，再找已知演算法及難度結果；需要精確還是容許近似，則是另一個工程取捨。P、NP 與 NP-hard 不是「先後試一遍」的互斥分類。後續可深入圖論、線性規劃、隨機演算法與平攤分析。
+
+上方分支設限實作使用整數價值／重量與 `Fraction` 計算上界，避免浮點數低估造成錯誤剪枝；其位元運算成本需另計。FPTAS 程式明標骨架，尚未實作價值向 DP 與選取集合的還原。
+
+延伸核對：[Princeton 近似演算法與 Knapsack FPTAS](https://www.cs.princeton.edu/courses/archive/spr05/cos423/lectures/11approx-alg.pdf)。

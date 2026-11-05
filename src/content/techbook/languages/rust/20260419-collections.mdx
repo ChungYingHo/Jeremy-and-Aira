@@ -1,9 +1,9 @@
 ---
 title: "[Rust] 常用集合"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["Rust", "Vec", "String", "HashMap", "collections"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 6
 ---
 
@@ -93,7 +93,7 @@ let sum: i32 = v.iter().sum();
 let max = v.iter().max();          // Option<&i32>
 ```
 
-`.iter()` 產生 `&i32`，到了 `.filter()` 裡又多包一層變成 `&&i32`（參考的參考）。`.copied()` 把 `&i32` 複製回 `i32`——`i32` 是 `Copy`，這步是免費的；換成 `String` 就要用 `.cloned()`。
+`.iter()` 產生 `&i32`，到了 `.filter()` 裡又多包一層變成 `&&i32`（參考的參考）。`.copied()` 把 `&i32` 複製回 `i32`——`i32` 是 `Copy`，不需要為整數另做 heap 配置，但不是所有 Copy 都零成本；換成 String 若要擁有副本，可用 `.cloned()`，並注意字串複製成本。
 
 三種起手式：`.iter()` 借用、`.iter_mut()` 可變借用、`.into_iter()` 取走所有權。
 
@@ -177,7 +177,7 @@ for b in s.bytes() {
 
 // 字串切片：要切在合法 UTF-8 邊界，否則 panic
 let hello = &s[0..1];     // "h"
-// let bad = &s[0..2];    // panic：byte 1 是 é 的中間
+// let bad = &s[0..2];    // panic：結束位置 byte 2 落在 é 的中間
 ```
 
 ### String vs &str
@@ -280,12 +280,12 @@ map.insert(key, val);
 let mut map: HashMap<&str, &str> = HashMap::new();
 let key = String::from("name");
 map.insert(&key, "jeremy");
-// 需注意 key 的生命週期至少要活到 map 被丟掉之後
+// 借用來源必須在 map 仍會使用此參照期間保持有效
 ```
 
 ## HashMap 的雜湊與安全性
 
-`HashMap` 預設用 SipHash，抗 HashDoS 攻擊——安全，但比較慢。如果資料純內部使用、不怕被惡意餵 key，可以換更快的雜湊：
+標準庫目前預設雜湊器採 SipHash 1-3，但演算法是可變更的實作細節。是否換用其他 hasher，要一起評估 key 型別、攻擊面與實際量測；不能把某個名稱直接等同安全或一定更快。以下是 aHash 的選用範例：
 
 ```toml
 # Cargo.toml
@@ -328,3 +328,8 @@ for (k, v) in &map {
 | 走訪 | `for x in &v` | `for c in s.chars()` | `for (k, v) in &m` |
 
 集合篇結束。下一篇進模組系統 `mod` 與 `use`，講怎麼把目前散在 `main.rs` 的程式碼切成多檔案、怎麼控制可見性。
+
+## 參考文件
+
+- [Rust：HashMap](https://doc.rust-lang.org/std/collections/struct.HashMap.html)
+- [Rust：str（UTF-8 boundary、chars）](https://doc.rust-lang.org/std/primitive.str.html)

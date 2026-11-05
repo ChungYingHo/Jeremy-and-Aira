@@ -1,9 +1,9 @@
 ---
 title: "[TypeScript] 內建型別工具"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["TypeScript", "utility types", "Partial", "Pick", "Omit", "Record"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 6
 ---
 
@@ -36,7 +36,7 @@ type FullUser = Required<User>
 
 ## Readonly\<T>
 
-所有欄位加上 `readonly`：
+所有欄位加上 `readonly`（型別限制，不會在 runtime 凍結物件）。下面同名工具的定義是原理示意，實際專案直接用內建工具，別貼到 global scope 重複宣告：
 
 ```typescript
 type Readonly<T> = { readonly [K in keyof T]: T[K] }
@@ -134,7 +134,7 @@ type X = NonNullable<string | null | undefined>   // string
 
 ## ReturnType\<T> / Parameters\<T>
 
-用 `infer` 從函式型別抽出回傳值與參數：
+用 `infer` 從函式型別抽出回傳值與參數；下面是簡化原理，內建版另有函式型別約束，對 overload 通常取最後一個簽章：
 
 ```typescript
 type ReturnType<T> = T extends (...args: any) => infer R ? R : never
@@ -189,10 +189,9 @@ type Data = Awaited<ReturnType<typeof load>> // { id: number }
 四個內建的字串字面值轉換：
 
 ```typescript
-type Uppercase<T extends string>
-type Lowercase<T extends string>
-type Capitalize<T extends string>
-type Uncapitalize<T extends string>
+// 已內建，不要重新宣告這些型別
+// Uppercase<T>、Lowercase<T>、Capitalize<T>、Uncapitalize<T>
+type UpperHello = Uppercase<"hello">   // "HELLO"
 ```
 
 ```typescript
@@ -235,18 +234,20 @@ type UserSetters = Setters<{ name: string; age: number }>
 ```typescript
 // 至少要有一個欄位
 type AtLeastOne<T, K extends keyof T = keyof T> =
-  K extends keyof T ? Partial<T> & Pick<T, K> : never
+  K extends keyof T ? Partial<T> & Required<Pick<T, K>> : never
 
 // 互斥（這幾個欄位只能擇一）
 type XOR<A, B> =
-  | (A & { [K in keyof B]?: never })
-  | (B & { [K in keyof A]?: never })
+  | (A & { [K in Exclude<keyof B, keyof A>]?: never })
+  | (B & { [K in Exclude<keyof A, keyof B>]?: never })
 
 // 深 Partial
 type DeepPartial<T> = {
   [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K]
 }
 ```
+
+這些自訂工具是普通物件形狀的簡化範例，不是通用序列化／驗證器。DeepReadonly／DeepPartial 對函式、Date、Map 或含 undefined 的巢狀 union 要另外設計；XOR 允許共有欄位，主要互斥兩邊各自獨有的鍵，若要連顯式 undefined 都禁止，需考慮 exactOptionalPropertyTypes。AtLeastOne 用 Required 才能讓原本可選的某一鍵真的變成必填。
 
 ## 何時不要硬寫複雜型別
 
@@ -259,3 +260,9 @@ type DeepPartial<T> = {
 實務原則：**型別應該幫助理解，不是炫技**。能用 `Pick` / `Omit` 解決的，就不要動 mapped + conditional。
 
 下一篇切到「執行期與型別系統互動」這條線——TS 怎麼靠 `typeof`、`instanceof`、自訂 type guard 在 runtime 縮小型別。前面提過的 discriminated union 會在那裡跟 narrowing 收束在一起。
+
+## 參考文件
+
+- [TypeScript：Utility Types](https://www.typescriptlang.org/docs/handbook/utility-types.html)
+- [TypeScript：Mapped Types](https://www.typescriptlang.org/docs/handbook/2/mapped-types.html)
+- [TypeScript：exactOptionalPropertyTypes](https://www.typescriptlang.org/tsconfig/exactOptionalPropertyTypes.html)

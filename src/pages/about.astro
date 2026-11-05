@@ -6,9 +6,9 @@ const authors = AUTHORS.filter(author => !author.isHiddenFromAbout)
 const platformLabel = (platform: string) => ({ github: 'GitHub', linkedin: 'LinkedIn', ithome: 'iThome', npm: 'npm' }[platform] || platform)
 ---
 
-<Layout title='關於' description='關於 Jeremy，以及這個記錄日常、想像與生活的部落格。'>
+<Layout title='About' description='關於 Jeremy，以及這個記錄日常、想像與生活的部落格。'>
   <div class='about-page' data-about-page>
-    <header class='about-heading'><h1>關於 Jeremy</h1></header>
+    <header class='about-heading'><h1>About</h1></header>
     {authors.map((author, authorIndex) => {
       const [quote, quoteAuthor] = (author.summary || '').split('\n')
       return <article class='author-profile' data-author-profile>
@@ -19,7 +19,6 @@ const platformLabel = (platform: string) => ({ github: 'GitHub', linkedin: 'Link
           </div>
           <figure class='profile-portrait'>
             <img src={author.imgPath} alt={author.name} width='300' height='300' />
-            <figcaption>{author.name}</figcaption>
           </figure>
         </div>
 
@@ -57,7 +56,6 @@ const platformLabel = (platform: string) => ({ github: 'GitHub', linkedin: 'Link
   .roles { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 30px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--color-ink-soft); line-height: 1.9; }
   .profile-portrait { width: 100%; margin: 0; }
   .profile-portrait img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-surface); }
-  .profile-portrait figcaption { margin-top: 14px; font-size: 15px; line-height: 1.6; }
   .profile-details { display: grid; grid-template-columns: 216px minmax(0, 1fr); gap: 80px; padding-top: 64px; }
   .profile-contact h2, .portfolio > header h2 { font-family: var(--font-body); font-size: 1.2rem; line-height: 1.5; font-weight: 500; margin: 0 0 24px; }
   .social-links { display: grid; gap: 0; }
@@ -96,8 +94,7 @@ const platformLabel = (platform: string) => ({ github: 'GitHub', linkedin: 'Link
     h1 { font-size: clamp(1.75rem, 8vw, 2rem); }
     .profile-intro { grid-template-columns: clamp(96px, 30vw, 128px) minmax(0, 1fr); gap: 26px 22px; align-items: center; padding-bottom: 32px; }
     .profile-portrait { width: 100%; }
-    .profile-portrait figcaption { margin-top: 8px; font-size: 13px; }
-    .roles { grid-column: 2; grid-row: 1; gap: 9px; font-size: 13px; line-height: 1.6; padding-bottom: 27px; }
+    .roles { grid-column: 2; grid-row: 1; gap: 9px; font-size: 13px; line-height: 1.6; }
     .author-quote { grid-column: 1 / -1; grid-row: 2; }
     blockquote { font-size: clamp(1.2rem, 5.5vw, 1.4rem); line-height: 1.6; }
     .author-quote figcaption { margin-top: 12px; font-size: 12px; }

@@ -1,10 +1,10 @@
 ---
 title: '[Vue] 常用工具'
-author: 'Jeremy & Claude'
+author: 'Jeremy & Claude & Codex'
 date: '2026-04-02'
 tags: ['vue', 'v-for', 'v-if', 'lifecycle', 'composable']
 sameDateSort: 2
-changelog: ['2026-06-11']
+changelog: ['2026-06-11', '2026-11-05']
 ---
 
 ## v-for — 列表渲染
@@ -179,11 +179,15 @@ import { ref, onMounted } from 'vue'
 
 const users = ref([])
 const isLoading = ref(true)
+const error = ref(null)
 
 onMounted(async () => {
   try {
     const res = await fetch('/api/users')
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
     users.value = await res.json()
+  } catch (err) {
+    error.value = err
   } finally {
     isLoading.value = false
   }
@@ -270,7 +274,7 @@ const { x, y } = useMouse()
 </template>
 ```
 
-一行搞定！而且邏輯只寫一次，改一個地方就全部更新。
+邏輯只寫一次，修改時也集中在同一處。每次呼叫這個 useMouse 都會建立獨立的 refs 與事件監聽；共用程式碼不代表共享同一份狀態。帶生命週期 hooks 的 composable 要在 setup 中同步呼叫。
 
 ### 命名慣例
 
@@ -290,7 +294,10 @@ export function useFetch(url) {
   const isLoading = ref(true)
 
   fetch(url)
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.json()
+    })
     .then(json => { data.value = json })
     .catch(err => { error.value = err })
     .finally(() => { isLoading.value = false })
@@ -324,11 +331,21 @@ const { data: users, error, isLoading } = useFetch('/api/users')
 import { ref, watch } from 'vue'
 
 export function useLocalStorage(key, defaultValue) {
-  const stored = localStorage.getItem(key)
-  const data = ref(stored ? JSON.parse(stored) : defaultValue)
+  let initial = defaultValue
+  try {
+    const stored = localStorage.getItem(key)
+    if (stored !== null) initial = JSON.parse(stored)
+  } catch (err) {
+    console.warn("Cannot read localStorage", err)
+  }
+  const data = ref(initial)
 
   watch(data, (newVal) => {
-    localStorage.setItem(key, JSON.stringify(newVal))
+    try {
+      localStorage.setItem(key, JSON.stringify(newVal))
+    } catch (err) {
+      console.warn("Cannot write localStorage", err)
+    }
   }, { deep: true })
 
   return data
@@ -345,6 +362,8 @@ const theme = useLocalStorage('theme', 'dark')
 // 改 theme.value 會自動存到 localStorage
 </script>
 ```
+
+這兩個 composable 是瀏覽器 SPA 的簡化版本：useFetch 的 url 是當次呼叫的固定值，不會自動追蹤 ref URL、取消過期請求或處理 SSR；正式需求再加 watch／AbortController 等機制。useLocalStorage 也不會自動同步其他分頁；讀到 JSON 還要按業務需求驗證資料形狀。localStorage 可能因權限／配額失敗，JSON 也可能損壞，不能假定每次都能成功。
 
 ### Composable vs Mixin
 
@@ -370,3 +389,10 @@ const theme = useLocalStorage('theme', 'dark')
 | Composable | 把共用邏輯抽成 `use` 開頭的函式 |
 
 這四個東西是 Vue 開發的日常。掌握了它們，加上前面文章講的響應式和資料流，你就已經有能力寫出一個完整的 Vue 應用了。接下來我們會進入路由（Vue Router）和狀態管理（Pinia），那就是大型應用的領域了。
+
+## 參考文件
+
+- [Vue：Composables](https://vuejs.org/guide/reusability/composables.html)
+- [Vue：Lifecycle Hooks](https://vuejs.org/api/composition-api-lifecycle.html)
+- [MDN：Using Fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch)
+- [MDN：localStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage)

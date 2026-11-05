@@ -404,6 +404,11 @@
     private cssHeight = 0
     private randomState = 0x8a39fd21
     private lastProfile = -1
+    private initializing = false
+    private initializationEpoch = 0
+    private initializationWait: { id: number; frame: boolean; resolve: () => void } | null = null
+    private paintWait: { observer: PerformanceObserver; resolve: () => void } | null = null
+    private resizePending = false
 
     connectedCallback() {
       this.disposed = false
@@ -437,6 +442,7 @@
     }
 
     private useStatic(mode: 'static' | 'fallback') {
+      if (this.initializing) this.release()
       this.stop()
       this.dataset.ready = mode
       this.dataset.mode = mode
@@ -530,27 +536,86 @@
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     }
 
-    private initialize() {
-      if (this.disposed || this.lost || this.motion?.matches || !this.canvas || this.gl) return
+    private waitForInitialization(frame = false) {
+      return new Promise<void>(resolve => {
+        const finish = () => { this.initializationWait = null; resolve() }
+        const id = frame ? requestAnimationFrame(finish) : window.setTimeout(finish, 0)
+        this.initializationWait = { id, frame, resolve }
+      })
+    }
+
+    private initializationActive(epoch: number) {
+      return epoch === this.initializationEpoch && !this.disposed && !this.lost && !this.motion?.matches && this.visible && !document.hidden
+    }
+
+    private waitForFirstPaint() {
+      if (typeof PerformanceObserver === 'undefined' || !PerformanceObserver.supportedEntryTypes?.includes('paint') || performance.getEntriesByType('paint').length) return Promise.resolve()
+      return new Promise<void>(resolve => {
+        const observer = new PerformanceObserver(list => {
+          if (!list.getEntries().length) return
+          observer.disconnect()
+          if (this.paintWait?.observer === observer) this.paintWait = null
+          resolve()
+        })
+        this.paintWait = { observer, resolve }
+        observer.observe({ type: 'paint', buffered: true })
+      })
+    }
+
+    private async initialize() {
+      if (this.initializing || this.disposed || this.lost || this.motion?.matches || !this.canvas || !this.visible || document.hidden) return
+      this.initializing = true
+      const epoch = ++this.initializationEpoch
+      this.stop()
+      this.dataset.ready = 'loading'
+      this.dataset.mode = 'static'
       try {
-        this.gl = this.canvas.getContext('webgl2', { alpha: false, antialias: false, depth: false, powerPreference: 'low-power' })
-        const gl = this.gl
-        if (!gl || !gl.getExtension('EXT_color_buffer_float')) throw new Error('Ink float rendering unavailable')
-        this.vao = gl.createVertexArray()
-        gl.bindVertexArray(this.vao)
-        const sources = { velocity: velocityShader, curl: curlShader, confine: confineShader, divergence: divergenceShader, pressure: pressureShader, project: projectShader, advectPigment: advectPigmentShader, pigment: pigmentShader, wave: waveShader, display: displayShader }
-        for (const [name, source] of Object.entries(sources)) this.passes[name] = this.makePass(source)
-        this.resize()
+        await this.waitForInitialization(true)
+        if (!this.initializationActive(epoch)) return
+        await this.waitForFirstPaint()
+        if (!this.initializationActive(epoch)) return
+        await this.waitForInitialization(true)
+        if (!this.initializationActive(epoch)) return
+        if (!this.gl) {
+          this.gl = this.canvas.getContext('webgl2', { alpha: false, antialias: false, depth: false, powerPreference: 'low-power' })
+          const gl = this.gl
+          if (!gl || !gl.getExtension('EXT_color_buffer_float')) throw new Error('Ink float rendering unavailable')
+          this.vao = gl.createVertexArray()
+          gl.bindVertexArray(this.vao)
+          const sources = { velocity: velocityShader, curl: curlShader, confine: confineShader, divergence: divergenceShader, pressure: pressureShader, project: projectShader, advectPigment: advectPigmentShader, pigment: pigmentShader, wave: waveShader, display: displayShader }
+          for (const [name, source] of Object.entries(sources)) {
+            this.passes[name] = this.makePass(source)
+            await this.waitForInitialization()
+            if (!this.initializationActive(epoch)) return
+          }
+        }
+        do {
+          this.resizePending = false
+          await this.prepareSurface(epoch)
+          if (!this.initializationActive(epoch)) return
+        } while (this.resizePending)
+        this.initializing = false
         this.dataset.ready = 'true'
         this.dataset.mode = 'fluid'
         this.sync()
       } catch {
-        this.release()
-        this.useStatic('fallback')
+        if (epoch === this.initializationEpoch) {
+          this.release()
+          this.useStatic('fallback')
+        }
+      } finally {
+        if (epoch === this.initializationEpoch && !this.initializationActive(epoch)) this.release()
       }
     }
 
     private resize = () => {
+      if (this.initializing) { this.resizePending = true; return }
+      if (!this.gl || this.disposed || this.lost) return
+      const rect = this.getBoundingClientRect()
+      if (Math.abs(rect.width - this.cssWidth) >= 1 || Math.abs(rect.height - this.cssHeight) >= 1) void this.initialize()
+    }
+
+    private async prepareSurface(epoch: number) {
       if (!this.gl || !this.canvas || !this.passes.display || this.disposed || this.lost) return
       const rect = this.getBoundingClientRect()
       if (rect.width < 1 || rect.height < 1) return
@@ -595,6 +660,10 @@
         if (i === 28) this.addDrop(second)
         if (i === 57) this.addDrop(third)
         this.simulate(1 / 30)
+        if ((i + 1) % 8 === 0 && i < 95) {
+          await this.waitForInitialization()
+          if (!this.initializationActive(epoch)) return
+        }
       }
       this.nextDrop = this.elapsed + 2.4
       this.render()
@@ -715,7 +784,8 @@
           const phase = this.dropCount % 5
           const positions = [[0.64, 0.57], [0.76, 0.43], [0.58, 0.38], [0.8, 0.6], [0.69, 0.3]]
           this.addDrop({ x: positions[phase][0] + (this.random() - 0.5) * 0.06, y: positions[phase][1] + (this.random() - 0.5) * 0.045, radius: this.cssWidth < 700 ? 0.037 : 0.029, strength: 0.85, kind: 'auto' })
-          this.nextDrop = this.elapsed + 3.6 + this.random() * 1.3
+          const frequency = this.cssWidth >= 1024 && this.finePointer?.matches ? 1.25 : 1
+          this.nextDrop = this.elapsed + (3.6 + this.random() * 1.3) / frequency
         }
         this.simulate(dt)
         this.render()
@@ -724,11 +794,15 @@
     }
 
     private canAnimate() {
-      return Boolean(this.gl && !this.disposed && !this.lost && this.visible && !document.hidden && !this.motion?.matches)
+      return Boolean(this.gl && !this.initializing && this.dataset.ready === 'true' && !this.disposed && !this.lost && this.visible && !document.hidden && !this.motion?.matches)
     }
 
     private sync = () => {
-      if (!this.canAnimate()) this.stop()
+      if (!this.visible || document.hidden) {
+        if (this.initializing) this.release()
+        this.stop()
+      } else if (!this.gl && !this.disposed && !this.lost && !this.motion?.matches) void this.initialize()
+      else if (!this.canAnimate()) this.stop()
       else if (!this.raf) {
         this.lastFrame = performance.now()
         this.raf = requestAnimationFrame(this.tick)
@@ -925,6 +999,8 @@
         this.useStatic('fallback')
       } else if (this.motion?.matches) {
         this.useStatic('static')
+      } else if (this.initializing) {
+        this.sync()
       } else if (this.gl) {
         this.dataset.ready = 'true'
         this.dataset.mode = 'fluid'
@@ -957,6 +1033,22 @@
     }
 
     private release() {
+      this.initializationEpoch += 1
+      if (this.paintWait) {
+        const wait = this.paintWait
+        this.paintWait = null
+        wait.observer.disconnect()
+        wait.resolve()
+      }
+      if (this.initializationWait) {
+        const wait = this.initializationWait
+        this.initializationWait = null
+        if (wait.frame) cancelAnimationFrame(wait.id)
+        else clearTimeout(wait.id)
+        wait.resolve()
+      }
+      this.initializing = false
+      this.resizePending = false
       this.stop()
       this.clearTargets()
       if (this.gl) {

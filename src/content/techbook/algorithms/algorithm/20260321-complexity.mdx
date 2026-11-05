@@ -1,9 +1,9 @@
 ---
 title: '[Algorithm] 複雜度分析'
-author: 'Jeremy & Claude'
+author: 'Jeremy & Claude & Codex'
 date: '2026-03-21'
 tags: [algorithm, complexity, big-o, master theorem, time complexity, space complexity]
-changelog: []
+changelog: ['2026-11-05']
 ---
 
 import BigOChart from '@/components/ArticleRelated/algorithm/BigOChart.svelte'
@@ -31,8 +31,8 @@ import MasterTheoremDiagram from '@/components/ArticleRelated/algorithm/MasterTh
 
 ## O、Ω、Θ 的差異
 
-- $O$（Big-O）：**上界**，演算法不會比這更慢
-- $\Omega$（Big-Omega）：**下界**，演算法不會比這更快
+- $O$（Big-O）：指定成本函數的**漸進上界**，忽略常數後不超過此成長率
+- $\Omega$（Big-Omega）：指定成本函數的**漸進下界**，忽略常數後至少有此成長率
 - $\Theta$（Big-Theta）：**緊界**，上界與下界同階
 
 <AsymptoticBoundsDiagram client:visible />
@@ -43,9 +43,11 @@ $$c' \cdot g(n) \leq f(n) \leq c \cdot g(n)$$
 
 以線性搜尋為例：
 
-- **Worst case = $O(n)$**：目標在最後一個位置，要掃完整個陣列
-- **Best case = $\Omega(1)$**：目標在第一個位置，看一次就找到了
-- **Average case = $\Theta(n)$**：期望上要跑一半，仍然是線性成長
+- **Worst case = $\Theta(n)$**：目標在最後一個位置或不存在，要掃完整個陣列
+- **Best case = $\Theta(1)$**：目標在第一個位置，看一次就找到了
+- **Average case = $\Theta(n)$**：假設搜尋成功且每個位置等機率，期望比較 $(n + 1)/2$ 次
+
+$O$、$\Omega$、$\Theta$ 都能用於最佳、平均或最壞成本函數；它們不是三種情況各自專用的符號。
 
 :::warning
 考試考點：**嚴格區分 $O$、$\Omega$、$\Theta$**。
@@ -76,11 +78,11 @@ $$c' \cdot g(n) \leq f(n) \leq c \cdot g(n)$$
 
 $n$ 的某個固定次方。最常見的是 $O(n^2)$ 和 $O(n^3)$。
 
-$O(n^2)$ 通常來自兩層巢狀迴圈，對每個元素都要跑一遍所有其他元素——Bubble Sort、Insertion Sort、Selection Sort 都是。$n = 1000$ 時大約 $10^6$ 次操作，還可以接受；$n = 10^5$ 時就是 $10^{10}$ 次，在現代硬體上大概要幾十秒，很慢了。
+$O(n^2)$ 常見於兩層各執行線性次數的巢狀迴圈，例如 Bubble Sort、Insertion Sort 的最壞情況，以及 Selection Sort。$n$ 從 $1000$ 增至 $10^5$，$n^2$ 就從 $10^6$ 增至 $10^{10}$；實際秒數仍取決於操作內容、語言與硬體，不能只從階數換算。
 
-$O(n^3)$ 常見於三層巢狀迴圈，標準的矩陣乘法就是 $O(n^3)$：兩個 $n \times n$ 的矩陣相乘，每個輸出元素要做 $n$ 次乘加，共 $n^2$ 個輸出元素。$n = 1000$ 的矩陣乘法需要 $10^9$ 次操作，需要幾秒鐘。
+$O(n^3)$ 常見於三層巢狀迴圈，標準的矩陣乘法就是 $O(n^3)$：兩個 $n \times n$ 的矩陣相乘，每個輸出元素要做 $n$ 次乘加，共 $n^2$ 個輸出元素。$n = 1000$ 時約需 $10^9$ 次乘加，耗時仍需實測。
 
-只要 $k$ 是固定常數，多項式時間演算法在理論上都被認為是「可接受的」——這也是 P 類問題的定義（詳見最後一節）。
+只要 $k$ 是固定常數，就屬多項式時間；理論上常以此區分可有效求解的決定問題。但很大的次方或常數仍可能讓實作不可行，P 不等於實務上一定夠快。
 
 ### 指數時間 O(2ⁿ)
 
@@ -102,7 +104,7 @@ $O(n^3)$ 常見於三層巢狀迴圈，標準的矩陣乘法就是 $O(n^3)$：�
 
 $$O(n^7),\ O(n^2),\ O(\log \log n),\ O(\log n),\ O(n),\ O(n!),\ O(2^n),\ O(1)$$
 
-只要握住三大群組 **常數 / 對數 / 多項式 / 指數 / 階乘**，再比群內：
+只要握住五大群組 **常數 / 對數 / 多項式 / 指數 / 階乘**，再比群內：
 
 $$O(1) \subset O(\log \log n) \subset O(\log n) \subset O(n) \subset O(n^2) \subset O(n^7) \subset O(2^n) \subset O(n!)$$
 
@@ -115,7 +117,7 @@ $$O(1) \subset O(\log \log n) \subset O(\log n) \subset O(n) \subset O(n^2) \sub
 
 下列片段其實是**選擇排序**的 1-indexed 寫法：
 
-```c
+```text
 for i := 1 to n-1 do
 {
     j := i;
@@ -152,15 +154,15 @@ $$T(n) = O(n^2)$$
 :::
 
 :::warning
-常見錯誤是寫「外層 $n$ 次、內層 $n$ 次，所以 $n \times n = n^2$」就交卷。這在內層範圍**隨外層變化**時不嚴謹——老師會扣分，因為 $n^2$ 的**常數係數**是 $\frac{1}{2}$、不是 $1$。正確做法必須把 Σ 展開、套等差求和公式。
+用「外層最多 $n$ 次、內層最多 $n$ 次」可以證明 $O(n^2)$ 上界；但它沒有給出精確比較次數，也沒有單獨證明 $\Theta(n^2)$ 緊界。若題目要推導或精確次數，就把變動的內層範圍寫成 Σ。差異在證明內容，不在大 O 是否保留 $\frac{1}{2}$ 這個常數。
 :::
 
 ## 最壞、最佳、平均情況
 
 同一演算法面對不同輸入，執行時間可能差距很大：
 
-- **Worst case**：輸入對演算法最不利的情況。這是 $O$ 最常對應的場景。
-- **Best case**：輸入對演算法最有利的情況。這是 $\Omega$ 最常對應的場景。
+- **Worst case**：固定輸入規模下，成本最大的輸入。
+- **Best case**：固定輸入規模下，成本最小的輸入。
 - **Average case**：對所有可能輸入取平均（需要假設輸入分佈）。
 
 Quick Sort 是最具代表性的例子：選一個 pivot 將陣列分成兩部分，遞迴排序。
@@ -177,7 +179,7 @@ Quick Sort 是最具代表性的例子：選一個 pivot 將陣列分成兩部�
 | Quick Sort | $O(n \log n)$ | $O(n \log n)$ | $O(n^2)$ |
 
 :::info
-Merge Sort 的三種情況全都是 $\Theta(n \log n)$，這讓它在輸入分佈未知時是更穩定的選擇。Quick Sort 在實作上通常比 Merge Sort 快（cache 友好、原地排序），但需要好的 pivot 策略（如隨機選 pivot 或 median-of-three）來避免 worst case。Merge Sort 的代價是需要 $O(n)$ 的額外空間來合併。
+標準 Merge Sort 的三種情況都是 $\Theta(n \log n)$。Quick Sort 的常見原地實作也常有良好效能，但要區分平均與最壞保證：隨機 pivot 提供期望界，median-of-three 改善常見輸入，兩者仍可能遇到二次方最壞情況。陣列 Merge Sort 通常需要 $O(n)$ 額外合併空間。
 :::
 
 ## 主定理（Master Theorem）
@@ -191,6 +193,8 @@ $$T(n) = aT\!\left(\frac{n}{b}\right) + f(n), \quad a \geq 1,\; b > 1$$
 - $f(n)$：每次遞迴的合併/拆分代價
 
 主定理提供直接判定 $T(n)$ 成長速度的方法。
+
+以下假設基本情況 $T(1)=\Theta(1)$、成本非負；示例的非遞迴成本用 $\Theta$ 寫出緊界，避免只給上界卻直接推緊界。取整不影響這些標準例子的漸進結果。
 
 **關鍵值** $c = \log_b a$
 
@@ -209,7 +213,7 @@ $n^c$ 可以想成遞迴樹總共有多少個葉節點的代價。比較 $f(n)$�
 
 條件：$f(n)$ 比 $n^c$ **慢**一個多項式因子，即 $f(n) = O(n^{c - \varepsilon})$，某個 $\varepsilon > 0$。
 
-**手把手**：$T(n) = 8T(n/2) + O(n^2)$
+**手把手**：$T(n) = 8T(n/2) + \Theta(n^2)$
 
 | 步驟 | 計算 |
 | :--- | :--- |
@@ -222,7 +226,7 @@ $n^c$ 可以想成遞迴樹總共有多少個葉節點的代價。比較 $f(n)$�
 
 條件：$f(n) = \Theta(n^c)$，兩邊同階。每層遞迴都貢獻類似代價，共 $\log n$ 層，所以多一個 $\log$。
 
-**手把手（Merge Sort）**：$T(n) = 2T(n/2) + O(n)$
+**手把手（Merge Sort）**：$T(n) = 2T(n/2) + \Theta(n)$
 
 | 步驟 | 計算 |
 | :--- | :--- |
@@ -233,9 +237,9 @@ $n^c$ 可以想成遞迴樹總共有多少個葉節點的代價。比較 $f(n)$�
 
 ### Case 3：合併主導 → $T(n) = \Theta(f(n))$
 
-條件：$f(n)$ 比 $n^c$ **快**一個多項式因子，即 $f(n) = \Omega(n^{c + \varepsilon})$，另需滿足正則條件（實務上大多成立，不詳述）。
+條件：$f(n)$ 比 $n^c$ **快**一個多項式因子，即 $f(n) = \Omega(n^{c + \varepsilon})$；另需有常數 $0 < q < 1$，使充分大的 $n$ 滿足 $a f(n/b) \leq q f(n)$（正則條件）。
 
-**手把手**：$T(n) = T(n/2) + O(n)$
+**手把手**：$T(n) = T(n/2) + \Theta(n)$
 
 | 步驟 | 計算 |
 | :--- | :--- |
@@ -248,22 +252,22 @@ $n^c$ 可以想成遞迴樹總共有多少個葉節點的代價。比較 $f(n)$�
 
 | 遞迴式 | $a$ | $b$ | $c=\log_b a$ | $f(n)$ | Case | $T(n)$ |
 | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| Binary search: $T(n/2) + O(1)$ | 1 | 2 | 0 | $1$ | 2 | $\Theta(\log n)$ |
-| Merge sort: $2T(n/2) + O(n)$ | 2 | 2 | 1 | $n$ | 2 | $\Theta(n \log n)$ |
-| Strassen: $7T(n/2) + O(n^2)$ | 7 | 2 | $\log_2 7 \approx 2.81$ | $n^2$ | 1 | $\Theta(n^{\log_2 7})$ |
-| $T(n/2) + O(n)$ | 1 | 2 | 0 | $n$ | 3 | $\Theta(n)$ |
-| $4T(n/2) + O(n^2)$ | 4 | 2 | 2 | $n^2$ | 2 | $\Theta(n^2 \log n)$ |
-| $3T(n/2) + O(n^2)$ | 3 | 2 | $\log_2 3 \approx 1.58$ | $n^2$ | 3 | $\Theta(n^2)$ |
+| Binary search（最壞）: $T(n/2) + \Theta(1)$ | 1 | 2 | 0 | $1$ | 2 | $\Theta(\log n)$ |
+| Merge sort: $2T(n/2) + \Theta(n)$ | 2 | 2 | 1 | $n$ | 2 | $\Theta(n \log n)$ |
+| Strassen: $7T(n/2) + \Theta(n^2)$ | 7 | 2 | $\log_2 7 \approx 2.81$ | $n^2$ | 1 | $\Theta(n^{\log_2 7})$ |
+| $T(n/2) + \Theta(n)$ | 1 | 2 | 0 | $n$ | 3 | $\Theta(n)$ |
+| $4T(n/2) + \Theta(n^2)$ | 4 | 2 | 2 | $n^2$ | 2 | $\Theta(n^2 \log n)$ |
+| $3T(n/2) + \Theta(n^2)$ | 3 | 2 | $\log_2 3 \approx 1.58$ | $n^2$ | 3 | $\Theta(n^2)$ |
 
 :::tip
 口訣：**比較 $f(n)$ 和 $n^c$**。$f$ 慢 → Case 1，答案就是 $n^c$；同階 → Case 2，多一個 $\log$；$f$ 快 → Case 3，答案就是 $f(n)$。
 :::
 
 :::warning
-主定理不是萬能的，有些遞迴式不在它的適用範圍內。例如 $T(n) = 2T(n/2) + n\log n$——$f(n) = n\log n$ 比 $n^c = n$ 大，但差的只是一個 $\log n$ 因子（不是多項式因子），所以不滿足 Case 3 也不屬於 Case 2。這類情況要改用遞迴樹法或代入法，結果為 $\Theta(n \log^2 n)$。
+上面介紹的是 Case 2 僅含 $f(n) = \Theta(n^c)$ 的基礎版本。例如 $T(n) = 2T(n/2) + n\log n$ 不符合這個版本的三種條件，遞迴樹可得 $\Theta(n \log^2 n)$。擴充版 Case 2 允許 $f(n) = \Theta(n^c \log^k n)$（$k \geq 0$），因此也能直接處理這一例；不能把基礎版的限制當成所有主定理版本的限制。
 :::
 
-### 例題：用展開法（不用主定理）推導 $T(n) = 3T(n/3) + O(n)$
+### 例題：用展開法（不用主定理）推導 $T(n) = 3T(n/3) + \Theta(n)$
 
 **為什麼要會展開法**：主定理是一個「查表規則」，考試如果老師尚未教到、或題目明說「不得使用主定理」，直接寫結果會被扣分。展開法（又稱 iteration method、substitution by unfolding）是把遞迴式一層一層代入，靠 Σ 求和算出精確階數，屬於第一性原理的推導。
 
@@ -328,9 +332,9 @@ $$T(n) = n + c n \log_{3} n = \Theta(n \log n)$$
 
 ## 問題複雜度（簡介）
 
-- **P**：能在多項式時間 $O(n^k)$ 內**解決**的問題（排序、Dijkstra、最大流）
-- **NP**：能在多項式時間內**驗證**一個解是否正確的問題
-- **NP-complete**：NP 中最難的一批——所有 NP 問題都可多項式時間規約到它（TSP、SAT、背包）
+- **P**：能在多項式時間內**解決**的決定問題，例如「最短路徑長度是否不超過 $K$」
+- **NP**：對答案為 yes 的輸入，存在多項式長度的證書，能在多項式時間內**驗證**
+- **NP-complete**：屬於 NP，且所有 NP 問題都可多項式時間規約到它，例如 SAT、TSP 的決定版本；TSP 最佳化版本則稱 NP-hard
 - **P ⊆ NP**，但 P = NP 尚未證明
 
 ## 常見考法
@@ -342,4 +346,6 @@ $$T(n) = n + c n \log_{3} n = \Theta(n \log n)$$
 | 主定理套用 | $a, b, f(n) \to c=\log_b a \to$ 比 $f$ 與 $n^c$ → Case 1/2/3 |
 | 展開法推導 | 展 3 層看係數、找觸底 $k=\log_b n$、代回求和 |
 | 區分 $O/\Omega/\Theta$ | 「緊界」一定是 $\Theta$；上界 $O$；下界 $\Omega$ |
-| 辨識 P / NP / NPC | NP-complete 代表「無多項式解」，要走近似或啟發式 |
+| 辨識 P / NP / NPC | NP-complete 尚無已知多項式時間精確演算法；是否存在仍取決於 P = NP 問題 |
+
+延伸核對：[MIT 6.006 漸進符號](https://live.ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/c6d8f06c6f11e3342633dec85498f551_MIT6_006S20_r01.pdf)、[Cornell 主定理與正則條件](https://www.cs.cornell.edu/courses/cs410/1999fa/Lectures/lecture2.pdf)；採用時須先確認基礎版或擴充版的條件。

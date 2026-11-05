@@ -1,9 +1,9 @@
 ---
 title: "[TypeScript] 介面與型別別名"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["TypeScript", "interface", "type", "union", "intersection"]
-changelog: ['2026-06-11']
+changelog: ['2026-06-11', '2026-11-05']
 sameDateSort: 3
 ---
 
@@ -25,7 +25,7 @@ type User = {
 }
 ```
 
-兩者大多時候可互換，差異整理在文末。
+以上是兩種擇一的寫法，不可在同一作用域同時宣告同名的 User interface 與 type；後續區塊也按獨立範例閱讀。差異整理在文末。
 
 ## 屬性修飾
 
@@ -38,7 +38,7 @@ interface User {
 }
 ```
 
-`?` 大致等同 `name: string | undefined`，差別在它還允許整個欄位直接省略。
+`email?: string` 允許省略欄位，讀取通常得到 string | undefined；開啟 exactOptionalPropertyTypes 後，「缺少 email」與「明確指定 email: undefined」也會區分，不等同必填的 string | undefined。
 
 ## extends：繼承
 
@@ -130,7 +130,7 @@ function handle(r: Result<number>) {
 
 辨識欄位（這裡是 `ok`）讓 TS 在 if / switch 後自動窄化分支。型別守衛章節會更深入。
 
-所謂「辨識」，是指 union 裡每個分支都帶一個共同欄位（例如 `ok: true | false` 或 `kind: 'circle' | 'square'`）。TS 在 `if` / `switch` 裡讀到這個欄位的值，就會自動把變數縮成對應的分支（type narrowing）；少了這個共同欄位，TS 就無從判斷當下是哪一種。
+所謂「辨識」，是指 union 裡每個分支都帶一個共同欄位（例如 `ok: true | false` 或 `kind: 'circle' | 'square'`）。TS 在 `if` / `switch` 裡讀到這個欄位的值，就會自動把變數縮成對應的分支（type narrowing）；沒有辨識欄位時仍可用 in、typeof 或自訂守衛窄化；共同字面值欄位只是很方便、清楚的一種方式。
 
 ## 函式型別
 
@@ -180,7 +180,7 @@ type Foo = { a: number }
 type Foo = { b: string }   // ❌ Duplicate identifier 'Foo'
 ```
 
-主要應用：擴充全域型別（例如 `Window`、`Express.Request`）。
+主要應用：擴充全域型別（例如 Window、Express.Request）。上面的 Window 合併若寫在 module 內只會是區域宣告；要擴充全域 Window，需包在 `declare global`，模組篇會示範。
 
 ## interface vs type 對照
 
@@ -193,7 +193,7 @@ type Foo = { b: string }   // ❌ Duplicate identifier 'Foo'
 | 字面值 / 原始型別別名 | ❌ | ✅ |
 | 同名合併 | ✅ | ❌ |
 | 對應 mapped type / conditional type | ❌ | ✅ |
-| 對 IDE 提示效能 | 略快 | 略慢 |
+| 檢查效能 | extends 的繼承關係可被快取 | 複雜 intersection 可能更耗資源，不能一概說 alias 較慢 |
 
 實務取捨：
 
@@ -250,3 +250,9 @@ const t: readonly [string, number] = ['a', 1]
 把陣列宣告成 `readonly` 是傳函式參數時的好習慣，明示「我不會改」。
 
 物件結構與型別組合搞定，下一篇處理另一個天天碰的東西——函式的型別，包含 overload、`this`、回呼簽章與 `void` 的細節。
+
+## 參考文件
+
+- [TypeScript：Object Types](https://www.typescriptlang.org/docs/handbook/2/objects.html)
+- [TypeScript：exactOptionalPropertyTypes](https://www.typescriptlang.org/tsconfig/exactOptionalPropertyTypes.html)
+- [TypeScript：Declaration Merging](https://www.typescriptlang.org/docs/handbook/declaration-merging.html)

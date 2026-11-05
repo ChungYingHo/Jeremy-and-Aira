@@ -1,9 +1,9 @@
 ---
 title: "[Java] 集合框架"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-20"
 tags: ["Java", "collection", "List", "Map", "Set"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 3
 ---
 
@@ -11,17 +11,16 @@ sameDateSort: 3
 
 ## 整體架構
 
-Java Collection Framework 在 `java.util` 下，三大主幹加 `Map`：
+Java Collections Framework 在 `java.util` 下，主要介面與關係如下：
 
-```
-Iterable
-└── Collection
-    ├── List       （有序、可重複）
-    ├── Set        （不重複）
-    └── Queue      （FIFO / 雙端）
-
-Map                （key-value，獨立階層，不繼承 Collection）
-```
+| 介面 | 主要關係與用途 |
+| :--- | :--- |
+| `Iterable` | 提供 iterator，可供 for-each 走訪 |
+| `Collection` | 繼承 `Iterable`，是 `List`、`Set`、`Queue` 的共同父介面 |
+| `List` | 有序、可重複 |
+| `Set` | 元素不重複 |
+| `Queue`／`Deque` | 佇列／雙端佇列；取出順序由實作決定，不一定是 FIFO |
+| `Map` | key-value 的獨立階層，不繼承 `Collection` |
 
 宣告時用介面、實例化時用具體類別：
 
@@ -54,7 +53,7 @@ list.isEmpty();
 
 ### LinkedList
 
-雙向鏈結。頭尾 add/remove O(1)，隨機存取 O(n)。需要當 queue 或頻繁頭部操作才用，否則一律 ArrayList。
+雙向鏈結。頭尾 add/remove O(1)，隨機存取 O(n)。一般 List 可先選 ArrayList；單純的 queue／stack 通常也可先考慮 ArrayDeque。LinkedList 的優勢要連同走訪方式評估，不能只看到「插入 O(1)」就忽略找位置的成本。
 
 ### 走訪
 
@@ -63,6 +62,8 @@ for (String s : list) { ... }                  // for-each
 for (int i = 0; i < list.size(); i++) { ... }  // 傳統
 list.forEach(s -> System.out.println(s));      // lambda
 ```
+
+對 LinkedList 反覆用 `get(i)` 走訪，整輪可能變成 O(n²)；for-each／iterator 不需要每次從頭找位置。
 
 ## Set
 
@@ -92,7 +93,7 @@ t.first();    // 1
 t.last();     // 3
 ```
 
-### 自訂物件放 Set 必須實作 `equals` + `hashCode`
+### HashSet／LinkedHashSet 的相等規則
 
 否則兩個內容相同的物件會被當成不同東西：
 
@@ -104,6 +105,8 @@ set.contains(new Point(1, 2));    // ✅ true
 ```
 
 非 record 的 class 要手動實作（或用 IDE 產生）。
+
+TreeSet 則依 `compareTo`／`Comparator` 的結果判斷兩個元素是否相同，回傳 0 就視為同一個元素；排序規則應與 `equals` 一致，才符合 Set 的一般契約。
 
 ## Map
 
@@ -128,7 +131,7 @@ m.forEach((k, v) -> System.out.println(k + "=" + v));
 
 ### LinkedHashMap
 
-保留插入順序，常見於 LRU cache 實作。
+預設保留插入順序。若用來實作 LRU cache，通常要用 `accessOrder=true` 的建構方式，並另外處理容量與淘汰；單純換成 LinkedHashMap 還不會自動變成 LRU。
 
 ### TreeMap
 
@@ -149,7 +152,7 @@ for (String w : words) {
 }
 ```
 
-`merge(key, value, remap)`：key 不存在就放 value，存在就用 remap 合併。
+`merge(key, value, remap)`：key 不存在或目前對應 `null` 時放入 value；已有非 `null` 值才呼叫 remap 合併。若 remap 回傳 `null`，該 key 會被移除。
 
 ### computeIfAbsent
 
@@ -183,7 +186,7 @@ queue.offer(1); queue.offer(2);
 queue.poll();       // 1
 ```
 
-別用 `Stack`（老舊、`synchronized` 拖速度），用 `ArrayDeque`。
+一般單執行緒 stack／queue 可先選 ArrayDeque，避免沿用歷史較久的 Stack。ArrayDeque 不接受 `null`，也不是執行緒安全的容器；多執行緒需求要另選並行容器或同步方式。
 
 ### PriorityQueue
 
@@ -198,7 +201,9 @@ pq.poll();    // 1
 PriorityQueue<Integer> max = new PriorityQueue<>(Comparator.reverseOrder());
 ```
 
-## 不可變集合（Java 9+）
+優先順序保證的是 `peek`／`poll` 的頭部元素，並不保證 iterator 或直接印出的整個佇列已排序。
+
+## 不可修改的集合（Java 9+）
 
 ```java
 List<Integer> nums = List.of(1, 2, 3);
@@ -210,7 +215,7 @@ Map<String, Integer> big = Map.ofEntries(
 );
 ```
 
-`add` / `put` 會丟 `UnsupportedOperationException`。給「真的不會變」的常數用，建構快、執行緒安全。
+這些 factory 產生的集合不能 `add`／`put`，否則會丟 `UnsupportedOperationException`；也不接受 `null`。這是集合結構不可修改，不代表元素本身深度不可變，不能因此就宣稱任何內容都能安全地跨執行緒共享。
 
 ## Collections 工具類
 
@@ -223,8 +228,10 @@ Collections.max(list);
 Collections.min(list);
 Collections.frequency(list, x);
 
-List<Integer> readOnly = Collections.unmodifiableList(list);    // 包裝成不可變視圖
+List<Integer> readOnly = Collections.unmodifiableList(list);    // 包裝成不可修改的視圖
 ```
+
+視圖仍會反映原本 `list` 的變化，不是快照；若要獨立的不可修改結果，可依需求使用 `List.copyOf(list)`（Java 10+），但元素依然只是淺層複製。
 
 ## Comparator
 
@@ -253,3 +260,10 @@ people.sort(Comparator.comparingInt(Person::age)
 | 純常數 | `List.of` / `Set.of` / `Map.of` |
 
 集合 API 上面的 `<T>` 角括號就是泛型。下一篇正式進泛型——萬用字元 `?`、`extends` / `super` 上下界、為什麼 Java 泛型有「型別擦除」這個獨特包袱。
+
+## 參考
+
+- [Java 21：List 的不可修改集合](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html#unmodifiable)
+- [Java 21：TreeSet 的相等與排序契約](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/TreeSet.html)
+- [Java 21：LinkedHashMap 的 access-order](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/LinkedHashMap.html)
+- [Java 21：ArrayDeque](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/ArrayDeque.html)

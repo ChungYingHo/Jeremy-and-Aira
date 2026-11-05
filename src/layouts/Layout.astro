@@ -5,12 +5,13 @@ import Menu from '@/components/Menu/Menu.svelte'
 import BackgroundMusic from '@/components/BackgroundMusic.astro'
 import { ClientRouter } from 'astro:transitions'
 import { useMenu } from '@/utils/useMenu'
+import type { AuthorMember } from '@/constants/authors'
 
 const { menu } = await useMenu()
 const currentPath = Astro.url.pathname
 
 // The display face is self-hosted so the brand does not depend on remote font loading.
-const FONT_CSS_URL = 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap'
+const FONT_CSS_URL = 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap'
 
 interface Props {
   title?: string
@@ -19,6 +20,7 @@ interface Props {
   type?: 'website' | 'article'
   publishedTime?: string
   author?: string
+  authors?: AuthorMember[]
   tags?: string[]
   immersive?: boolean
   visualHome?: boolean
@@ -33,6 +35,7 @@ const {
   type = 'website',
   publishedTime,
   author = SITE_NAME,
+  authors,
   tags = [],
   immersive = currentPath === '/',
   visualHome = false,
@@ -43,6 +46,9 @@ const pageTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`
 const canonicalURL = new URL(Astro.url.pathname, Astro.site).href
 const ogImage = new URL(image, Astro.site).href
 const twitterCard = image === '/icon-512.png' ? 'summary' : 'summary_large_image'
+const articleAuthors = authors
+  ? authors.filter(member => member.kind === 'person').map(member => ({ '@type': 'Person', name: member.name }))
+  : [{ '@type': 'Person', name: author }]
 
 const jsonLd = type === 'article'
   ? {
@@ -52,7 +58,8 @@ const jsonLd = type === 'article'
       description,
       image: ogImage,
       url: canonicalURL,
-      author: { '@type': 'Person', name: author },
+      author: articleAuthors.length === 1 ? articleAuthors[0] : articleAuthors,
+      ...(authors?.length ? { creditText: authors.map(member => member.kind === 'ai' ? `${member.name}（AI 協作）` : member.name).join('、') } : {}),
       publisher: { '@type': 'Person', name: SITE_NAME },
       ...(publishedTime ? { datePublished: publishedTime } : {}),
       ...(tags.length ? { keywords: tags.join(', ') } : {}),

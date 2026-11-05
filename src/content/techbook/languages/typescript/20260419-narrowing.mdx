@@ -1,9 +1,9 @@
 ---
 title: "[TypeScript] 型別守衛與窄化"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["TypeScript", "type guard", "narrowing", "discriminated union"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 7
 ---
 
@@ -150,7 +150,7 @@ interface Cat { meow: () => void }
 interface Dog { bark: () => void }
 
 function isCat(x: Cat | Dog): x is Cat {
-  return (x as Cat).meow !== undefined
+  return "meow" in x && typeof x.meow === "function"
 }
 
 function play(animal: Cat | Dog) {
@@ -187,14 +187,14 @@ function f(v: unknown) {
 
 - 回傳型別寫成 `asserts x is T`
 - 函式必須真的會 throw，否則型別系統就被騙了
-- 不能用 arrow function（語法不支援）
+- arrow function 可以用，但被呼叫的變數需要明確的 assertion 函式型別，例如 `const assertString: (x: unknown) => asserts x is string = (x) => { if (typeof x !== "string") throw new Error("not a string") }`
 
 ## 型別斷言（as）vs 型別守衛
 
 | | `as` | type guard |
 | :--- | :--- | :--- |
 | 是否實際檢查 | ❌ 純編譯期 | ✅ 執行期實際判斷 |
-| 錯了會發生什麼 | 執行期炸 | 不會錯，分支邏輯正確 |
+| 錯了會發生什麼 | 不會替你檢查，後續使用可能出錯 | 守衛實作也可能錯，尤其自訂 predicate 不保證邏輯正確 |
 | 用在何處 | 過渡 / 確定型別但 TS 推不出 | 主要工具 |
 
 ```typescript
@@ -236,7 +236,7 @@ if (v !== undefined) {
 }
 ```
 
-### 2. 函式呼叫後窄化會「重置」
+### 2. 函式呼叫不一定讓窄化失效，但外部狀態可能已改變
 
 ```typescript
 function check(x: string | null) {
@@ -254,7 +254,7 @@ function check(x: string | null) {
 ```typescript
 function f(x: object | null) {
   if (typeof x === 'object') {
-    x.foo   // ❌ x 仍可能是 null
+    x.toString()   // ❌ x 仍可能是 null
   }
   if (x !== null) {
     // ✅ 排掉 null 後 x: object
@@ -280,3 +280,8 @@ function f(v: string | number) {
 if 裡面 return 或 throw 之後，後面的程式自動被窄化——能執行到那裡，就代表前面的條件不成立。
 
 最後一篇進到模組與 `.d.ts`，把跨檔案 import / export、ambient 宣告、第三方套件型別這些工程面的東西收尾。
+
+## 參考文件
+
+- [TypeScript：Narrowing](https://www.typescriptlang.org/docs/handbook/2/narrowing.html)
+- [TypeScript3.7：Assertion Functions](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html)

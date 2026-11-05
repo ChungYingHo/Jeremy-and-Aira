@@ -1,9 +1,9 @@
 ---
 title: '[Algorithm] 貪婪演算法'
-author: 'Jeremy & Claude'
+author: 'Jeremy & Claude & Codex'
 date: '2026-03-23'
 tags: [algorithm, greedy, prim, kruskal, sollin, dijkstra, huffman, convex hull, bin packing, graph, tree]
-changelog: ['2026-04-02']
+changelog: ['2026-04-02', '2026-11-05']
 ---
 
 import MstDiagram from '@/components/ArticleRelated/algorithm/MstDiagram.svelte'
@@ -25,7 +25,7 @@ import BinPackingDiagram from '@/components/ArticleRelated/algorithm/BinPackingD
 1. **貪婪選擇性質**：每步的貪婪選擇不會讓之後的最優解消失——局部最優能組合成全域最優。
 2. **最優子結構**：整體最優解包含子問題的最優解。
 
-兩個條件缺一不可。實務判斷能不能用貪婪：先想一個貪婪策略，再找反例；找到反例就改用動態規劃。
+兩個條件缺一不可。實務判斷能不能用貪婪：先想策略，再找反例；沒有找到反例仍不等於證明，還要用交換論證、割性質等方式說明選擇安全。若策略失敗，再依問題選擇動態規劃、搜尋或其他方法。
 
 找零例子：台灣面額（1、5、10、50、100、500）對貪婪友善，付 100 買 73、找 27，貪婪拿 10+10+5+1+1 剛好 5 枚是最少的。但換成 **1、3、4 元**找 6 元，貪婪選 4+1+1 = 3 枚，最優解 3+3 = 2 枚——這套面額上貪婪就壞了。
 
@@ -36,7 +36,7 @@ import BinPackingDiagram from '@/components/ArticleRelated/algorithm/BinPackingD
 
 接下來的 Prim、Kruskal、Sollin、Dijkstra 複雜度都用 $|V|$（頂點數）和 $|E|$（邊數）兩個變數表示，跟前篇用單一 $n$ 的寫法不同。怎麼對應到常見等級？
 
-- $|E|$ 的範圍：最少 $|V| - 1$（樹）、最多 $|V|^2$（完全圖），所以 $|E|$ 介於 $O(|V|)$ 和 $O(|V|^2)$ 之間
+- 對連通簡單無向圖，$|V| - 1 \leq |E| \leq |V|(|V|-1)/2$；若不要求連通，邊數可以是 0。簡單有向圖也至多有 $|V|(|V|-1)$ 條邊，兩者的上界都是 $O(|V|^2)$
 - $O(|E| \log |V|)$ 在**稀疏圖**（$|E| \approx |V|$）約是 $O(n \log n)$ 等級；在**稠密圖**（$|E| \approx |V|^2$）約是 $O(n^2 \log n)$ 等級
 - 不管是哪一種，都仍是**多項式複雜度** (polynomial)，不是指數級
 
@@ -51,7 +51,7 @@ import BinPackingDiagram from '@/components/ArticleRelated/algorithm/BinPackingD
 
 #### 複雜度
 
-用 min-heap 存候選邊。每條邊最多進 heap 一次共 $|E|$ 次、每次 $O(\log V)$ → 總共 $O(|E| \log |V|)$。適合稠密圖。
+下方採 lazy min-heap 存候選邊，每條邊至多進出 heap 一次，時間 $O(|E| \log |E|)$；對連通簡單圖可寫成 $O(|E| \log |V|)$。若是稠密圖，陣列選最小值的 $O(|V|^2)$ Prim 版本反而可省去 heap 的對數因子。
 
 #### 範例
 
@@ -68,7 +68,7 @@ import BinPackingDiagram from '@/components/ArticleRelated/algorithm/BinPackingD
 | 1 | \{A\} | A-D(1), A-B(4), A-E(8) | **A-D(1)** | 1 |
 | 2 | \{A, D\} | A-B(4), D-E(7), A-E(8) | **A-B(4)** | 5 |
 | 3 | \{A, D, B\} | B-E(2), B-C(3), D-E(7), A-E(8) | **B-E(2)** | 7 |
-| 4 | \{A, D, B, E\} | B-C(3), E-F(9)（其餘兩端已在樹內） | **B-C(3)** | 10 |
+| 4 | \{A, D, B, E\} | B-C(3), E-C(5), E-F(9) | **B-C(3)** | 10 |
 | 5 | \{A, D, B, E, C\} | C-F(6), E-F(9) | **C-F(6)** | 16 |
 | 6 | 全部 | — | — | **16** |
 
@@ -108,7 +108,7 @@ def prim(graph, start):
 
 #### 複雜度
 
-排序 $O(|E| \log |E|)$ 主導，Union-Find 每次操作攤銷近 $O(1)$。總共 $O(|E| \log |E|)$。適合稀疏圖。
+排序 $O(|E| \log |E|)$ 主導；Union-Find 同時採路徑壓縮與依 rank 合併時，每次操作攤銷為 $O(\alpha(|V|))$，成長極慢但不是嚴格常數。含初始化的總時間為 $O(|V| + |E| \log |E|)$。適合以邊串列表示的稀疏圖。
 
 #### 範例
 
@@ -137,6 +137,7 @@ def prim(graph, start):
 ```python
 def kruskal(nodes, edges):
     parent = {n: n for n in nodes}
+    rank = {n: 0 for n in nodes}
 
     def find(x):
         while parent[x] != x:
@@ -148,7 +149,11 @@ def kruskal(nodes, edges):
         rx, ry = find(x), find(y)
         if rx == ry:
             return False
+        if rank[rx] < rank[ry]:
+            rx, ry = ry, rx
         parent[ry] = rx
+        if rank[rx] == rank[ry]:
+            rank[rx] += 1
         return True
 
     edges.sort(key=lambda e: e[2])
@@ -167,7 +172,7 @@ def kruskal(nodes, edges):
 
 #### 演算法策略
 
-另一種 MST 招式。每一輪，**所有分量同時**各自找自己最便宜的跨分量邊，一次全部加進去、合併分量。重複直到只剩一個分量。1926 年發明、比 Prim/Kruskal 都早，天生適合平行運算。
+另一種 MST 招式。每一輪，**所有分量同時**各自找自己最便宜的跨分量邊，再用 Union-Find 去重並跳過已成環的邊，合併分量。相同權重時尤其不能無條件全加。連通圖重複直到只剩一個分量；不連通圖則得到最小生成森林。1926 年發明、比 Prim/Kruskal 都早，天生適合平行運算。
 
 #### 複雜度
 
@@ -211,6 +216,7 @@ def kruskal(nodes, edges):
 ```python
 def sollin(nodes, edges):
     parent = {n: n for n in nodes}
+    rank = {n: 0 for n in nodes}
 
     def find(x):
         while parent[x] != x:
@@ -222,7 +228,11 @@ def sollin(nodes, edges):
         rx, ry = find(x), find(y)
         if rx == ry:
             return False
+        if rank[rx] < rank[ry]:
+            rx, ry = ry, rx
         parent[ry] = rx
+        if rank[rx] == rank[ry]:
+            rank[rx] += 1
         return True
 
     total = 0
@@ -236,6 +246,8 @@ def sollin(nodes, edges):
             for r in [ru, rv]:
                 if r not in cheapest or w < cheapest[r][2]:
                     cheapest[r] = (u, v, w)
+        if not cheapest:
+            break  # No remaining edges between components.
         for u, v, w in cheapest.values():
             if union(u, v):
                 total += w
@@ -251,7 +263,7 @@ def sollin(nodes, edges):
 | | Prim | Kruskal | Sollin |
 | :--- | :--- | :--- | :--- |
 | 方向 | 從節點出發擴張 | 從邊出發合併 | 每輪每分量同時挑 |
-| 適合 | 稠密圖 | 稀疏圖 | 平行運算 |
+| 適合 | 從鄰接結構擴張；稠密圖可選陣列版 | 邊串列、稀疏圖 | 平行運算 |
 | 需要 | min-heap | Union-Find + 排序 | Union-Find |
 | 複雜度 | $O(|E| \log |V|)$ | $O(|E| \log |E|)$ | $O(|E| \log |V|)$ |
 
@@ -271,7 +283,7 @@ def sollin(nodes, edges):
 
 #### 複雜度
 
-用 min-heap：$|V|$ 次 extract-min + 最多 $|E|$ 次 push，每次 $O(\log V)$ → 總共 $O((|V| + |E|) \log |V|)$。
+若用支援 decrease-key 的索引 heap，可得 $O((|V| + |E|) \log |V|)$。下方 `heapq` 範例以重複 push 加過期項目略過取代 decrease-key，可能有 $O(|E|)$ 次 pop，較直接的界是 $O(|V| + |E| \log(|E| + 1))$；簡單圖上可化為常見的 $O((|V| + |E|) \log |V|)$。
 
 #### 範例
 
@@ -413,6 +425,8 @@ Dijkstra 不能處理**負權邊**。有負邊要用 Bellman-Ford（$O(|V| \cdot
 import heapq
 
 def huffman(freq):
+    if not freq:
+        return {}
     heap = [(f, i, c) for i, (c, f) in enumerate(freq.items())]
     heapq.heapify(heap)
     counter = len(freq)
@@ -426,7 +440,7 @@ def huffman(freq):
 
     def build(node, prefix=''):
         if isinstance(node, str):
-            codes[node] = prefix
+            codes[node] = prefix or '0'
             return
         build(node[0], prefix + '0')
         build(node[1], prefix + '1')
@@ -507,7 +521,7 @@ def activity_selection(activities):
 給平面一堆點，找最小凸多邊形把所有點包起來。像用橡皮筋圈釘子、收縮後的形狀。Graham Scan 的招式：
 
 1. 找 $y$ 最小（平手取 $x$ 最小）的點當起點。
-2. 其他點依對起點的極角排序。
+2. 其他點依對起點的極角排序；同角度依距離由近到遠，讓共線處彈掉近點、保留最遠點。
 3. 依序掃過去，維護一個 stack——新來的點造成「右轉」就把 stack 頂彈掉（它不是凸包點），形成「左轉」才 push。
 
 判左轉右轉用**外積**：三點 $P_1, P_2, P_3$，
@@ -548,9 +562,15 @@ $\text{cross} > 0$ 左轉（保留）、$\leq 0$ 右轉或共線（彈出 $P_2$�
 import math
 
 def graham_scan(points):
+    points = sorted(set(points))
+    if len(points) <= 1:
+        return points
     start = min(points, key=lambda p: (p[1], p[0]))
     points.remove(start)
-    points.sort(key=lambda p: math.atan2(p[1] - start[1], p[0] - start[0]))
+    points.sort(key=lambda p: (
+        math.atan2(p[1] - start[1], p[0] - start[0]),
+        (p[0] - start[0]) ** 2 + (p[1] - start[1]) ** 2
+    ))
 
     stack = [start]
     for p in points:
@@ -589,11 +609,12 @@ $n$ 個物品、大小 $s_i \leq C$，箱容量 $C$，目標用最少箱子。�
 #### 複雜度
 
 - NF：$O(n)$
-- FF / FFD：$O(n \log n)$（FFD 排序主導；FF 每次找可用箱平均 $O(\log n)$）
+- 下方逐箱掃描的 FF / FFD：最壞 $O(n^2)$，排序 $O(n \log n)$ 不會蓋過逐箱掃描
+- 若用節點記錄最大剩餘容量的區間樹，按箱子開啟順序找第一個可放位置，FF / FFD 才能做到 $O(n \log n)$；一般二元 heap 並不能直接回答「第一個」可用箱
 
 近似比：
 
-| 策略 | 近似比 |
+| 策略 | 使用箱數的保證（OPT 為最少箱數）|
 | :--- | :--- |
 | Next Fit | $\leq 2 \cdot \text{OPT}$ |
 | First Fit | $\leq 1.7 \cdot \text{OPT} + 2$ |
@@ -665,10 +686,10 @@ def first_fit_decreasing(items, capacity=1.0):
 
 **最優解**：A（1）+ C（4）= 5，總價值 **18**。
 
-貪婪錯了 2。0/1 背包必須用動態規劃。
+貪婪少了 2。0/1 背包需要其他方法求精確解，例如整數容量下的動態規劃、分支限界或 meet-in-the-middle；不是只能用 DP。
 
 :::tip
-若物品**可以切割**（分數背包），貪婪按性價比**是對的**——把最後一件切一部分塞滿。但 0/1 背包（整件拿或不拿）不行。考試常出這題陷阱：沒明說可切就是 0/1。
+若物品**可以切割**（分數背包），在通常正重量、非負價值的設定下按性價比貪婪是對的——最後一件可切一部分。但 0/1 背包不保證成功；是否可切割要依題目定義，不能自行假設。
 :::
 
 ## 貪婪 vs 動態規劃
@@ -676,9 +697,9 @@ def first_fit_decreasing(items, capacity=1.0):
 | | 貪婪 | 動態規劃 |
 | :--- | :--- | :--- |
 | 決策 | 每步選局部最優、不回頭 | 考慮所有可能、記錄子問題解 |
-| 額外條件 | 要有貪婪選擇性質 | 只要有最優子結構 |
+| 額外條件 | 要證明貪婪選擇安全 | 要有正確的狀態與轉移；重疊子問題讓重用結果有價值 |
 | 速度 | 通常較快 | 通常較慢 |
-| 正確性 | 要證明 | 狀態設計對就對 |
+| 正確性 | 證明每次選擇都可延伸成最優解 | 證明狀態涵蓋所有情況、轉移與邊界正確 |
 | 典型 | MST、Dijkstra、Huffman、活動選擇 | 0/1 背包、LCS、編輯距離 |
 
 ## 常見考法
@@ -694,8 +715,12 @@ def first_fit_decreasing(items, capacity=1.0):
 | 活動選擇 | 按**結束時間**遞增排序、依序挑不衝突 |
 | Bin Packing | FF / FFD 手跑；近似比要背 |
 | 分數背包 | 按性價比排序、最後一件切割 |
-| **0/1 背包**（陷阱）| 性價比貪婪**不保證最優**、必須 DP |
+| **0/1 背包**（陷阱）| 性價比貪婪**不保證最優**；可考慮 DP 或精確搜尋 |
 
 :::warning
-**Dijkstra 負權邊陷阱**：考試常故意放一條負權邊看你會不會用 Dijkstra 出錯。**0/1 背包**：題目沒明說「可切割」就是 0/1，貪婪一定錯。
+**Dijkstra 負權邊陷阱**：有負權邊時，標準 Dijkstra 的正確性保證失效。**0/1 背包**：性價比貪婪在某些輸入剛好最優，但不能保證每次都最優；是否可切割要以題目定義為準。
 :::
+
+範例假設圖的每個頂點（包含沒有出邊的頂點）都有鄰接串列，頂點標籤可比較；Prim 的範例只計起點所在分量。Graham Scan 使用整數座標與 `atan2` 展示概念，對極接近共線的大數座標仍應採可靠的幾何判定；裝箱小數可先轉為整數單位，避免浮點邊界誤差。
+
+延伸核對：[Princeton 最小生成樹](https://algs4.cs.princeton.edu/43mst/)、[Graham Scan 實作](https://algs4.cs.princeton.edu/code/edu/princeton/cs/algs4/GrahamScan.java.html)、[Johnson：Fast algorithms for bin packing](https://www.sciencedirect.com/science/article/pii/S0022000074800267)、[Dósa：FFD 的緊界](https://doi.org/10.1007/978-3-540-74450-4_1)。

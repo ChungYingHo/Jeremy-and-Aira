@@ -1,9 +1,9 @@
 ---
 title: "[Python] 型別提示與工具"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["Python", "type hints", "typing", "mypy", "Protocol"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 8
 ---
 
@@ -11,13 +11,13 @@ sameDateSort: 8
 
 ## 型別提示是什麼
 
-Python 是動態語言，型別提示（type hints, PEP 484）只是「給人與工具看的註解」，**runtime 不會檢查**。
+Python 是動態語言，型別提示（type hints, PEP 484）只是「給人與工具看的註解」，**Python 本身不會依標註強制檢查參數型別**。
 
 ```python
 def add(a: int, b: int) -> int:
     return a + b
 
-add('hello', 1)   # runtime 不會炸（直到 + 失敗才炸）
+add('hello', 1)   # 不會先做型別標註檢查，但函式內的 + 會 TypeError
 ```
 
 要實際檢查，靠 **mypy** / **pyright** / IDE 在編譯期（其實是寫程式時）幫忙。
@@ -56,7 +56,7 @@ def find(name: str) -> int | None: ...
 def to_int(x: str | int) -> int: ...
 ```
 
-## Any vs object vs ...
+## Any vs object
 
 ```python
 from typing import Any
@@ -168,7 +168,7 @@ def show(u: User) -> None:
     print(u['name'])
 
 show({'id': 1, 'name': 'a', 'email': 'a@b'})    # ✅
-show({'id': 1, 'name': 'a'})                     # ❌ 缺 email
+show({'id': 1, 'name': 'a'})                     # ❌ 靜態檢查缺 email；這次 runtime 仍會印 a
 ```
 
 可選欄位：
@@ -276,6 +276,8 @@ class Counter:
         self.value = 0
 ```
 
+`ReadOnly`（Python 3.13+）可標示 TypedDict 的唯讀鍵，例如 `id: ReadOnly[int]`；它是靜態限制，不會讓一般 dict 在 runtime 變成不可修改。
+
 ## cast 與 # type: ignore
 
 ```python
@@ -301,7 +303,7 @@ mypy src/
 ```toml
 [tool.mypy]
 python_version = "3.13"
-strict = true                   # 一鍵開啟所有嚴格檢查
+strict = true                   # 開啟一組嚴格檢查，不包含所有可選旗標
 exclude = ["tests/"]
 warn_unused_ignores = true
 disallow_any_unimported = true
@@ -311,7 +313,7 @@ disallow_any_unimported = true
 
 ## pyright / Pylance
 
-VS Code 內建的 Pylance 就是 pyright（微軟做的另一套型別檢查器）。
+Pylance 是 VS Code 的獨立擴充套件，以 Pyright 的型別分析引擎為基礎，兩者不是完全相同的產品。
 
 | 工具 | 特色 |
 | :--- | :--- |
@@ -331,7 +333,7 @@ get_type_hints(f)
 # {'x': <class 'int'>, 'y': <class 'str'>, 'return': <class 'bool'>}
 ```
 
-`get_type_hints(fn)` 回傳一個 `dict`：參數名對應型別，外加一個 `'return'` 鍵對應回傳型別（傳 class 進去則是欄位對應型別）。`pydantic`、`fastapi`、`typer` 這些在 runtime 讀型別做驗證、序列化、CLI 解析的工具，底層都靠它。
+`get_type_hints(fn)` 回傳一個 `dict`：參數名對應型別，外加一個 `'return'` 鍵對應回傳型別（傳 class 進去則是欄位對應型別）。`pydantic`、`fastapi`、`typer` 這類工具會利用型別標註做 runtime 工作，但各自有版本相關的解析機制，不能說全部只靠 `get_type_hints`。一般 `dataclass` 本身不會驗證欄位型別。
 
 ## 寫 type hints 的順序建議
 
@@ -345,6 +347,12 @@ get_type_hints(f)
 
 - IDE 補全與跳轉更準
 - 改舊程式時，hints 是你的重構安全網
-- 配合 `pydantic` / `dataclass` 直接拿 hints 做 runtime 驗證
+- 有 runtime 驗證需求時，另選驗證工具或明確寫檢查；`dataclass` 不會自動驗證型別
 
 Python 系列到此結束——從環境（uv / venv）、語法骨架（型別、流程、函式、OOP）、組織（module / package）、IO 與例外、標準庫，到型別提示，整套寫真實 Python 專案需要的基礎都串完了。下一階段可以挑一個方向深入：Web（FastAPI / Django）、資料（pandas / polars）、ML（pytorch / scikit-learn），各自還會用到本系列沒展開的特定生態。
+
+## 參考文件
+
+- [Python 3.13：typing](https://docs.python.org/3.13/library/typing.html)
+- [mypy：strict configuration](https://mypy.readthedocs.io/en/stable/config_file.html#confval-strict)
+- [Pylance 官方說明](https://github.com/microsoft/pylance-release)

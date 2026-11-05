@@ -6,7 +6,7 @@
 
 ## 首頁與路由
 
-正式 `/` 使用 InkSurface 的全寬100vh fallback／100svh場景。共用Header在首屏上方，小型Jeremy／Solunastre Studio保持；左側完整呈現「雪沫乳花浮午盞，蓼茸蒿筍試春盤。人間有味是清歡。」。前兩句輕量、末句為唯一H1，詩句全部採Kouzan Brush Sousho 400草書；前兩句桌機26–32px，主句48–56px桌機／36px手機／30px窄屏，短桌機24／46px、短手機18／30px。詩句與Header共用1360px置中版心，響應式邊距56／32／20px。僅留一個細線文字加箭頭的「閱讀更多」到/about。文字區維持pointer-events:none，僅連結接事件；墨可自然暈到詩句背後，3條實際文字Range行框與CTA採局部核心R≤0.16限濃（padding8px／圓角8px／外30px柔邊，僅核心外固定起伏≤3px），pigment及screenUV共用同一冪等限濃helper並同比保留G/R age，防平流與折射堆深。區外及intro空隙仍可自然疊濃，字形另保留24%紙色／10px柔邊，沒有全版veil。pointer幾何排除保留Header、操作面板與實際閱讀更多連結。
+正式 `/` 使用 InkSurface 的全寬場景，以100lvh最大視窗高度為下限，讓Safari透明工具列後方仍由主視覺覆蓋；高度依序保留100vh／100svh／100dvh、最小高度保留100vh備援，並禁止flex壓縮。保留Safari自動safe-area inset，不改viewport-fit或以visualViewport JS縮放首屏。共用Header在首屏上方，小型Jeremy／Solunastre Studio保持；左側完整呈現「雪沫乳花浮午盞，蓼茸蒿筍試春盤。人間有味是清歡。」。前兩句輕量、末句為唯一H1，詩句全部採Kouzan Brush Sousho 400草書；前兩句桌機26–32px，主句48–56px桌機／36px手機／30px窄屏，短桌機24／46px、短手機18／30px。詩句與Header共用1360px置中版心，響應式邊距56／32／20px。僅留一個細線文字加箭頭的「閱讀更多」到/about。文字區維持pointer-events:none，僅連結接事件；墨可自然暈到詩句背後，3條實際文字Range行框與CTA採局部核心R≤0.16限濃（padding8px／圓角8px／外30px柔邊，僅核心外固定起伏≤3px），pigment及screenUV共用同一冪等限濃helper並同比保留G/R age，防平流與折射堆深。區外及intro空隙仍可自然疊濃，字形另保留24%紙色／10px柔邊，沒有全版veil。pointer幾何排除保留Header、操作面板與實際閱讀更多連結。
 下一段「最近的書寫」合併getPublishedEntries的Blog與TechBook，透過entryTimestamp及compareSortKeys依時間倒序、同日sameDateSort與標題正序取最新六筆。ArticleList依MENU_COLLECTIONS產生實際路徑，首頁顯示「筆記／日常」類型；目前六筆皆為較新的TechBook是實際日期排序結果，不另造Blog配額。
 品牌首頁連結一律 `/`。不保留未採用的提案路由、獨立 Header、舊場景或花草資產，避免誤回已否決的畫面。
 
@@ -28,15 +28,18 @@ Layout使用ClientRouter、body不加切頁動畫，固定名稱transition:persi
 
 Networking三圖與五種排序圖解以局部橫捲保留可讀比例，只有實際溢位才顯示滑動提示並可鍵盤聚焦；排序控制位於捲動區外、觸控區至少44px，不對全站SVG設定最小寬度。
 
+首次載入優先呈現既有靜態墨與文字，再建立WebGL；支援PaintTiming時等待first-paint，未支援時使用雙rAF備援。10個程式逐一讓出執行權，96步暖場每8步讓出，總步數、三滴seed、dt及畫質配置保持；完整完成才顯示live。離頁、減動、隱藏或離屏會取消等待中的RAF／timer／PaintObserver並清理初始化資源，避免背景工作持續。
+Google Fonts的Noto Sans TC改請求300..700可變範圍，保留原五個字重；JetBrains Mono仍為400／500，不改原700合成呈現。字體family與品牌字體不變；此變更只縮減重複CSS規則，不是另換字型。
+
 ## 關於頁與游標
 
-About以明確標題、引言與原色照片形成介紹區，下方以可讀正文、文字聯絡連結及作品列表分層。600px以下以96–128px照片和右側直列職務形成緊湊身份區，完整引言另起一段，再依序正文、聯絡與作品；601–850px身份置左、引言置右；更寬維持引言／職務左、照片右的桌機配置。AUTHORS原照片、英文簡介、職務、程式語言、四個社群目的地與三個既有作品均保留。
+About以About作頁面標題，照片下方不重複姓名，保留圖片alt；引言與原色照片形成介紹區，下方以可讀正文、文字聯絡連結及作品列表分層。600px以下以96–128px照片和右側直列職務形成緊湊身份區，完整引言另起一段，再依序正文、聯絡與作品；601–850px身份置左、引言置右；更寬維持引言／職務左、照片右的桌機配置。AUTHORS原照片、簡介事實、職務、程式語言、四個社群目的地與三個既有作品均保留。
 作品首項新增「昭離工作室｜Solunastre Studio」，實際外連https://solunastre.com/並保留noopener；「我的個人工作室，專門放自製商業產品。」只取使用者提供事實，沒有假設客戶案例或產品數據。外站內容／HTTP未驗證。
 游標沿用原生箭頭、文字I-beam與連結pointer；未採用的CustomCursor元件與舊綠色跟隨效果已外存，專案不保留第二套游標。
 
 ## 滴墨材質與備援
 
-InkSurface 保持原生 WebGL2：速度／壓力場、MacCormack 墨色平流及獨立水波場。初始三滴形成墨形，之後持續滴落；舊墨淡去，不持續填黑整屏。startup／auto／user 逐滴生成 spread／curl／drift／stretch profile，輪廓角度、橢圓比例、半徑、濃度、旋流正負、拉伸及漂移確實送入 shader，不只診斷亂數。
+InkSurface 保持原生 WebGL2：速度／壓力場、MacCormack 墨色平流及獨立水波場。初始三滴形成墨形，之後持續滴落；舊墨淡去，不持續填黑整屏。寬度>=1024px且支援fine-hover時，僅自動滴墨間隔除以1.25，由3.6–4.9秒縮為2.88–3.92秒；首滴2.4秒、強度／半徑／衰退／空間分布及手機配置保持。startup／auto／user 逐滴生成 spread／curl／drift／stretch profile，輪廓角度、橢圓比例、半徑、濃度、旋流正負、拉伸及漂移確實送入 shader，不只診斷亂數。
 fine-hover游標移動即可作筆；hover／自動落墨／點擊共用原滴墨形態與流動；僅路徑取樣、尺寸及劑量隨互動調整，重複描繪允許自然疊濃。Header／操作面板／實際連結仍排除pointer注墨，詩句可留淡墨但限濃，intro空隙與周圍維持原墨累積；有效移動或點擊／輕點後暫停auto約2600ms，閒置再恢復滴墨，pan保留原生捲動與pinch zoom。約30fps目標，桌機依實際像素配置、畫布最高900萬像素／顏料長邊960–2048自適應（physical2K為1536、4K為2048），手機維持200萬像素／DPR1.25與原低負載配置；離屏／隱藏停繪。減動、無JS、缺失WebGL2／浮點支援及context loss保留靜態SVG；失效context後resize／減動來回不重新顯示dead canvas。
 
 ## 2026-11-05 最新詩句、About與英文草書品牌驗證

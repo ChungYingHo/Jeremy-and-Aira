@@ -1,9 +1,9 @@
 ---
 title: "[Algorithm] 排序演算法"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-03-22"
 tags: [排序, 泡泡排序, 選擇排序, 插入排序, 合併排序, 快速排序]
-changelog: []
+changelog: ['2026-11-05']
 sameDateSort: 3
 ---
 
@@ -17,7 +17,7 @@ import QuickSortVisualizer from '@/components/ArticleRelated/algorithm/QuickSort
 
 排序就是把一堆資料照大小排好，好處是之後查詢、去重、找中位數都便宜。評估一個排序演算法要看四件事：**時間**（多快）、**空間**（要不要多開陣列）、**穩定性**（相等元素順序會不會被打亂）、**適應性**（資料已經接近有序時會不會更快）。
 
-比較型排序（靠比誰大誰小決定順序）的理論下界是 $O(n \log n)$，因為 $n!$ 種排列要用二元判斷樹區分，至少要 $\log_2 n! = \Theta(n \log n)$ 次比較。想突破這個下界只能用非比較型（counting/radix/bucket），但那些有額外假設。
+比較型排序（靠比誰大誰小決定順序）的最壞情況理論下界是 $\Omega(n \log n)$，因為 $n!$ 種相異元素排列要用二元判斷樹區分，至少要 $\lceil \log_2 n! \rceil = \Theta(n \log n)$ 次比較。想突破這個下界須利用比較以外的資訊，例如 counting/radix；bucket 的線性期望時間也需要分佈等額外假設。
 
 穩定性的例子：`[('Alice', 90), ('Bob', 80), ('Charlie', 90)]` 依分數升序，Alice 和 Charlie 同分，穩定排序後 Alice 仍在 Charlie 前面。
 
@@ -97,9 +97,9 @@ def bubble_sort(arr):
 <details>
 <summary>例題：判斷跑幾輪就已排序完成</summary>
 
-在 Bubble Sort 中，一輪內若沒發生任何 swap，就代表已經排序完成。所以「跑幾輪剛好排好」= 第一次出現「整輪無 swap」的輪次。
+在 Bubble Sort 中，一輪內若沒發生任何 swap，就能確認排序完成。但「資料第一次排好」和「flag 確認完成並停止」可能不是同一輪。
 
-例如 `[1, 2, 3, 5, 4]`：第 1 輪只在 $j = 3$ 交換 5, 4 → `[1, 2, 3, 4, 5]`，但本輪有 swap。第 2 輪全程無 swap、提早結束。所以跑 2 輪。
+例如 `[1, 2, 3, 5, 4]`：第 1 輪只在 $j = 3$ 交換 5, 4 → `[1, 2, 3, 4, 5]`，資料已排好；第 2 輪全程無 swap，程式才提早結束。因此排好需 1 輪，這份程式執行了 2 輪。
 
 </details>
 
@@ -119,7 +119,7 @@ def bubble_sort(arr):
 
 #### 複雜度
 
-無論輸入如何，外層 $n - 1$ 輪、內層每輪平均掃 $n/2$ 次 → 一律 $O(n^2)$。好處是交換次數最少（每輪一次），壞處是**不穩定**——`[3a, 3b, 1]` 第 1 輪把 $3a$ 換到位置 3，就跳到 $3b$ 後面了。
+無論輸入如何，內層總共比較 $n(n-1)/2$ 次 → 一律 $\Theta(n^2)$。好處是交換少（每輪至多一次，合計 $O(n)$），壞處是**不穩定**——`[3a, 3b, 1]` 第 1 輪把 $3a$ 換到位置 3，就跳到 $3b$ 後面了。
 
 #### 範例
 
@@ -300,11 +300,11 @@ def merge(left, right):
 
 挑一個**基準值（pivot）**，把陣列分成「比 pivot 小」、「等於 pivot」、「比 pivot 大」三堆，對左右兩堆遞迴。實務上最常用，常數係數小、cache 友好。
 
-關鍵是 pivot 選得好不好：永遠選第一個，遇到已排序輸入時會退化成 $O(n^2)$。實務用隨機選或三數取中（median-of-three）來避免 worst case。
+關鍵是 pivot 選得好不好：永遠選第一個，遇到相異元素已排序輸入時會退化成 $O(n^2)$。隨機選可保證期望 $O(n \log n)$；三數取中（median-of-three）能改善常見輸入，但兩者都沒有消除 $O(n^2)$ 的最壞情況。
 
 #### 複雜度
 
-平均情況 pivot 把陣列切成接近均等的兩半：$T(n) = 2T(n/2) + O(n) = O(n \log n)$。最壞情況 pivot 每次都是極值：$T(n) = T(n - 1) + O(n) = O(n^2)$。不穩定（partition swap 會打亂相等元素順序）。
+平衡分割時：$T(n) = 2T(n/2) + \Theta(n) = \Theta(n \log n)$。隨機 pivot 的期望時間也為 $\Theta(n \log n)$，但不代表每一輪都對半。相異元素且每次選到極值時：$T(n) = T(n - 1) + \Theta(n) = \Theta(n^2)$。常見原地交換版不穩定；下方以新串列分組的教學版保留各組順序，因此可以穩定。
 
 #### 範例
 
@@ -318,11 +318,11 @@ def merge(left, right):
 
 | 回合 | 輸入 | pivot | $L$（$<$） | $E$（$=$） | $G$（$>$） |
 | :---: | :--- | :---: | :--- | :--- | :--- |
-| 1 | `[4, 1, 3, 1, 5, 2]` | 3 | `[1, 1, 2]` | `[3]` | `[4, 5]` |
-| 2a | `[1, 1, 2]`（遞迴 $L$）| 1 | `[]` | `[1, 1]` | `[2]` |
-| 2b | `[4, 5]`（遞迴 $G$）| 4 | `[]` | `[4]` | `[5]` |
+| 1 | `[4, 1, 3, 1, 5, 2]` | 1 | `[]` | `[1, 1]` | `[4, 3, 5, 2]` |
+| 2 | `[4, 3, 5, 2]`（遞迴 $G$）| 5 | `[4, 3, 2]` | `[5]` | `[]` |
+| 3 | `[4, 3, 2]`（遞迴 $L$）| 3 | `[2]` | `[3]` | `[4]` |
 
-合併：`[1, 1] + [2] + [3] + [4] + [5] = [1, 1, 2, 3, 4, 5]`。
+偶數長度取中間偏右的元素，與程式 `arr[len(arr) // 2]` 及互動圖一致。合併：`[1, 1] + [2] + [3] + [4] + [5] = [1, 1, 2, 3, 4, 5]`。
 
 <details>
 <summary>Python 實作</summary>
@@ -352,13 +352,15 @@ def quick_sort(arr):
 | 3 | `[3, 4, 5]` | 3 | `[]` | `[4, 5]` |
 | 4 | `[4, 5]` | 4 | `[]` | `[5]` |
 
-每次只縮 1 個元素、遞迴深度 $n$、總比較 $n + (n-1) + \ldots + 1 = O(n^2)$。解法：隨機 pivot 或 median-of-three。
+每次只縮 1 個元素、遞迴深度 $n$、總比較為 $\Theta(n^2)$。隨機 pivot 降低壞分割的機率，median-of-three 改善這個輸入；若需要最壞時間保證，可採有深度限制與 Heap Sort 後備的 introsort。
 
 </details>
 
 | | Best | Average | Worst | 空間 | 穩定 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| Quick Sort | $O(n \log n)$ | $O(n \log n)$ | $O(n^2)$ | $O(\log n)$ | ✗ |
+| Quick Sort（一般原地版）| $O(n \log n)$ | $O(n \log n)$ | $O(n^2)$ | 平均 $O(\log n)$、最壞 $O(n)$ 遞迴堆疊 | ✗ |
+
+此列描述一般原地版，不是上方 Python 分組版。Python 版會配置新串列，平衡時額外空間為 $O(n)$，極端不平衡時因祖先呼叫仍保留串列可達 $O(n^2)$；全相等輸入只需一次三路分組，時間為 $\Theta(n)$。它用清楚的寫法展示概念，不能套用原地版的空間與穩定性結論。
 
 ## 總比較
 
@@ -368,13 +370,13 @@ def quick_sort(arr):
 | Selection | $O(n^2)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ | ✗ | ✗ |
 | Insertion | $O(n)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ | ✓ | ✓ |
 | Merge | $O(n \log n)$ | $O(n \log n)$ | $O(n \log n)$ | $O(n)$ | ✓ | ✗ |
-| Quick | $O(n \log n)$ | $O(n \log n)$ | $O(n^2)$ | $O(\log n)$ | ✗ | ✗ |
+| Quick（一般原地版）| $O(n \log n)$ | $O(n \log n)$ | $O(n^2)$ | 平均 $O(\log n)$、最壞 $O(n)$ | ✗ | ✗ |
 
 實務選擇：
 
 - 資料量小或幾乎有序 → Insertion
 - 要穩定且資料量大 → Merge
-- 一般最快 → Quick + 隨機 pivot
+- 一般用途可考慮 Quick + 隨機 pivot；實際速度以資料與實作量測
 - Bubble / Selection → 只拿來教學
 
 ## 常見考法
@@ -382,14 +384,16 @@ def quick_sort(arr):
 | 題型 | 必備技能 |
 | :--- | :--- |
 | 給陣列跑前 $k$ 輪 | 列每輪比較/交換/狀態表（Bubble、Selection、Insertion 最常見） |
-| 判斷跑幾輪剛好排好 | Bubble 用 flag 檢查、Insertion 看已排序前綴 |
+| 判斷跑幾輪剛好排好 | 區分資料已排好與 Bubble flag 停止的輪次；Insertion 看已排序前綴 |
 | 比較排序下界 | $\lceil \log_2 n! \rceil = \Theta(n \log n)$ |
-| 穩定性判斷 | Merge/Insertion/Bubble 穩定；Selection/Quick 不穩定，要會舉反例 |
+| 穩定性判斷 | 以上 Merge/Insertion/Bubble 實作穩定；Selection 與一般原地 Quick 不穩定，要看實作 |
 | Quick worst case 觸發 | 已排序 + 固定選首 pivot → $O(n^2)$ |
 | Merge 合併步驟 | 雙指標、合併成本 $O(n_L + n_R)$ |
 | 推導 $O(n^2)$ | $\sum_{i=1}^{n-1}(n-i) = \frac{n(n-1)}{2}$ |
 | 推導 $O(n \log n)$ | 遞迴樹 $\log n$ 層、每層 $n$ → $n \log n$ |
 
 :::warning
-**Selection 為何不穩定**：「跟未排序區第一個交換」的動作會把相等元素「跳過」其他相等元素。`[3a, 3b, 1]` 第 1 輪 $3a$ 跑到位置 3，順序就顛倒了。**Quick Sort** 的 partition swap 同理會破壞相等元素順序。
+**Selection 為何不穩定**：「跟未排序區第一個交換」的動作會把相等元素「跳過」其他相等元素。`[3a, 3b, 1]` 第 1 輪 $3a$ 跑到位置 3，順序就顛倒了。一般原地 **Quick Sort** 的 partition swap 也可能破壞相等元素順序；本篇 Python 分組版沒有這種交換。
 :::
+
+延伸核對：[Princeton Algorithms：Quicksort](https://algs4.cs.princeton.edu/23quicksort/)（原地分區、隨機化與最壞情況）。

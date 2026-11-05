@@ -1,9 +1,9 @@
 ---
 title: '[Algorithm] 動態規劃'
-author: 'Jeremy & Claude'
+author: 'Jeremy & Claude & Codex'
 date: '2026-04-12'
 tags: [algorithm, dynamic programming, LIS, LCS, knapsack, bellman-ford, floyd-warshall]
-changelog: ['2026-04-12', '2026-05-26']
+changelog: ['2026-04-12', '2026-05-26', '2026-11-05']
 ---
 
 ## 演算法概念
@@ -25,7 +25,7 @@ changelog: ['2026-04-12', '2026-05-26']
 1. **最佳子結構**：大問題的最佳解，可以用子問題的最佳解組合出來。
 2. **重疊子問題**：同一個子問題在遞迴中會被用到多次。
 
-沒重疊用分治；沒最佳子結構只能暴搜。
+對最佳化問題，正確的最佳子結構讓轉移成立；重疊子問題則讓儲存答案特別有價值。計數、可行性等問題也能用 DP。若目前狀態無法形成正確轉移，可以重新設計狀態或選擇其他方法，不能直接斷定只剩暴搜。
 
 ### 寫 DP 的五步驟
 
@@ -123,6 +123,8 @@ def dag_shortest_path(V, edges, s):
             if in_deg[v] == 0:
                 queue.append(v)
 
+    if len(order) != len(V):
+        raise ValueError('graph must be acyclic')
     dist = {v: float('inf') for v in V}
     dist[s] = 0
     for u in order:
@@ -205,7 +207,8 @@ def multistage_shortest(stages, edges):
     f = {t: 0}
     for stage in reversed(stages[:-1]):
         for v in stage:
-            f[v] = min(w + f[u] for u, w in graph.get(v, []))
+            f[v] = min((w + f[u] for u, w in graph.get(v, [])),
+                       default=float('inf'))
     return f[stages[0][0]]
 ```
 
@@ -237,7 +240,7 @@ $$
 - 嚴格遞增：$a[j] < a[i]$（不允許等於）
 - 非嚴格遞增：$a[j] \leq a[i]$（允許等於）
 
-差別只在轉移時的比較符號。題目沒明說時要看上下文判斷——李家同《演算法》課本用**非嚴格**。
+這個 $O(n^2)$ 轉移的差別只在比較符號；二分搜尋版則要把 `bisect_left` 改成 `bisect_right`。以題目明訂的嚴格／非嚴格條件為準。
 
 例：序列 $[5, 2, 1, 2, 3, 6, 9, 7]$：
 - 嚴格版 LIS = $[1, 2, 3, 6, 9]$ 或 $[1, 2, 3, 6, 7]$（2 條）
@@ -306,7 +309,7 @@ def lis_nlogn(arr):
 
 給兩字串 $X$、$Y$，**LCS** 就是最長、同時是兩者子序列的字串。
 
-例：$X = $ `AGCAT`、$Y = $ `GAC`。共同子序列有 `A`、`AC`、`GA` 等等，最長是 `AC` 或 `GA`，長度 2。
+例：$X = $ `AGCAT`、$Y = $ `GAC`。共同子序列有 `A`、`AC`、`GA` 等等，最長可為 `AC`、`GA` 或 `GC`，長度 2。
 
 實務應用：DNA 比對（兩物種同源程度）、`diff` / git 差異比對、編輯距離。
 
@@ -395,7 +398,7 @@ $$
 
 白話：「**經過 u 再走這條邊到 v，比現在的記錄還短嗎？若是，就改寫**」。
 
-把**所有邊**都檢查一次叫**一輪**。重複跑直到沒任何邊能再縮短（最多 $|V| - 1$ 輪保證收斂）。
+把**所有邊**都檢查一次叫**一輪**。若起點可達的區域沒有負權環，最多 $|V| - 1$ 輪可求得最短距離；可達負權環則會讓部分距離持續下降，沒有有限最短值。
 
 > 這個「檢查並縮短」的動作，教科書叫 **relax**（鬆弛），但名字滿誤導的、不必糾結。實際就是上面那個 if 條件。
 
@@ -409,7 +412,7 @@ $$
 \text{dist}_k(v) = \min\Bigl(\text{dist}_{k-1}(v),\;\; \min_{u \to v}\bigl(\text{dist}_{k-1}(u) + w(u, v)\bigr)\Bigr)
 $$
 
-任何不含環的最短路徑最多 $|V| - 1$ 條邊 → 跑 $|V| - 1$ 輪保證收斂。實作上不用真的開二維表，每輪就用同一張 $\text{dist}$ 更新即可。
+若沒有可達負權環，最短路徑可取為不重複頂點的路徑，最多 $|V| - 1$ 條邊。實作可原地更新同一張 $\text{dist}$；但同輪可能連用剛更新的值，因而包含超過 $k$ 條邊的路徑，不一定恰等於上述 $\text{dist}_k$。若要逐輪精確對應此 DP 定義，須從上一輪快照更新。
 
 **偵測負權環**：跑完 $|V| - 1$ 輪後再跑一輪，若還能縮短就有可達的負權環。
 
@@ -430,14 +433,14 @@ $$
 | $B \to E$ | $-4$ |  |  |
 | $C \to D$ | $-3$ |  |  |
 
-起點 $s = A$。跑 4 輪（$|V| - 1$）：
+起點 $s = A$。以下原地更新依序掃描 $A\to B, A\to C, B\to C, B\to D, B\to E, C\to D, C\to E, D\to B, E\to A, E\to D$，共跑 4 輪（$|V| - 1$）：
 
 | 輪 | A | B | C | D | E | 說明 |
 | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
 | 0 | 0 | ∞ | ∞ | ∞ | ∞ | 初始 |
-| 1 | 0 | 6 | 7 | 4 | 2 | $B \leftarrow 6$、$C \leftarrow 7$、$D \leftarrow 7 - 3 = 4$、$E \leftarrow 6 - 4 = 2$ |
-| 2 | 0 | 2 | 7 | 4 | 2 | $B \leftarrow 4 - 2 = 2$（經 $D$ 回 $B$）|
-| 3 | 0 | 2 | 7 | 4 | $-2$ | $E \leftarrow 2 - 4 = -2$ |
+| 1 | 0 | 2 | 7 | 4 | 2 | 先得 $B=6$、$E=2$，之後 $D=4$，同輪再由 $D\to B$ 得 $B=2$ |
+| 2 | 0 | 2 | 7 | 4 | $-2$ | $E \leftarrow 2 - 4 = -2$ |
+| 3 | 0 | 2 | 7 | 4 | $-2$ | 穩定，可提早結束 |
 | 4 | 0 | 2 | 7 | 4 | $-2$ | 穩定 |
 
 最終 $A = 0, B = 2, C = 7, D = 4, E = -2$。
@@ -452,7 +455,7 @@ $$
 - 第 3 層：再走一步可達的
 - ...
 
-**第 $k$ 輪結束後，最多用 $k$ 條邊可達的所有點，dist 都已是目前最佳**。所以 $|V| - 1$ 輪能涵蓋最多 $|V|$ 層、保證收斂。
+第 $k$ 輪結束後，所有最多使用 $k$ 條邊的路徑都已納入考量；這不代表那些點已達全域最短距離，較多邊的路徑仍可能更短。沒有可達負權環時，$|V| - 1$ 輪便涵蓋一條最短簡單路徑。
 
 實際上有時更早收斂——若某輪沒任何邊縮短了 dist，可提早結束。常見實作就加個 flag 偵測。
 :::
@@ -504,7 +507,7 @@ $$
 
 #### 複雜度
 
-三層迴圈各 $V$ 次 → $O(V^3)$。空間 $O(V^2)$。適合稠密圖；稀疏圖（$E \ll V^2$）跑 $V$ 次 Dijkstra 可能更快。
+三層迴圈各 $V$ 次 → $O(V^3)$。空間 $O(V^2)$。可有負邊，但若有負權環，涉及該環的點對便沒有有限最短距離。適合稠密圖；非負邊的稀疏圖（$E \ll V^2$）跑 $V$ 次 Dijkstra 可能更快。
 
 #### 範例
 
@@ -565,12 +568,14 @@ def floyd_warshall(V, edges):
     for i in range(V):
         dist[i][i] = 0
     for u, v, w in edges:
-        dist[u][v] = w
+        dist[u][v] = min(dist[u][v], w)
     for k in range(V):
         for i in range(V):
             for j in range(V):
                 if dist[i][k] + dist[k][j] < dist[i][j]:
                     dist[i][j] = dist[i][k] + dist[k][j]
+    if any(dist[v][v] < 0 for v in range(V)):
+        raise ValueError('negative cycle')
     return dist
 ```
 
@@ -595,19 +600,19 @@ $n$ 件物品，第 $i$ 件重 $w_i$、價值 $v_i$。背包容量 $W$。每件�
 
 #### 複雜度
 
-填 $n \cdot (W + 1)$ 表 → $O(nW)$。空間壓縮到 $O(W)$（只需上一列）。
+假設容量 $W$ 與重量都是非負整數。填 $n \cdot (W + 1)$ 表 → $O(nW)$（通常假設 $W \geq 1$）。空間壓縮到 $O(W)$（只需上一列）；下方範例的兩個物品陣列長度須相同。
 
 :::info
 **$O(nW)$ 為什麼不是真正的多項式（偽多項式 / pseudo-polynomial）**
 
 $O(nW)$ 看起來像多項式，但 $W$ 和 $n$ 代表的「東西」不一樣：
 
-- $n$ 是物品數——就是**輸入長度**
+- $n$ 是物品數——完整輸入還包含每件物品重量與價值的編碼長度
 - $W$ 是背包容量——是**輸入裡一個數字的大小**
 
-電腦裡一個數字 $W$ 要用 $\lceil \log_2 W \rceil$ 個 bit 存。$W$ 多給 1 個 bit（譬如從 $2^{30}$ 變 $2^{31}$）執行時間就翻倍——**以輸入長度（bit 數）來看，$O(nW)$ 實際上是 $O(n \cdot 2^b)$，對 bit 數 $b$ 是指數級**。
+正整數 $W$ 的二進位編碼長度是 $b = \lfloor\log_2 W\rfloor + 1$。容量從 $2^{30}$ 變成 $2^{31}$ 只多一個 bit，DP 的容量維度卻約翻倍。因此 $W$ 可達 $2^b - 1$，這個演算法對 $b$ 的依賴可能是指數級，並非對完整輸入位元長度的多項式時間保證。
 
-這種「對數值本身是多項式、對輸入長度是指數」的複雜度叫 **pseudo-polynomial**（偽多項式）。所以 0/1 背包被歸為 **NP-hard**：只有在 $W$ 不太大時 DP 才實用。
+這種依賴數值大小的界稱為 **pseudo-polynomial**（偽多項式）。它說明此 DP 不與背包的 NP-hard 性質矛盾，**不是 NP-hard 的證明**；NP-hard 必須另外透過規約建立。容量不太大時，這個精確 DP 仍很實用。
 
 簡單判斷：複雜度裡如果出現「輸入裡某個數字本身」（而不是數字的個數），就要警覺它可能是偽多項式。
 :::
@@ -680,7 +685,7 @@ def knapsack_01(weights, values, W):
 | 5 | Floyd-Warshall 三層迴圈順序 | 最外層**必須**是中繼 $k$；順序錯就錯 |
 | 6 | 判斷該用哪個演算法 | 正權用 Dijkstra；有負權無負環用 Bellman-Ford；全對用 Floyd |
 | 7 | 轉移方程寫出來 | 多半題目只問狀態定義與轉移方程 |
-| 8 | 為什麼 Knapsack 是 NP-hard | $W$ 的**位數**是 $\log W$；以輸入大小看 $O(nW) = O(n \cdot 2^b)$ |
+| 8 | Knapsack DP 為何不反駁 NP-hard | $O(nW)$ 對容量值為多項式、對編碼長度未必；NP-hard 另須規約證明 |
 
 複雜度推導：
 
@@ -701,3 +706,5 @@ def knapsack_01(weights, values, W):
 :::
 
 下一篇 NP 完備理論——即使 Knapsack 有 DP 解，也逃不過「問題本身就難」的宿命。
+
+延伸核對：[Princeton 最短路徑（DAG、負權環與 Bellman-Ford）](https://algs4.cs.princeton.edu/44sp/)。

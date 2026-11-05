@@ -1,16 +1,16 @@
 ---
 title: "[Data Structure] 樹"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-03-17"
 tags: [data structure, tree, binary search tree, traversal]
-changelog: []
+changelog: ['2026-11-05']
 sameDateSort: 1
 ---
 
 import TreeDiagram from '@/components/ArticleRelated/data-structure/tree/TreeDiagram.svelte'
 import BinaryTreeTypesDiagram from '@/components/ArticleRelated/data-structure/tree/BinaryTreeTypesDiagram.svelte'
 
-**樹 (Tree)** 是一種**非線性**資料結構——資料以階層方式延伸，和陣列、鏈結串列、堆疊、佇列這類「一條線」的線性結構不同。最直覺的例子是公司組織圖：一個節點可以有多個子節點，但只有一個父節點。
+**樹 (Tree)** 是一種**非線性**資料結構——資料以階層方式延伸，和陣列、鏈結串列、堆疊、佇列這類「一條線」的線性結構不同。最直覺的例子是公司組織圖：一個節點可以有多個子節點；除了沒有父節點的根，其餘節點恰有一個父節點。
 
 ## 術語
 
@@ -47,7 +47,7 @@ import BinaryTreeTypesDiagram from '@/components/ArticleRelated/data-structure/t
 | 完整二元樹 (Full Binary Tree) | 每個節點要麼沒有子節點，要麼就有恰好兩個子節點 |
 | 完全二元樹 (Complete Binary Tree) | 除了最後一層，每層都填滿；最後一層的節點盡量靠左排列 |
 | 完美二元樹 (Perfect Binary Tree) | 每一層都完全填滿，葉節點全部在同一層 |
-| 平衡二元樹 (Balanced Binary Tree) | 任意節點的左右子樹高度差不超過 1 |
+| 高度平衡二元樹（AVL 條件）| 任意節點的左右子樹高度差不超過 1；其他平衡樹可採不同條件 |
 
 ## 二元搜尋樹 (BST)
 
@@ -55,7 +55,7 @@ import BinaryTreeTypesDiagram from '@/components/ArticleRelated/data-structure/t
 
 > **左子樹的所有節點值 < 根節點值 < 右子樹的所有節點值**
 
-搜尋邏輯：每次比較當前節點，目標比節點小則往左，比節點大則往右。每次比較排除一半範圍，類似二分搜尋。
+搜尋邏輯：每次比較當前節點，目標比節點小則往左，比節點大則往右。每次排除另一棵子樹，**不保證排除一半節點**；要有平衡條件才可保證對數高度。以下實作忽略重複值，採嚴格的左小右大規則。
 
 ### 節點結構
 
@@ -95,15 +95,7 @@ class TreeNode {
 | 6 | 6 `>` 5 → 右到 7；6 `<` 7 → 左 | 7 的左子 |
 | 8 | 8 `>` 5 → 右到 7；8 `>` 7 → 右 | 7 的右子 |
 
-最終樹長這樣：
-
-```
-        5
-       / \
-      3   7
-     / \ / \
-    1  4 6  8
-```
+最終根為 5，左右子節點為 3、7；3 的左右子節點為 1、4，7 的左右子節點為 6、8。下方互動走訪圖使用這棵樹。
 
 **搜尋示範**：
 
@@ -290,7 +282,7 @@ class TreeNode {
 
 ## BST 的時間複雜度
 
-BST 的效能完全取決於**樹的高度 $h$**（從根到最深葉節點的邊數）。若樹保持平衡，$h$ 約為 $\log_2 n$（$n$ 是節點總數）：
+BST 的搜尋、插入、刪除為 $O(h+1)$，其中 **高度 $h$** 從根到最深葉節點以邊數計。平衡樹有 $h = O(\log n)$；一般未平衡 BST 的對數平均情況則需要隨機插入順序等分布假設：
 
 | 操作 | 平均情況 | 最差情況 |
 |------|----------|----------|
@@ -300,7 +292,7 @@ BST 的效能完全取決於**樹的高度 $h$**（從根到最深葉節點的�
 
 :::info
 最差情況 $O(n)$ 發生在樹退化為「斜樹」的時候。
-例如依序插入 `1, 2, 3, 4, 5`，每個新節點都比前一個大，就會形成一條向右傾斜的直線，樹的高度等於 $n$，搜尋效能退化為等同鏈結串列的 $O(n)$。
+例如依序插入 `1, 2, 3, 4, 5`，每個新節點都比前一個大，就會形成一條向右傾斜的直線；依本文的邊數定義，高度為 $n-1=4$，搜尋退化為 $O(n)$。
 
 為了避免這種情況，實務上會採用**自平衡樹**（如 AVL Tree 或 Red-Black Tree），在插入或刪除後自動調整結構，維持 $O(\log n)$ 的效能。Java 的 `TreeMap` 底層就是用 Red-Black Tree 實作的。
 :::
@@ -326,13 +318,13 @@ BST 的效能完全取決於**樹的高度 $h$**（從根到最深葉節點的�
 | 1 | **給序列依序 insert 畫 BST** | 空樹起，逐一比對根走左右 |
 | 2 | **寫出 preorder / inorder / postorder / level-order** | 3 個 DFS 差在根何時輸出；level-order 用 queue |
 | 3 | **BST 中序 = 排序序列** | 這是 BST 最重要性質 |
-| 4 | **由走訪序列還原樹** | preorder + inorder、或 postorder + inorder 可唯一還原；單一走訪不行 |
+| 4 | **由走訪序列還原一般二元樹** | 節點標記相異時，preorder + inorder 或 postorder + inorder 可唯一還原；若有重複標記或 BST 等額外條件須另論 |
 | 5 | **BST 刪除 3 種情況** | 葉、單子、雙子（用後繼 / 前驅） |
-| 6 | **BST 退化成斜樹** | 已排序序列 insert → 樹高 = $n$ → 搜尋 $O(n)$ |
+| 6 | **BST 退化成斜樹** | 相異已排序序列 insert → 樹高 = $n-1$ → 搜尋 $O(n)$ |
 | 7 | **完整/完全/完美/平衡 二元樹辨析** | 完整（0 或 2 子）、完全（最後一層靠左）、完美（全滿）、平衡（高差 $\le 1$） |
 | 8 | **高度 vs 深度** | 深度由根往下、高度由葉往上 |
 | 9 | **$n$ 節點二元樹的葉節點數** | 完美 BT：$\lceil n/2 \rceil$；完整 BT：degree-2 節點數 + 1 |
-| 10 | **BST 搜尋複雜度推導** | 平衡 $h = \log_2 n$、斜樹 $h = n$ |
+| 10 | **BST 搜尋複雜度推導** | 平衡 $h = O(\log n)$、斜樹 $h = n-1$ |
 
 ### 複雜度推導
 
@@ -344,10 +336,12 @@ BST 的效能完全取決於**樹的高度 $h$**（從根到最深葉節點的�
 :::warning
 **考試常踩的陷阱**
 
-1. **Preorder + Postorder 不能唯一還原**：必須有 inorder 才行
+1. **Preorder + Postorder 一般不能唯一還原**：單子節點可能在左也可能在右；若已知是 full binary tree 且標記相異，則是可唯一還原的特例
 2. **BST 的 inorder 一定是排序**：反過來：若 inorder 不遞增 → 不是 BST
 3. **刪除雙子節點不能直接砍**：要用後繼（右子樹最小）或前驅（左子樹最大）替代
 4. **完整 ≠ 完全 ≠ 完美**：三個詞在考試常被混用
-5. **BST 最差 $O(n)$ 不是 $O(\log n)$**：平均才是 $O(\log n)$
+5. **一般 BST 最差 $O(n)$**：對數平均需要分布假設，自平衡 BST 才保證最壞 $O(\log n)$
 6. **BFS 用 queue、DFS 用 stack（或遞迴）**：搞反會錯
 :::
+
+延伸核對：[Java TreeMap 官方文件](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/TreeMap.html)明列 Red-Black Tree 與搜尋、插入、刪除的對數時間保證。

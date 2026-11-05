@@ -1,9 +1,9 @@
 ---
 title: "[Data Structure] 圖"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-03-17"
 tags: [data structure, graph, dfs, bfs]
-changelog: []
+changelog: ['2026-11-05']
 sameDateSort: 2
 ---
 
@@ -16,8 +16,7 @@ import DirectedGraphDiagram from '@/components/ArticleRelated/data-structure/gra
 應用範例：捷運路線圖、社群媒體好友關係、Google Maps 導航路徑、電腦網路連線拓樸。
 
 :::info
-樹其實是圖的一種特例——「無環的連通圖」。
-兩者最大的差別在於：樹有嚴格的層次結構（只能由父節點連向子節點，不能形成環），而圖的邊沒有這些限制，節點之間可以任意相連、形成環，也可以彼此不相連。
+圖論中的樹是「無環的連通**無向圖**」。選定根之後，才有父子層次；邊本身不一定具有方向。一般圖則可以有環、沒有根，也可以不連通。
 :::
 
 ## 術語
@@ -27,9 +26,9 @@ import DirectedGraphDiagram from '@/components/ArticleRelated/data-structure/gra
 | 頂點 | Vertex | 圖中每一個資料單元 |
 | 邊 | Edge | 連接兩個頂點的線 |
 | 相鄰 | Adjacent | 兩個頂點之間有邊相連 |
-| 度 | Degree | 某頂點連接的邊數 |
-| 路徑 | Path | 從某頂點到另一頂點，經過一連串邊所形成的序列 |
-| 環 | Cycle | 路徑的起點與終點相同 |
+| 度 | Degree | 無向圖中與頂點相接的邊端數；自環貢獻 2 |
+| 路徑 | Path | 相鄰頂點依邊相接的序列；本篇簡單路徑不重複頂點 |
+| 環 | Cycle | 起終點相同，除首尾外不重複頂點的封閉序列；一般封閉走訪未必是簡單環 |
 | 連通圖 | Connected Graph | 圖中任意兩個頂點之間都存在路徑 |
 
 ## 圖的分類
@@ -46,6 +45,8 @@ import DirectedGraphDiagram from '@/components/ArticleRelated/data-structure/gra
 <DirectedGraphDiagram client:only="svelte" />
 
 在程式建立圖時，差別只在 `addEdge` 是否雙向設定：
+
+下方各對方法是二選一的替代寫法，相同簽名不能一起貼進同一 Java 類別。後續完整範例採無向圖，並預先建立所有頂點的串列。
 
 ```java
 // 無向圖：兩個方向都設定
@@ -326,7 +327,7 @@ public class GraphBFS {
 | DFS | $O(|V| + |E|)$ | $O(|V|)$（遞迴呼叫堆疊） |
 | BFS | $O(|V| + |E|)$ | $O(|V|)$（佇列） |
 
-每個頂點和每條邊各被拜訪一次，所以是 $O(|V| + |E|)$，其中 $|V|$ 是頂點數，$|E|$ 是邊數。
+每個已到達頂點處理一次，無向邊的兩個鄰接項目各檢查一次，因此是 $O(|V| + |E|)$；此處假設集合／雜湊查詢為常數期望時間。從單一起點出發只會走到它可達的部分，要涵蓋不連通圖須再從其他未訪頂點啟動。表中空間指額外空間，DFS 也包含 `visited`。
 
 :::tip
 DFS 與 BFS 不只是走訪方式，也是解決許多圖相關問題的核心工具：
@@ -341,7 +342,7 @@ DFS 與 BFS 不只是走訪方式，也是解決許多圖相關問題的核心�
 | 1 | **給邊列畫出鄰接矩陣 / 鄰接串列** | 無向要雙向、有向單向 |
 | 2 | **從某點 DFS / BFS 手跑走訪順序** | 鄰接串列順序影響結果；DFS 用 stack / 遞迴、BFS 用 queue |
 | 3 | **DFS / BFS 的時間複雜度推導** | 鄰接串列 $O(V+E)$、鄰接矩陣 $O(V^2)$ |
-| 4 | **判斷圖是否連通** | 從任一點 DFS / BFS，訪到的節點 = $V$ → 連通 |
+| 4 | **判斷無向圖是否連通** | 非空無向圖從任一點出發訪到全部頂點即連通；有向圖強連通需另檢查反向可達性 |
 | 5 | **偵測環** | 無向：DFS 遇到非 parent 的 visited 節點 → 有環；有向：DFS 遇到「灰色」節點 → 有環 |
 | 6 | **連通分量數** | 對未訪節點起 DFS / BFS，跑幾次 = 分量數 |
 | 7 | **拓樸排序**（DAG） | DFS post-order 反轉；或 Kahn's（每次取 in-degree = 0） |
@@ -383,6 +384,8 @@ $$
 |------|-----------|
 | Google Maps 路徑規劃 | 有權圖 + 最短路徑演算法（如 Dijkstra） |
 | 社群媒體好友推薦 | 無向圖 + BFS（找朋友的朋友） |
-| 網頁排名 (PageRank) | 有向圖 + 連通性分析 |
+| 網頁排名 (PageRank) | 有向連結圖上的隨機漫步／穩態分布 |
 | 任務排程 / 相依分析 | 有向無環圖 (DAG) + 拓樸排序 |
 | 電腦網路連線偵測 | 無向圖 + 連通性偵測 |
+
+延伸核對：[Princeton 無向圖、DFS 與 BFS](https://algs4.cs.princeton.edu/41graph/)。

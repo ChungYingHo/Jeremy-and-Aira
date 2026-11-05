@@ -1,9 +1,9 @@
 ---
 title: "[Cloud] 雲端運算"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-03-22"
 tags: [env, cloud, aws, gcp, azure]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", "2026-11-05"]
 sameDateSort: 1
 ---
 
@@ -12,7 +12,7 @@ import CloudServiceModelDiagram from '@/components/ArticleRelated/web/CloudServi
 
 ## 雲端是什麼
 
-雲端運算（Cloud Computing）一句話講完：**運算資源（伺服器、儲存、資料庫、網路等）不再自己買自己管，改成向雲端服務商租。**
+公有雲運算的直覺是：**透過網路按需取得運算、儲存、資料庫等資源，不必每次先購置硬體。** 雲端也包含私有雲等部署模型；即使用公有雲，自己仍須管理資料、權限與所選服務分配給你的責任。
 
 對比一下流程就懂了：
 
@@ -23,9 +23,8 @@ import CloudServiceModelDiagram from '@/components/ArticleRelated/web/CloudServi
 
 | | AWS | Google Cloud (GCP) | Microsoft Azure |
 | :--- | :--- | :--- | :--- |
-| 市佔 | 最大，約 30% | 第三 | 第二 |
-| 強項 | 服務最完整、社群最大 | AI/ML 工具、資料分析 | 與 Microsoft 生態整合（Office 365、AD）|
-| 適合 | 幾乎所有場景 | AI 應用、大數據 | 企業已使用 Microsoft 技術棧的情況 |
+| 常見服務例子 | EC2、S3、RDS | Compute Engine、Cloud Storage、BigQuery | Virtual Machines、Blob Storage、Azure SQL |
+| 選擇時可比較 | 所需服務、區域、權限與成本 | 所需服務、區域、權限與成本 | 所需服務、區域、權限與成本 |
 
 好消息是，三家提供的服務大多互相對應。學會其中一家的概念，換到另一家的學習成本不高。
 
@@ -35,15 +34,15 @@ import CloudServiceModelDiagram from '@/components/ArticleRelated/web/CloudServi
 
 <CloudServiceModelDiagram client:only="svelte" />
 
-開發者最常接觸 **IaaS**（自己管伺服器）和 **PaaS**（只部署程式碼）。**Serverless** 模式更進一步——只寫函式，連伺服器都不用管。
+**IaaS** 通常由你管理客體 OS 與應用，**PaaS** 則把更多平台維運交給供應商。**Serverless** 讓開發者不必直接佈建伺服器，包含函式、容器及其他託管服務；資料、程式、權限與成本仍須自己負責。
 
 ## 常見的雲端服務類型
 
 ### 運算
 
 - **虛擬機（VM）**：一台可以 SSH 登入的雲端電腦。AWS EC2 / GCP Compute Engine / Azure Virtual Machine
-- **容器服務**：直接跑 Docker Container，底層 OS 不用你管。AWS ECS/EKS / GCP Cloud Run/GKE / Azure Container Apps/AKS
-- **Serverless**：函式按需執行，沒有請求就不計費。AWS Lambda / Google Cloud Functions / Azure Functions
+- **容器服務**：執行容器映像，主機管理責任依模式不同；例如 ECS on EC2／自管 Kubernetes 節點仍須管理工作節點，Fargate 或 Cloud Run 則代管更多基礎設施。常見服務有 AWS ECS/EKS、GCP Cloud Run/GKE、Azure Container Apps/AKS
+- **函式服務**：按事件執行程式，例如 AWS Lambda、Cloud Run functions、Azure Functions；是否能縮到零與如何計費，依服務及設定而定
 
 AWS Lambda 的 Node.js handler 長這樣——上傳這個檔案就能跑，不用管伺服器：
 
@@ -58,17 +57,17 @@ export const handler = async (event) => {
 }
 ```
 
-搭配 API Gateway 或 Function URL 觸發，實際被請求一次才計費一次。
+這是 API Gateway proxy／Function URL 的簡化事件處理範例，部署時仍要選定相容 Node.js runtime 與 handler，並設定觸發器及權限。費用可能包含請求次數、執行時間、資料傳輸及預備併發等項目，不能只用「請求一次付一次」概括；參見 [Lambda 計費項目](https://aws.amazon.com/lambda/pricing/)。
 
 ### 儲存
 
-- **物件儲存（Object Storage）**：存圖片、影片、備份檔這類非結構化資料。AWS S3 是這類服務的代名詞，GCP 叫 Cloud Storage，Azure 叫 Blob Storage。存進去就能用 URL 存取，容量幾乎無限，而且便宜。
+- **物件儲存（Object Storage）**：存圖片、影片、備份檔這類非結構化資料，例如 AWS S3、Google Cloud Storage、Azure Blob Storage。透過 API 或 URL 存取仍須符合權限；物件預設不等於公開，容量限制、請求與下載費用也須查看方案。
 - **區塊儲存**：掛載到 VM 上的虛擬硬碟（SSD/HDD），用起來就像一般硬碟。AWS EBS、GCP Persistent Disk。
 - **檔案儲存**：可以被多台機器同時掛載的共享目錄。AWS EFS、Azure Files。
 
 ### 資料庫
 
-雲端平台提供託管的資料庫——安裝、備份、版本管理全部不用自己來：
+託管資料庫代管部分安裝、更新與備份工作；使用者仍須選版本、設定保留期、權限與高可用方案，並確認還原流程：
 
 - **關聯式資料庫**：AWS RDS（支援 PostgreSQL、MySQL 等）、Google Cloud SQL、Azure Database
 - **NoSQL**：AWS DynamoDB、Google Firestore、Azure Cosmos DB
@@ -88,7 +87,7 @@ export const handler = async (event) => {
 
 ### 按用量付費
 
-不用預先砸錢買硬體。小專案從最小規格開始，長大了再升級；臨時性的任務跑完就刪掉，不留成本。
+不用先買完整硬體。小專案可由小規格開始；任務結束後除了刪除運算資源，也要留意磁碟、快照、IP 等保留資源仍可能計費。
 
 ### 全球化
 
@@ -96,7 +95,7 @@ export const handler = async (event) => {
 
 ### 可靠性
 
-大型雲端平台有 SLA（服務等級協議）保障可用性，通常在 99.9% 以上。自己維護的伺服器壞了就是壞了；雲端平台有備援機制撐著。
+SLA 的可用性目標、適用部署方式、排除條款與補償方式依服務而異，不等於保證應用永不中斷。備援仍須依需求設計多區部署、資料複寫、備份與故障切換。
 
 ## 上雲不等於萬能
 
@@ -111,7 +110,7 @@ export const handler = async (event) => {
 雲端平台的地理概念很重要：
 
 - **Region（區域）**：地理上的一個位置，例如 `ap-northeast-1`（AWS 東京）、`asia-east1`（GCP 台灣）
-- **Availability Zone（可用區，AZ）**：同一個 Region 內的多個獨立資料中心，彼此有物理隔離。一個 Region 通常有 3 個以上的 AZ，服務分散部署在不同 AZ，就算其中一個斷電也不影響服務
+- **Availability Zone（可用區，AZ）**：Region 內分離的故障隔離範圍；以 AWS 而言，一個 AZ 可包含一個或多個資料中心。跨 AZ 部署可降低單區故障風險，但仍需資料與流量切換設計，不能只因分散部署就保證完全不中斷
 
 選 Region 主要考量兩件事：**使用者在哪**（越近延遲越低）和**法規要求**（某些行業要求資料必須存放在特定國家）。
 
@@ -126,4 +125,4 @@ Docker 把應用程式打包成 Container Image，雲端則提供讓這些 Conta
 3. 用雲端的容器服務（ECS、Cloud Run）把它跑起來
 4. 搭配雲端的資料庫、儲存、CDN 等服務
 
-這樣從開發到部署，環境完全一致，也不用自己管伺服器的 OS 和安全性更新。
+同一份 Image 可提高開發到部署的一致性，但架構、核心、環境變數與外部服務仍可能不同；主機 OS 是否代管取決於服務模式，映像內套件、應用及權限的更新責任仍在使用者。可用 [AWS 共同責任模型](https://aws.amazon.com/compliance/shared-responsibility-model/)理解責任如何隨服務改變。

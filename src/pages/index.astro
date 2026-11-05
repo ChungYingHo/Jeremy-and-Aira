@@ -47,7 +47,7 @@ const recentPosts = [...dailyPosts, ...notePosts].sort((a, b) => compareSortKeys
 </Layout>
 
 <style>
-  .ink-home { position: relative; height: 100vh; height: 100svh; overflow: hidden; isolation: isolate; background: var(--color-paper); }
+  .ink-home { position: relative; height: 100vh; height: 100svh; height: 100dvh; min-height: 100vh; min-height: 100lvh; flex-shrink: 0; overflow: hidden; isolation: isolate; background: var(--color-paper); }
   .ink-intro { position: absolute; z-index: 2; top: 31svh; left: max(var(--site-shell-gutter), calc((100% - var(--site-shell-max)) / 2)); width: min(32rem, calc(100% - 2 * var(--site-shell-gutter))); color: var(--color-ink); pointer-events: none; }
   .home-poem { font-family: var(--font-poem); font-weight: 400; }
   .home-poem, .more-link { text-shadow: 0 0 10px color-mix(in srgb, var(--color-paper) 24%, transparent); }

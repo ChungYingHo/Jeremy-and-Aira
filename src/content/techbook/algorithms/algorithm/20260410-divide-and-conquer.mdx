@@ -1,9 +1,9 @@
 ---
 title: '[Algorithm] 分而治之法'
-author: 'Jeremy & Claude'
+author: 'Jeremy & Claude & Codex'
 date: '2026-04-10'
 tags: [algorithm, divide and conquer, merge sort, quick sort, convex hull, closest pair, FFT]
-changelog: ['2026-04-10']
+changelog: ['2026-04-10', '2026-11-05']
 ---
 
 import MergeSortVisualizer from '@/components/ArticleRelated/algorithm/MergeSortVisualizer.svelte'
@@ -18,11 +18,11 @@ import ClosestPairDiagram from '@/components/ArticleRelated/algorithm/ClosestPai
 2. **Conquer**：對每個子問題遞迴求解，小到不能再切時直接解。
 3. **Combine**：把子問題的解**合起來**變成原問題的解。
 
-關鍵是「合起來」——沒有合起來就不是分治，是淘汰。淘汰切完只進**其中一塊**、其他丟掉；分治切完**每塊都要解**，最後再合回去。
+本篇用「遞迴解多塊，再合併結果」介紹分治；前篇淘汰與搜尋則只繼續一塊。不同教材分類略有差異，也有教材將二分搜尋等單一子問題的方法納入廣義分治；合併步驟可以很簡單，甚至不需要額外操作。
 
 典型遞迴式 $T(n) = a \, T(n/b) + f(n)$：$a$ 是子問題個數、$b$ 是子問題規模相對原問題縮幾倍、$f(n)$ 是合併成本。**Combine 決定整體效率**——合併做到 $O(n)$ 就能配上 $T(n) = 2T(n/2) + O(n) = O(n \log n)$，合併若變成 $O(n \log n)$ 整體就退化到 $O(n \log^2 n)$。
 
-適合分治的條件：子問題之間**獨立**（不獨立就要動態規劃）、合併成本合理（通常要 $O(n)$ 或更低）。
+分治的效益來自子問題縮小、解能有效合併。若相同子問題大量重複出現，動態規劃可能藉重用結果節省成本；不是只要子問題有關聯就必須用 DP。
 
 ## 各適用情境
 
@@ -40,7 +40,7 @@ Divide：從中間切成左右兩半。Conquer：各自遞迴排序。Combine：
 
 **題目**：`[38, 27, 43, 3, 9, 82, 10]` 從小到大排序。
 
-**圖解**：
+**圖解**（以另一組陣列示範相同合併流程，下表另算本題）：
 
 <MergeSortVisualizer client:only="svelte" />
 
@@ -92,7 +92,7 @@ Divide：從中間切成左右兩半。Conquer：各自遞迴排序。Combine：
 def merge_sort(arr):
     if len(arr) <= 1:
         return arr
-    mid = len(arr) // 2
+    mid = (len(arr) + 1) // 2
     return merge(merge_sort(arr[:mid]), merge_sort(arr[mid:]))
 
 
@@ -126,7 +126,7 @@ Hoare partition 的流程（pivot = `a[left]`）：
 
 #### 複雜度
 
-平均 pivot 切出接近均等的兩半 → $T(n) = 2T(n/2) + O(n) = O(n \log n)$。最壞 pivot 每次都極值、一邊空一邊 $n - 1$ → $T(n) = T(n - 1) + O(n) = O(n^2)$。實務用隨機 pivot 或三數取中（median-of-three）避免 worst case。
+平衡分割時 $T(n) = 2T(n/2) + \Theta(n) = \Theta(n \log n)$；隨機 pivot 的期望時間也為 $\Theta(n \log n)$，不代表每次恰好對半。相異元素且 pivot 每次都是極值時，$T(n) = T(n - 1) + \Theta(n) = \Theta(n^2)$。隨機 pivot 或三數取中可改善常見輸入，但沒有消除二次方最壞情況。
 
 #### 範例
 
@@ -204,7 +204,7 @@ def quick_sort(a, left, right):
 <details>
 <summary>例題：Quick Sort worst case</summary>
 
-已排序 `[1, 2, 3, 4, 5]`、固定選 `a[left]`：每次 pivot 都是最小值，左半空、右半 $n - 1$ 個。$T(n) = T(n - 1) + O(n) = O(n^2)$。實務用隨機 pivot 或 median-of-three 避免。
+已排序 `[1, 2, 3, 4, 5]`、固定選 `a[left]`：每次 pivot 都是最小值，左半空、右半 $n - 1$ 個。$T(n) = T(n - 1) + \Theta(n) = \Theta(n^2)$。隨機 pivot 提供期望時間保證；median-of-three 能改善這個輸入，仍有其他壞輸入。
 
 </details>
 
@@ -214,14 +214,14 @@ def quick_sort(a, left, right):
 
 #### 演算法策略
 
-極點（maximal point）：若 $x_1 > x_2$ 且 $y_1 > y_2$，則 $P_1$ 宰制 $P_2$。沒被任何人宰制的點就是極點。所有極點排起來是一條「往右下的階梯」。
+極點（maximal point）：本篇採用 $x_1 \geq x_2$ 且 $y_1 \geq y_2$、至少一維嚴格較大的宰制定義。沒被任何其他點宰制的點就是極點；重複座標視為同一點。若教材要求兩維都嚴格大於，等座標的處理就會不同，不能混用。
 
 分治招式：
 
-1. **Divide**：按 x 中位數切成左半 $L$（小 x）、右半 $R$（大 x）。
+1. **Divide**：先按 $(x, y)$ 升序排序，再依位置切成左半 $L$、右半 $R$；同 x 時較大的 y 在右側。
 2. **Conquer**：各自遞迴求 $L_{max}$、$R_{max}$。
 3. **Combine**：
-   - $R_{max}$ 的每點 x 都大於 $L$ 全部 → 不可能被 $L$ 宰制 → **全保留**。
+   - $R_{max}$ 的點不可能被 $L$ 宰制：左點的 x 較小，或同 x 時 y 較小 → **全保留**。
    - $L_{max}$ 裡的點要跟 $R$ 比 y——令 $y^* = \max\{y : (x, y) \in R_{max}\}$（就是 $R_{max}$ 的最大 y），$L_{max}$ 裡 $y > y^*$ 保留、$y \leq y^*$ 丟掉。
 
 為什麼只比 $R_{max}$ 的最大 y 就夠？因為 $R_{max}$ 裡最大 y 的那個點本身一定是極點，它能宰制的範圍就是 $R$ 裡最廣的——它都打不贏的 $L$ 點，其他 $R$ 點也打不贏。
@@ -260,10 +260,10 @@ def quick_sort(a, left, right):
 
 ```python
 def maximal_points(points):
-    pts = sorted(points, key=lambda p: p[0])
+    pts = sorted(set(points))
 
     def solve(a):
-        if len(a) == 1:
+        if len(a) <= 1:
             return a
         mid = len(a) // 2
         L = solve(a[:mid])
@@ -286,7 +286,7 @@ def maximal_points(points):
 
 **(c) 下界 = 1**：x 最大的那個點永遠無人能在 x 上贏過它 → 必為極點 → 極點數 $\geq 1$。結合 (b)，最少恰為 1。
 
-整理：$1 \leq |M| \leq n$。隨機分佈下期望極點數為 $O(\log n)$。
+整理：非空點集有 $1 \leq |M| \leq n$；空點集則沒有極點。若各點獨立抽樣、x 與 y 也獨立且連續同分佈，期望極點數為 $\Theta(\log n)$；一般隨機分佈沒有這個保證，例如點都落在下降曲線上時可全部是極點。
 
 </details>
 
@@ -307,13 +307,13 @@ Combine 若兩兩配對會爆成 $O(n^2)$，得想辦法剪枝。
 
 **Strip（中垂線帶）**：以中垂線 $x = x_m$ 為中心、左右各 $d$ 寬的直立帶子，寬度 $2d$；形式定義 $\text{strip} = \{P : |P.x - x_m| < d\}$。
 
-關鍵直覺：離中垂線超過 $d$ 的點，光 x 軸距離就 $\geq d$，不可能和任何另一點配出 $< d$ 的距離——整個跳過。所以只用 strip 內的點繼續配對。
+關鍵直覺：離中垂線至少 $d$ 的點，和**另一半**的點之水平距離就至少是 $d$，不可能形成更短的跨半部點對；同半部的最近距離已由遞迴算過。因此合併只須檢查 strip。
 
 strip 裡的點按 y 排序後，每個點**只需往下檢查最多 7 個**就夠——strip 寬 $2d$、左右兩側內部最近距離都 $\geq d$，幾何上 $d \times 2d$ 的矩形至多容 8 個點。下方範例的 ClosestPairDiagram 從第 5 步起會把 strip（藍色帶狀區）疊在中垂線兩側。
 
 #### 複雜度
 
-每層 Combine $O(n)$（strip 篩 + y 排序 + 每點掃 ≤ 7）、共 $\log n$ 層 → $T(n) = 2T(n/2) + O(n) = O(n \log n)$。實作技巧：遞迴過程中同時維護 x 和 y 兩份預排序索引，避免每層重排 strip 退化成 $O(n \log^2 n)$。
+每層 Combine $O(n)$（線性合併 y 順序 + 篩 strip + 每點掃 ≤ 7）、共 $\log n$ 層 → $O(n \log n)$。下方遞迴同時回傳按 y 排序的點，用 merge 保留順序；若每層重新排序 strip，合併會變 $O(n \log n)$，整體只得 $O(n \log^2 n)$。
 
 #### 範例
 
@@ -376,19 +376,33 @@ def closest_pair(points):
 
     def solve(a):
         if len(a) <= 3:
-            return min((dist(a[i], a[j]) for i in range(len(a)) for j in range(i + 1, len(a))), default=float('inf'))
+            d = min((dist(a[i], a[j]) for i in range(len(a))
+                     for j in range(i + 1, len(a))), default=float('inf'))
+            return d, sorted(a, key=lambda p: p[1])
         mid = len(a) // 2
-        xm = a[mid][0]
-        d = min(solve(a[:mid]), solve(a[mid:]))
-        strip = sorted([p for p in a if abs(p[0] - xm) < d], key=lambda p: p[1])
+        xm = (a[mid - 1][0] + a[mid][0]) / 2
+        dl, yl = solve(a[:mid])
+        dr, yr = solve(a[mid:])
+        d = min(dl, dr)
+        by_y, i, j = [], 0, 0
+        while i < len(yl) and j < len(yr):
+            if yl[i][1] <= yr[j][1]:
+                by_y.append(yl[i])
+                i += 1
+            else:
+                by_y.append(yr[j])
+                j += 1
+        by_y.extend(yl[i:])
+        by_y.extend(yr[j:])
+        strip = [p for p in by_y if abs(p[0] - xm) < d]
         for i in range(len(strip)):
             for j in range(i + 1, min(i + 8, len(strip))):
                 if strip[j][1] - strip[i][1] >= d:
                     break
                 d = min(d, dist(strip[i], strip[j]))
-        return d
+        return d, by_y
 
-    return solve(pts)
+    return solve(pts)[0]
 ```
 
 </details>
@@ -518,6 +532,8 @@ import numpy as np
 
 
 def poly_multiply(A, B):
+    if not A or not B:
+        return []
     n = 1
     while n < len(A) + len(B) - 1:
         n *= 2
@@ -538,10 +554,10 @@ print(poly_multiply([1, 2, 3], [4, 5]))  # [4, 13, 22, 15]
 | 問題 | 不用 FFT | 用 FFT |
 | :--- | :---: | :---: |
 | 多項式乘法 | $O(n^2)$ | $O(n \log n)$ |
-| 大整數乘法 | $O(n^2)$ | $O(n \log n)$ |
+| 大整數的數位卷積 | $O(n^2)$ 個係數乘法 | $O(n \log n)$ 個轉換算術操作；位元成本與進位另計 |
 | 訊號卷積 / 濾波 | $O(n^2)$ | $O(n \log n)$ |
 
-只要看到「兩個序列配對累加」（卷積），FFT 幾乎都能套。Python 的 `numpy.fft`、`scipy.signal.fftconvolve`、MP3/JPEG 壓縮都用它。
+FFT 適用於多項式與序列卷積；`numpy.fft` 提供轉換，`scipy.signal.fftconvolve` 則直接提供卷積。有限序列須補零到至少兩輸入長度之和減一，避免循環卷積混疊。上方範例只針對誤差足夠小的實數整數係數而取整；它不是任意精度整數乘法，也不適合直接拿來相乘小數或複數係數。影像壓縮還常見 DCT 等其他轉換，不能一律稱為使用 FFT。
 
 </details>
 
@@ -566,3 +582,5 @@ print(poly_multiply([1, 2, 3], [4, 5]))  # [4, 13, 22, 15]
 :::
 
 下一篇動態規劃——當子問題**不再獨立**、彼此重疊時，分治會重複計算，DP 用「記下來不再重算」解掉這個低效。
+
+延伸核對：[Princeton ClosestPair 實作與線性合併](https://algs4.cs.princeton.edu/code/edu/princeton/cs/algs4/ClosestPair.java.html)、[NumPy DFT 定義與正規化](https://numpy.org/doc/stable/reference/routines.fft.html)。

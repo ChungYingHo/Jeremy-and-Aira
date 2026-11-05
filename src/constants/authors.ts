@@ -1,9 +1,15 @@
+export type AuthorMember = {
+  name: string
+  kind: 'person' | 'ai'
+}
+
 export type Author = {
   name: string
   imgPath: string
   isSecret: boolean
   isHiddenFromAbout?: boolean
   coAuthorImgs?: string[]
+  members?: AuthorMember[]
   summary?: string
   description?: string
   currentRole?: string[]
@@ -55,6 +61,15 @@ export const AUTHORS: Author[] = [
     isSecret: false,
     isHiddenFromAbout: true,
     coAuthorImgs: ['/assets/authors/jeremy.png', '/assets/authors/claude.png'],
+    members: [{ name: 'Jeremy', kind: 'person' }, { name: 'Claude', kind: 'ai' }],
+  },
+  {
+    name: 'Jeremy & Claude & Codex',
+    imgPath: '/assets/authors/jeremy.png',
+    isSecret: false,
+    isHiddenFromAbout: true,
+    coAuthorImgs: ['/assets/authors/jeremy.png', '/assets/authors/claude.png'],
+    members: [{ name: 'Jeremy', kind: 'person' }, { name: 'Claude', kind: 'ai' }, { name: 'Codex', kind: 'ai' }],
   },
   // Solunastre Studio（原 Aira）：Jeremy 的附屬工作室／第二人格，日後可能獨立成站。
   // 暫不顯示為作者卡（保留設定以便日後復用）。

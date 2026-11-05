@@ -1,9 +1,9 @@
 ---
 title: "[TypeScript] 模組與宣告檔"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["TypeScript", "module", "import", "declare", "d.ts"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 8
 ---
 
@@ -11,7 +11,7 @@ TS 系列最後一篇。前面把型別系統與窄化打通了，這篇收尾�
 
 ## ESM 為主
 
-現代 TS 一律以 ES Module 為主。判斷標準很簡單：一個檔案只要有 `import` 或 `export`，就是模組，有自己的 scope；都沒有就是 script，跟其他 script 共享全域。
+現代 TS 一律以 ES Module 為主。判斷標準很簡單：一個檔案只要有 `import` 或 `export`，就是模組，有自己的 scope；沒有 import／export 時還要看 moduleDetection、檔案副檔名與 package 設定；不是任何設定下都會被當成共享全域的 script。
 
 ```typescript
 // math.ts
@@ -68,7 +68,7 @@ Node 模式下：
 import { add } from './math.js'
 ```
 
-在 `.ts` 裡寫 `.js` 看起來很怪，但理由是這樣：Node 的 ESM loader 只認 `.js`（或顯式 `.mjs`），完全不知道 TS 的存在；而 TS 編譯時又不會改寫 import 路徑字串。所以路徑必須預先寫成編譯後實際存在的檔名——這是「TS 不做路徑改寫」這個設計的必然結果。
+這裡假設先輸出 JS 再由 Node ESM 執行，所以相對 import 預先指向輸出的 .js（CommonJS 解析規則不同）。但較新 Node 已支援部分 .ts；TypeScript5.7+ 的 rewriteRelativeImportExtensions 也能把相對 .ts／.mts／.cts 路徑改成輸出副檔名，不能再說 Node 完全不懂 TS 或 TS 永遠不改寫路徑。
 
 ## 路徑別名（paths）
 
@@ -90,7 +90,7 @@ import { add } from './math.js'
 import Button from '@/components/Button'
 ```
 
-注意 TS 只負責型別檢查層的解析，**執行期還要靠打包工具或額外 loader**（例如 `tsx`、`tsconfig-paths`，Vite 則自帶支援）才真的跑得起來。
+注意 TS 只負責型別檢查層的解析，**執行期還要靠打包工具或額外 loader**（例如 `tsx`、`tsconfig-paths`，Vite 專案則需設定 resolve.alias 或採適用版本／外掛的 tsconfig 路徑支援，不能只設定 TS 就假設執行期一定生效）才真的跑得起來。
 
 ## 宣告檔（.d.ts）
 
@@ -148,8 +148,8 @@ declare module '*.png' {
 }
 
 declare module '*.svg?component' {
-  import type { SvelteComponent } from 'svelte'
-  const C: SvelteComponent
+  import type { Component } from 'svelte'
+  const C: Component<Record<string, never>>
   export default C
 }
 ```
@@ -158,6 +158,8 @@ declare module '*.svg?component' {
 import logo from './logo.png'         // logo: string
 import Icon from './icon.svg?component'
 ```
+
+上面的 SVG component 宣告以 Svelte5 的無 props 元件為例，並假設已有把 SVG 編成元件的外掛；宣告檔本身不會完成轉換。
 
 ## 擴充全域 / 第三方型別
 
@@ -184,9 +186,9 @@ window.myApp.version   // ✅ 有型別
 
 ```typescript
 // express.d.ts
-import 'express'
+import 'express-serve-static-core'
 
-declare module 'express' {
+declare module 'express-serve-static-core' {
   interface Request {
     user?: { id: number; name: string }
   }
@@ -207,13 +209,13 @@ declare module 'express' {
 ```jsonc
 {
   "compilerOptions": {
-    "types": ["node", "jest"],   // 只載入這些 @types/*，其餘都不載
+    "types": ["node", "jest"],   // 控制自動加入全域的 @types，不禁止 import 其他套件型別
     "typeRoots": ["./node_modules/@types", "./src/types"]
   }
 }
 ```
 
-不寫 `types` 時，TS 預設載入 `node_modules/@types/*` 底下的所有型別，可能混進不想要的東西。
+本文 TypeScript5.9 在未指定 types 時，會自動納入可見的 @types 全域宣告；TypeScript6 的預設已有變更。明確 import 的套件型別不會因 types 清單沒有列出就全部失效。
 
 ## 寫 library 的 export 設計
 
@@ -224,6 +226,7 @@ declare module 'express' {
 ```jsonc
 {
   "name": "my-lib",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -251,18 +254,14 @@ declare module 'express' {
 
 ## 一個專案常見的型別結構
 
-```
-src/
-├── index.ts
-├── lib/
-│   └── client.ts
-├── models/
-│   └── user.ts        // export interface User {}
-└── types/
-    ├── env.d.ts       // declare namespace NodeJS { interface ProcessEnv {} }
-    ├── images.d.ts
-    └── global.d.ts
-```
+| 路徑 | 用途 |
+| :--- | :--- |
+| `src/index.ts` | 入口與匯出 |
+| `src/lib/client.ts` | 實作 |
+| `src/models/user.ts` | User 型別 |
+| `src/types/env.d.ts` | 環境變數宣告 |
+| `src/types/images.d.ts` | 資源模組宣告 |
+| `src/types/global.d.ts` | 全域擴充 |
 
 把 ambient declarations（沒有 export 的 `*.d.ts`）集中放在 `types/` 資料夾，好找也好管理。
 
@@ -279,3 +278,10 @@ src/
 | 擴充第三方型別 | 在第三方模組 declaration merging |
 
 TS 系列到此告一段落。八篇下來——環境、基本型別、interface/type、函式、泛型、utility types、窄化、模組——剛好是寫真實 TS 程式所需的最小完整地圖。後續的 decorator、TS plugin、各框架的延伸都是分支，之後有需要再展開。
+
+## 參考文件
+
+- [TypeScript：Module Reference](https://www.typescriptlang.org/docs/handbook/modules/reference.html)
+- [Node：TypeScript](https://nodejs.org/api/typescript.html)
+- [TypeScript：types](https://www.typescriptlang.org/tsconfig/types.html)
+- [Svelte：TypeScript Component type](https://svelte.dev/docs/svelte/typescript)

@@ -1,9 +1,9 @@
 ---
 title: "[TypeScript] 基本型別"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["TypeScript", "type", "any", "unknown", "never"]
-changelog: ['2026-06-11']
+changelog: ['2026-06-11', '2026-11-05']
 sameDateSort: 2
 ---
 
@@ -121,11 +121,11 @@ const s: Status = Status.Loading
 ```
 
 :::warning
-TS 5 之後，社群越來越偏好用 **`as const` 物件**取代 enum，原因有三：
+不需要 enum 特性時，也可用 **`as const` 物件**搭配 union type：
 
-- enum 編譯後會額外產生程式碼（雙向 mapping）
-- enum 在 type-only import 與 erasable syntax 模式下行為怪異
-- `as const` 純型別、零執行期成本
+- 一般 enum 會產生 JavaScript；只有數字 enum 產生 reverse mapping，字串 enum 不會
+- `erasableSyntaxOnly`／Node 內建 type stripping 不接受需要轉換的 enum
+- `as const` 標註會擦除，但物件本身仍存在於 JavaScript，不是整個物件零成本
 
 ```typescript
 const Status = {
@@ -178,7 +178,7 @@ if (typeof v === 'number') {
 ```typescript
 try {
   doSomething()
-} catch (err) {       // err 預設是 unknown（TS 4.4+）
+} catch (err) {       // strict／useUnknownInCatchVariables 開啟時是 unknown（TS4.4+）
   if (err instanceof Error) {
     console.error(err.message)
   }
@@ -244,7 +244,7 @@ const el = document.getElementById('app') as HTMLDivElement
 const n = '42' as unknown as number   // 雙重 as，繞開不相容檢查（少用）
 ```
 
-慎用。斷言錯了不會在編譯期報錯，會在執行期炸。
+慎用。雙重斷言不會做轉換，上面的 n 在 runtime 仍是字串；錯誤可能到後續使用時才暴露。
 
 ## non-null 斷言（!）
 
@@ -270,7 +270,7 @@ const obj = { name: 'a', age: 1 }              // { name: string; age: number }
 const obj2 = { name: 'a', age: 1 } as const    // { readonly name: 'a'; readonly age: 1 }
 ```
 
-非常適合搭配 `keyof typeof` 產生精準 union type（取代 enum）。
+非常適合搭配 `keyof typeof` 產生精準 union type。readonly／as const 只提供型別層限制，不等於 Object.freeze，也不會凍結已經存在的外部可變參照。
 
 ## 型別與值的雙重身份
 
@@ -287,3 +287,9 @@ const f: Foo = new Foo()   // 第一個 Foo 是型別、第二個 Foo 是值
 所謂「型別空間」是編譯期的檢查層：型別名、interface、type alias 都住在這裡，執行期完全看不到。「值空間」則是執行期真正存在的東西——變數、函式、class instance。`tsc` 編譯時會把純型別符號全部刪掉（type erasure），剩下的就是純 JavaScript。
 
 下一篇正式進 `interface` 與 `type`，把這篇行內物件型別寫起來會亂的問題解掉。
+
+## 參考文件
+
+- [TypeScript：Enums](https://www.typescriptlang.org/docs/handbook/enums.html)
+- [TypeScript：useUnknownInCatchVariables](https://www.typescriptlang.org/tsconfig/useUnknownInCatchVariables.html)
+- [Node：TypeScript type stripping](https://nodejs.org/api/typescript.html)

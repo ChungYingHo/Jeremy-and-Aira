@@ -1,10 +1,10 @@
 ---
 title: '[Vue] 資料流'
-author: 'Jeremy & Claude'
+author: 'Jeremy & Claude & Codex'
 date: '2026-04-02'
 tags: ['vue', 'props', 'emit', 'provide', 'inject', 'v-model', 'data flow']
 sameDateSort: 1
-changelog: ['2026-06-11']
+changelog: ['2026-06-11', '2026-11-05']
 ---
 
 ## 單向資料流（One-way Data Flow）
@@ -79,7 +79,7 @@ const props = defineProps<{
 }>()
 ```
 
-TS 寫法要設預設值的話，搭配 `withDefaults`：
+TS 寫法可搭配 `withDefaults` 設預設值；Vue3.5+ 的 reactive props destructure 也支援解構預設值，不能一概把所有解構都當成失去響應式：
 ```ts
 const props = withDefaults(defineProps<{
   name: string
@@ -91,7 +91,7 @@ const props = withDefaults(defineProps<{
 
 ### props 是唯讀的
 
-子元件**不能直接修改**父元件傳下來的 props：
+props binding 是淺層唯讀，子元件不應直接替換它；傳入物件／陣列時，其巢狀內容仍可能被改動，所以最好發事件請父層更新，避免隱晦的資料流：
 
 ```js
 // ❌ 這樣會噴警告
@@ -178,19 +178,11 @@ const emit = defineEmits<{
 
 props / emit 在父子之間用起來很順，但元件巢狀一深就麻煩了：
 
-```
-App
-└── Layout
-    └── Sidebar
-        └── UserInfo
-            └── Avatar    ← 它需要 App 層的 user 資料
-```
+例如 App 裡依序包著 Layout、Sidebar、UserInfo、Avatar，最深的 Avatar 需要 App 的 user。
 
 如果每一層都用 props 接力傳下去：
 
-```
-App (user) → Layout (:user) → Sidebar (:user) → UserInfo (:user) → Avatar (:user)
-```
+App → Layout → Sidebar → UserInfo → Avatar，每層都得接收並繼續傳遞 user。
 
 這就是 **props drilling**——中間那幾層根本用不到這份資料，卻被迫當傳聲筒，維護起來很累。
 
@@ -263,7 +255,7 @@ const user = inject('user')
 <input v-model="name" />
 ```
 
-但 `v-model` 其實就是 props + emit 的語法糖！上面那行等同於：
+自訂元件的 v-model 是 props + emit 的語法糖；原生 input 則由 Vue 根據輸入類型處理。以下只近似一般文字框，不涵蓋中文輸入法 composition、checkbox 等特殊情況：
 
 ```vue
 <input :value="name" @input="name = $event.target.value" />
@@ -321,10 +313,10 @@ const lastName = defineModel('lastName')
 Vue 內建了幾個好用的修飾符：
 
 ```vue
-<!-- .lazy：從 input 事件改成 change 事件（失去焦點才更新） -->
+<!-- .lazy：改在 change 事件更新；文字框通常是確認變更或失焦時 -->
 <input v-model.lazy="msg" />
 
-<!-- .number：自動轉成數字 -->
+<!-- .number：嘗試 parseFloat；空輸入仍可能是空字串，不保證永遠 number -->
 <input v-model.number="age" type="number" />
 
 <!-- .trim：自動去除頭尾空白 -->
@@ -351,3 +343,9 @@ Vue 內建了幾個好用的修飾符：
 4. 整個 app 都要用到？→ **Pinia**（後面的文章會講）
 
 其實資料流的核心觀念真的就是「單向資料流」。理解了這個，其他的方式都只是在不同情境下的工具選擇而已。不管用哪種方式，資料的「源頭」都應該要清楚可追蹤，這樣 debug 的時候才不會一臉茫然。
+
+## 參考文件
+
+- [Vue：Props](https://vuejs.org/guide/components/props.html)
+- [Vue：Component v-model](https://vuejs.org/guide/components/v-model.html)
+- [Vue：Form Input Bindings](https://vuejs.org/guide/essentials/forms.html)

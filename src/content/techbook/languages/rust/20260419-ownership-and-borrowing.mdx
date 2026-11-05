@@ -1,9 +1,9 @@
 ---
 title: "[Rust] 所有權與借用"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["Rust", "ownership", "borrowing", "lifetime", "memory"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 3
 ---
 
@@ -13,9 +13,9 @@ sameDateSort: 3
 
 記憶體管理三條路：
 
-1. **手動管理**（C / C++）：自己 `malloc` / `free`，效能最好但容易出錯（懸空指標、雙重釋放、記憶體洩漏）
-2. **垃圾回收（GC）**（Java / Go / Python）：runtime 定期掃描並回收，安全但有 runtime 成本與停頓
-3. **所有權系統**（Rust）：編譯期靜態分析，沒有 GC、沒有 runtime 開銷，但要遵守一套規則
+1. **手動管理／RAII**（C / C++）：C 常用 malloc／free；現代 C++ 也大量使用 RAII／智慧指標，不能簡化成全部手動釋放或保證效能最好
+2. **垃圾回收（GC）**（Java / Go / Python）：透過執行期機制回收；具體演算法與成本因實作而異，例如 CPython 還有參照計數
+3. **所有權系統**（Rust）：編譯期靜態分析，不靠追蹤式 GC／執行期借用檢查來實現一般所有權規則；配置、drop、Rc／Arc 等仍可能有執行期成本
 
 Rust 選第三條，代價是要把所有權規則放進腦子裡。
 
@@ -35,7 +35,7 @@ Rust 選第三條，代價是要把所有權規則放進腦子裡。
 | 速度 | 快（push / pop） | 較慢（要找空間） |
 | 例子 | `i32`、`bool`、`char`、固定大小 array | `String`、`Vec<T>`、`Box<T>` |
 
-純量型別都在 stack 上，複製成本極低，所以實作了 `Copy` trait——賦值就直接複製，不牽涉所有權移轉。
+型別不決定絕對儲存位置：i32 可以在區域變數、heap 物件欄位或暫存器裡；array 也可以放在 Box 中。這裡只用一般區域變數來建立直覺。Copy 表示可按值複製，不表示一定在 stack 上或完全零成本——賦值就直接複製，不牽涉所有權移轉。
 
 ```rust
 let a = 5;
@@ -45,14 +45,7 @@ println!("{a} {b}"); // ✅ a 還能用
 
 `String` 不一樣。它在 stack 上放三個欄位：`ptr`（指向 heap 字元資料的起點）、`len`（目前長度）、`cap`（已配置容量），實際字元資料在 heap 上：
 
-```
-stack                heap
-┌──────────┐        ┌─────────────┐
-│ ptr      │───────→│ h e l l o   │
-│ len   = 5│        └─────────────┘
-│ cap   = 5│
-└──────────┘
-```
+以區域 String 為例，值內含指向字元緩衝區的 pointer、長度與容量；緩衝區在 heap，String 值本身的位置則取決於它放在哪裡。欄位順序不是可依賴的 ABI 保證。
 
 move 時只複製 stack 上這三個欄位，heap 上的資料本身不動。
 
@@ -73,12 +66,7 @@ println!("{s1}");      // ❌ 編譯錯誤：value borrowed here after move
 
 這個設計避免了「兩個變數都覺得自己擁有同一塊記憶體」造成的雙重釋放。
 
-```
-move 之前                          move 之後
-s1 ──┐                            s1 ✗（失效）
-     ├─→ heap "hello"             s2 ──→ heap "hello"
-                                  
-```
+move 前由 s1 擁有字元緩衝區；move 後由 s2 擁有，s1 不能再使用。實際的暫存器／記憶體搬移可能被編譯器最佳化，不是語言保證一定複製三個 stack 欄位。
 
 要真正深拷貝，明確呼叫 `.clone()`：
 
@@ -89,7 +77,7 @@ println!("{s1} {s2}"); // ✅ 兩個都能用
 ```
 
 :::tip
-看到 `.clone()` 就要意識到：這裡有一次堆積分配。對效能敏感的場景別亂 clone。
+這個非空 String 的 clone 會複製字元資料；但 Clone trait 一般不保證深拷貝或 heap 配置，例如 Rc::clone 是共享所有權。成本要看型別。
 :::
 
 ## Copy trait：哪些型別不會 move
@@ -218,7 +206,7 @@ fn dangle() -> &String {
 } // ❌ s 在這裡 drop，回傳的參考會變成懸空
 ```
 
-編譯錯誤訊息會給你兩條路：要嘛回傳 `String`（移轉所有權），要嘛調整生命週期。
+這裡要回傳 String（移轉所有權），或改成借用呼叫方提供的資料。只加 lifetime 標註不能讓已被 drop 的區域 String 活得更久。
 
 ## 切片：&str 與其他切片
 
@@ -291,6 +279,12 @@ fn to_upper(s: &mut String) {
 | 賦值 / 傳參（Copy 型別） | 同上 | 複製：a 還能用 |
 | 不可變借用 | `&a` / `f(&a)` | a 仍是所有者，期間不能可變借用 |
 | 可變借用 | `&mut a` / `f(&mut a)` | a 仍是所有者，期間不能再借任何 |
-| 深拷貝 | `a.clone()` | 在 heap 上複製一份新資料 |
+| Clone | `a.clone()` | 行為依型別；String 複製字元，Rc 等可能仍共享資料 |
 
 掌握這張表加上三條核心規則，所有權就走過大半了。下一篇進 `struct` 與 `enum`，那邊會看到所有權怎麼跟自訂型別互動，以及 `enum` 配 `match` 的威力。
+
+## 參考文件
+
+- [Rust Book：Ownership](https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html)
+- [Rust：Clone](https://doc.rust-lang.org/std/clone/trait.Clone.html)
+- [Rust：String representation](https://doc.rust-lang.org/std/string/struct.String.html#representation)

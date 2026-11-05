@@ -1,9 +1,9 @@
 ---
 title: "[Data Structure] 雜湊表"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-17"
 tags: [data structure, hash table, hashing, collision]
-changelog: []
+changelog: ['2026-11-05']
 sameDateSort: 1
 ---
 
@@ -16,16 +16,16 @@ import OpenAddressingDiagram from '@/components/ArticleRelated/data-structure/ha
 
 ## 核心觀念
 
-- 底層是一個固定大小的陣列（**桶 Bucket** 或**槽 Slot**）
+- 底層在兩次擴容之間是一個固定大小的陣列（**桶 Bucket** 或**槽 Slot**）
 - 透過 `index = hash(key) % table_size` 決定資料該放哪個 slot
-- 讀、寫、刪除都只要一次 hash 運算 + 一次陣列存取，所以平均是 $O(1)$
+- 先定位桶，再依碰撞策略比對 key；在雜湊分布及載入率等假設下，期望成本才可維持 $O(1)$，不是永遠只存取一次
 
 ## 雜湊函式 (Hash Function)
 
 把任意 key 轉成固定範圍整數的函式，好的 hash 函式要滿足：
 
-- **確定性**：同一個 key 每次算出的 hash 值要相同
-- **快速**：計算成本要低（通常要求 $O(1)$）
+- **一致性**：同一張表內，相等 key 必須得到相同 hash；使用隨機種子時，不必跨程序得到相同數字
+- **快速**：固定大小的 key 可視為 $O(1)$；長字串等 key 的首次雜湊通常還要讀取內容
 - **均勻分布**：不同 key 應盡量分散，避免大量碰撞
 
 最常見的簡化做法是「除法 hash」：
@@ -89,13 +89,14 @@ public class HashTableChaining {
     private int size;
 
     public HashTableChaining(int size) {
+        if (size <= 0) throw new IllegalArgumentException("size must be positive");
         this.size = size;
         this.table = new LinkedList[size];
         for (int i = 0; i < size; i++) table[i] = new LinkedList<>();
     }
 
     private int hash(int key) {
-        return key % size;
+        return Math.floorMod(key, size);
     }
 
     public void put(int key, String value) {
@@ -124,7 +125,7 @@ public class HashTableChaining {
 </details>
 
 :::info
-鏈結法的優點是實作直觀、不怕表被填滿；缺點是每個 slot 要多存一個串列指標，且 cache locality 較差。Java 的 `HashMap` 在 JDK 8 之後採用鏈結法，當單一 bucket 的串列長度超過門檻（預設 8）時，會把該串列升級成紅黑樹，以改善最壞情況效能。
+鏈結法的優點是實作直觀、元素數可超過桶數；缺點是串列額外配置與 cache locality。上方 Java 範例用 `floorMod` 支援負整數 key，固定容量、不含刪除或擴容；泛型陣列建立會有 unchecked 警告。OpenJDK 8 的 `HashMap` 有樹化門檻 8，還要求表容量至少 64，容量不足通常先擴容；這是該實作的策略，不是所有雜湊表的規則。
 :::
 
 ---
@@ -178,14 +179,14 @@ public class HashTableChaining {
 | 29 | $i = 0$：1 占 → $i = 1$：2 占 → $i = 2$：5 占 → $i = 3$：3 占 → $i \ge 4$ 循環回到已占 slot | 插入失敗 |
 
 :::info
-平方探測可以打散主叢集，但代價是：當表近滿時可能無法覆蓋所有 slot。以 $m = 7$ 為例，$1 + i^2 \bmod 7$ 在 $i = 0 \sim 6$ 只走過 1、2、5、3 這四個不同位置，碰到第 5 個 key 就卡住。實務上通常要求表大小為 $4k + 3$ 型的質數，並維持 load factor $\le 0.5$，才能保證探測序列遍歷整張表。
+平方探測可以打散主叢集，但不一定覆蓋所有 slot。以 $m = 7$ 為例，$(1 + i^2) \bmod 7$ 只走過 1、2、5、3 四個位置，第 5 個同 hash 的 key 就卡住。對奇質數 $m$，這個公式有 $(m+1)/2$ 個不同落點，因此**插入前少於一半槽被占用**時保證能找到空槽；這不等於遍歷全表，也不需要額外限定 $m=4k+3$。
 :::
 
 ### 雙雜湊 (Double Hashing)
 
 跳步長度由第二個 hash 函式決定：$h(k, i) = (h_1(k) + i \cdot h_2(k)) \bmod m$。
 
-設 $h_1(k) = k \bmod 7$、$h_2(k) = 1 + (k \bmod 5)$（$h_2$ 不能為 0，否則會退化成線性探測）：
+設 $h_1(k) = k \bmod 7$、$h_2(k) = 1 + (k \bmod 5)$。步長須與表大小互質；若步長是 0，會停在原地，而不是線性探測：
 
 | Key | $h_1$ | $h_2$ | 探測順序 | 最終 slot |
 | :---: | :---: | :---: | :--- | :---: |
@@ -202,7 +203,7 @@ public class HashTableChaining {
 | 值 | — | 15 | — | 36 | 22 | 8 | 29 |
 
 :::tip
-雙雜湊相當於每個 key 都有自己的跳步節奏，分布最均勻、碰撞叢集最少，是三種開放定址法中效能最穩定的。代價是每次碰撞要多算一次 hash 函式。
+雙雜湊讓不同 key 可以有不同跳步，通常能減少叢集；實際分布仍取決於兩個 hash 函式與輸入。第二個 hash 可先算一次，再重用步長；它也可能比線性探測有較差的 cache locality，不能一概稱為最快。
 :::
 
 ### 三種探測法的比較
@@ -210,7 +211,7 @@ public class HashTableChaining {
 | 探測法 | 跳步公式 | 叢集程度 | 探測涵蓋範圍 |
 | :--- | :--- | :--- | :--- |
 | 線性 | $h(k) + i$ | 主叢集最嚴重 | 保證走完整張表 |
-| 平方 | $h(k) + i^2$ | 可分散主叢集，但仍有次叢集 | $m$ 為 $4k+3$ 質數且 $\alpha \le 0.5$ 才保證涵蓋 |
+| 平方 | $h(k) + i^2$ | 可分散主叢集，但仍有次叢集 | 奇質數時涵蓋 $(m+1)/2$ 槽；低於半滿保證找到空槽 |
 | 雙雜湊 | $h_1(k) + i \cdot h_2(k)$ | 最均勻 | $\gcd(h_2(k), m) = 1$ 時涵蓋全表 |
 
 ---
@@ -231,12 +232,12 @@ public class HashTableChaining {
 **負載因子 (Load Factor)** $\alpha = n/m$（已放入元素數 ÷ 總 slot 數），衡量表有多擠：
 
 - $\alpha$ 越大 → 碰撞越頻繁 → 效能越差
-- 開放定址法通常要求 $\alpha \le 0.75$
-- 鏈結法允許 $\alpha > 1$（串列可無限長），但超過後效能會快速下滑
+- 開放定址法須留空位，門檻依探測策略決定；本篇平方探測的插入保證要求插入前 $\alpha < 0.5$，不能統一套 0.75
+- 鏈結法允許 $\alpha > 1$，均勻雜湊下期望查詢成本為 $O(1+\alpha)$，不是超過 1 就有固定的效能斷崖
 
 當 $\alpha$ 超過門檻時觸發 **Rehash**：
 
-1. 建立更大的新表（通常是原本的 2 倍，且保持質數）
+1. 建立更大的新表，通常等比擴容；表大小可採質數或 2 的次方，須搭配正確的雜湊與探測策略
 2. 逐一把舊表的每個 entry 重新 hash 到新表
 3. 釋放舊表
 
@@ -252,10 +253,10 @@ Rehash 單次成本是 $O(n)$，但因為每插入 $n$ 個元素才會重建一�
 | 4 | **手跑雙雜湊** | 跳步 $= i \cdot h_2(k)$；$h_2$ 不能為 0 |
 | 5 | **查詢比對次數計算** | 找某 key 最多比幾次？（串列法 = 串列長度；探測法 = 探測步數） |
 | 6 | **主叢集 / 次叢集問題** | 線性 → 主叢集；平方 → 次叢集（同 $h(k)$ 的 key 探測序列相同） |
-| 7 | **負載因子 $\alpha = n/m$** | 開放定址 $\alpha \le 0.75$；鏈結法可 $> 1$ |
+| 7 | **負載因子 $\alpha = n/m$** | 開放定址門檻依策略；鏈結法可 $>1$；墓碑也會影響探測 |
 | 8 | **Rehash 時機 + 均攤** | 等比擴張（× 2）→ 均攤 $O(1)$ |
 | 9 | **最壞情況為什麼退化** | 所有 key 撞同 slot → 串列法 $O(n)$、探測法也 $O(n)$ |
-| 10 | **Hash 函式設計** | 除法 $h(k) = k \bmod m$ 取**質數** $m$；避免 $m = 2^k$ |
+| 10 | **Hash 函式設計** | 簡單除法法常取質數；$2^k$ 表大小配合良好位元混合也常用，不能一律排除 |
 
 ### 複雜度推導
 
@@ -266,20 +267,20 @@ Rehash 單次成本是 $O(n)$，但因為每插入 $n$ 個元素才會重建一�
 :::warning
 **考試常踩的陷阱**
 
-1. **平方探測不保證涵蓋全表**：$m$ 要是 $4k+3$ 型質數、$\alpha \le 0.5$ 才保證
+1. **平方探測不保證涵蓋全表**：奇質數且插入前低於半滿，保證的是找到空槽，不是遍歷所有槽
 2. **雙雜湊 $h_2(k) \neq 0$**：$h_2 = 0$ 會讓探測永遠停在原地
 3. **載入因子 $\alpha$ 的分子是元素數**：刪除元素後 $\alpha$ 會下降（但開放定址要用 tombstone 標記）
 4. **開放定址的刪除不能直接清空**：會斷了後面 key 的探測鏈 → 要用 tombstone（墓碑標記）
-5. **最壞 $O(n)$ 非 $O(\log n)$**：Java 8 的 HashMap 在 bucket 長度 ≥ 8 時轉紅黑樹才變 $O(\log n)$
+5. **平均、攤銷與最壞不同**：一次擴容可為線性；Java 樹化有容量等前提，不能只看 bucket 長度就替所有 key 宣稱最壞對數保證
 :::
 
 ## 實務：JavaScript 的 Object / Map / Set
 
-JS 內建三個 hash-table 類型，底層皆是 hash 表：
+JS 常用以下三種容器表達字典或集合；ECMAScript 規格規定可觀察行為，並不強制它們底層都用雜湊表：
 
 | 類型 | 用途 | key 型別限制 |
 | :--- | :--- | :--- |
-| `Object` | 最常見的字典，早期被當 map 用 | key 自動轉字串 |
+| `Object` | 物件屬性容器，也常用作字典 | 屬性 key 是字串或 Symbol；其他型別通常轉字串 |
 | `Map` | ES2015 引入，正統 key-value 容器 | 任何型別（含物件） |
 | `Set` | 只存 key、無 value 的集合 | 任何型別 |
 
@@ -300,8 +301,10 @@ const s = new Set([1, 1, 2, '2'])
 console.log(s.size)      // 3 — 數字 2 與字串 '2' 不同
 ```
 
-`Map` 與 `Set` 的查詢、插入、刪除皆為 $O(1)$ 平均，且保留插入順序；`Object` 雖然也是 hash 表，但多了原型鏈與字串轉換等附帶邏輯，純 key-value 場景優先用 `Map`。
+`Map` 與 `Set` 保留插入順序；規格要求平均存取時間對元素數呈次線性，但沒有保證每種操作一定平均 $O(1)$，底層可用雜湊表或其他符合要求的結構。`Object` 還有原型鏈與屬性鍵轉換；若需要任意型別 key，通常選 `Map`。
 
 :::tip
 Python 的 `dict` 與 `set`、Java 的 `HashMap` 與 `HashSet`、Go 的 `map`，底層原理都是 hash 表。不同語言對碰撞處理、rehash 策略、記憶體配置略有差異，但對使用者來說介面都類似——要查某個 key 有沒有、要建立 key 到 value 的對應，就用 hash 表。
 :::
+
+延伸核對：[ECMAScript Map 規格](https://tc39.es/ecma262/multipage/keyed-collections.html#sec-map-objects)、[OpenJDK 8 HashMap 原始碼](https://github.com/openjdk/jdk8u/blob/master/jdk/src/share/classes/java/util/HashMap.java)、[OpenDSA 探測法與半滿保證](https://opendsa-server.cs.vt.edu/ODSA/Books/njit/cs114/fall-2022/Sec_09/html/HashCImproved.html)。

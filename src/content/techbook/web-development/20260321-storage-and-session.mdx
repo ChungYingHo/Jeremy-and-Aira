@@ -1,9 +1,9 @@
 ---
 title: '[Web] Cookie、Session、localStorage 與 sessionStorage'
-author: 'Jeremy & Claude'
+author: 'Jeremy & Claude & Codex'
 date: '2026-03-21'
 tags: [web, cookie, session, localStorage, sessionStorage, http]
-changelog: ['2026-06-11']
+changelog: ['2026-06-11', '2026-11-05']
 ---
 
 ## HTTP 是無狀態的
@@ -18,31 +18,31 @@ changelog: ['2026-06-11']
 
 Cookie 是 Netscape 工程師 Lou Montulli 在 1994 年發明的，是最早解決 HTTP 無狀態問題的方案。
 
-它的本質很簡單：一小段由 server 寫入、存在瀏覽器裡的文字資料。之後瀏覽器每次對同一個 server 發請求，都會自動把對應的 cookie 附在 HTTP request header 上，server 一看就知道這個請求是誰發的。
+Cookie 是瀏覽器保存的小段資料，可由伺服器透過 `Set-Cookie` 設定，也可在限制允許時由 JavaScript 設定。瀏覽器只會在網域、路徑、安全性、SameSite 與憑證模式等條件符合時附上 Cookie；內容若要代表身分，後端仍須驗證，不能相信任意 cookie 值。
 
 ### Cookie 的運作流程
 
 1. 使用者登入，server 驗證帳密成功後，在 HTTP **response header** 寫入 `Set-Cookie`。
 2. 瀏覽器收到後，自動把 cookie 儲存起來。
-3. 之後每次對同一 domain 的請求，瀏覽器都會自動在 **request header** 帶上 `Cookie`。
+3. 之後符合該 cookie 範圍與瀏覽器政策的請求，才會在 **request header** 帶上 `Cookie`。
 4. Server 讀取 cookie，識別使用者身份或取得需要的狀態資訊。
 
 ### Cookie 的屬性
 
 | 屬性 | 說明 |
 | :--- | :--- |
-| `Expires` / `Max-Age` | 設定 cookie 的有效期限。沒設的話就是 session cookie，瀏覽器關掉就消失 |
-| `Domain` | 限制哪些 domain 可以存取這個 cookie |
-| `Path` | 限制哪些路徑下的請求會帶上這個 cookie |
+| `Expires` / `Max-Age` | 設定期限；兩者同時有時 `Max-Age` 優先。省略則為 session cookie，session restore 可能將它還原，不能把關閉瀏覽器當成可靠登出 |
+| `Domain` | 省略時限目前主機；指定合法上層網域時可涵蓋子網域，不以 port 隔離 |
+| `Path` | 控制哪些請求路徑會帶上 cookie，不是資料存取安全邊界 |
 | `HttpOnly` | 設定後，JavaScript 無法透過 `document.cookie` 存取這個 cookie |
 | `Secure` | 設定後，只有 HTTPS 連線才會傳送這個 cookie |
-| `SameSite` | 控制 cookie 能不能在跨站請求中被帶上，可設 `Strict`、`Lax`、`None` |
+| `SameSite` | 控制跨站附帶條件，可設 `Strict`、`Lax`、`None`；`None` 也須有 `Secure`。site 與 origin 不是相同概念 |
 
 :::danger
-`HttpOnly` 是防 **XSS（Cross-Site Scripting）** 的關鍵。
+`HttpOnly` 限制 JavaScript 讀取 cookie，能降低 **XSS（Cross-Site Scripting）** 直接竊取憑證的風險，但不會防止 XSS 本身。
 
 - XSS 的玩法：攻擊者把惡意 JavaScript 注入網頁，用 `document.cookie` 把使用者的 cookie 偷走，拿去假冒身份
-- 設了 `HttpOnly`，JavaScript 根本讀不到那個 cookie，惡意腳本無從下手
+- 設了 `HttpOnly`，`document.cookie` 讀不到該 cookie；但惡意同站腳本仍可能發出帶 cookie 的請求或讀取頁面資料
 - `Secure` 則確保 cookie 只在 HTTPS 加密連線下傳送，不會在明文傳輸時被中間人攔走
 
 登入相關的 cookie，一律 `HttpOnly` + `Secure`。
@@ -59,10 +59,10 @@ Cookie 是 Netscape 工程師 Lou Montulli 在 1994 年發明的，是最早解�
 瀏覽器端用 `document.cookie` 讀寫 cookie（前提是該 cookie 沒設 `HttpOnly`）：
 
 ```js
-// 設定 cookie（expires 以 UTC 格式字串表示）
-document.cookie = 'username=Jeremy; expires=Fri, 31 Dec 2026 23:59:59 GMT; path=/'
+// 非驗證用途的偏好範例：一小時後到期
+document.cookie = 'username=Jeremy; Max-Age=3600; Path=/; SameSite=Lax'
 
-// 讀取所有 cookie（是一整個字串，需要自己解析）
+// 只讀到目前文件可見、非 HttpOnly 的 cookie
 console.log(document.cookie) // "username=Jeremy; theme=dark"
 
 // 刪除 cookie（把 expires 設成過去的時間）
@@ -99,13 +99,16 @@ GET /profile HTTP/1.1
 Cookie: connect.sid=s%3A7xT...abc
 ```
 
-Express 搭配 `express-session` 的最小實作：
+Express 搭配 `express-session` 的流程片段。`authenticate` 是**待實作的憑證驗證函式**，不是 Express 內建 API；此片段不構成完整登入系統：
 
 ```js
 import express from 'express'
 import session from 'express-session'
 
 const app = express()
+app.use(express.json())
+
+if (!process.env.SESSION_SECRET) throw new Error('SESSION_SECRET is required')
 
 app.use(session({
   secret: process.env.SESSION_SECRET,
@@ -114,9 +117,21 @@ app.use(session({
   cookie: { httpOnly: true, secure: true, sameSite: 'lax' },
 }))
 
-app.post('/login', (req, res) => {
-  req.session.userId = 42  // session 資料存在 server，cookie 只帶 session id
-  res.sendStatus(200)
+app.post('/login', async (req, res, next) => {
+  try {
+    const user = await authenticate(req.body)
+    if (!user) return res.sendStatus(401)
+    req.session.regenerate((err) => {
+      if (err) return next(err)
+      req.session.userId = user.id
+      req.session.save((saveErr) => {
+        if (saveErr) return next(saveErr)
+        res.sendStatus(200)
+      })
+    })
+  } catch (err) {
+    next(err)
+  }
 })
 
 app.get('/profile', (req, res) => {
@@ -125,28 +140,30 @@ app.get('/profile', (req, res) => {
 })
 ```
 
+這裡省略 HTTPS 啟動、CSRF 防護與正式 session store。`secure: true` 要求安全連線，若 TLS 終止在可信反向代理，須正確設定 Express 的 proxy 信任範圍；預設 `MemoryStore` 只適合開發，不適合正式多程序部署。登入後重建 Session ID 可降低 session fixation 風險，細節見 [express-session 官方文件](https://expressjs.com/en/resources/middleware/session/)。
+
 ### JWT 的運作流程
 
-傳統 server-side session 在 MPA 架構下運作得很好，但 SPA 與前後端分離普及之後，問題開始浮現：
+Server-side session 可用於 MPA，也可用於 SPA；多伺服器部署時，則須考慮狀態儲存與路由：
 
 - **狀態集中在 server**：每個登入中的使用者都要在 server 維護一筆 session 資料，使用者一多，記憶體就吃緊
 - **橫向擴展困難**：使用者登入時 session 建在 A server，下一個請求被路由到 B server，找不到 session，就被登出了
 - 解法不是沒有——sticky session（固定路由到同一台 server）或共享 session store（如 Redis）——但都是額外的架構成本
 
-**JWT（JSON Web Token）** 是 token-based 的驗證方式，核心思路跟 session 正好相反：**server 不儲存任何狀態。**
+**JWT（JSON Web Token）** 是傳遞 claims 的格式，可用於 token-based 驗證；簽章型 JWT 可在不逐次查 session store 的情況下驗證，但不代表整個系統不保存狀態，也不限定 SPA 必須用 JWT。
 
 1. 使用者登入，server 驗證成功後產生 JWT token，裡面放使用者 ID、角色、有效時間等資訊，回傳給前端。
 2. 前端存放 token，兩種主流做法：
     - **`HttpOnly` cookie**：瀏覽器自動管理，JavaScript 無法存取，安全性較高，但要處理 CSRF。
-    - **記憶體**（框架 state/store）：refresh 頁面就消失，要搭配 refresh token 機制續期，但不怕被 XSS 偷走。
-3. 每次請求時，前端把 token 放進 `Authorization` header（格式 `Bearer <token>`）。
-4. Server 只要驗證 token 簽名是否合法就能確認身份，不用查資料庫或記憶體。任何一台 server 都能獨立驗證，不需要共享 session store。
+    - **記憶體**（框架 state/store）：完整重載頁面後通常消失，可搭配適當續期機制；能執行同站 JavaScript 的 XSS 仍可能取得 token 或代發請求，並非免疫。
+3. 若 token 可由前端讀取，可放 `Authorization: Bearer <token>`；若存於 `HttpOnly` cookie，則由瀏覽器按 cookie 規則附帶，JavaScript 無法讀出後再塞進 header。
+4. 後端須固定允許的演算法並驗證簽章／MAC、有效期限及所需 issuer、audience 等條件，再做授權判斷；撤銷與帳號狀態也可能要求查共享資料。詳見 [JWT 安全實務 RFC 8725](https://www.rfc-editor.org/rfc/rfc8725.html)。
 
 :::info
-JWT 看起來像一串亂碼，但其實結構是三段 Base64 編碼用 `.` 串起來的：`header.payload.signature`。
+常見的 JWS compact 簽章型 JWT 有三段 Base64url 以 `.` 串起來：`header.payload.signature`。JWT 也可採 JWE 加密格式，不能把所有 JWT 都視為這三段結構。
 - **header**：說明這個 token 用的是什麼簽名演算法
 - **payload**：實際儲存的資訊，例如使用者 ID、角色等（這段是可以被解碼讀取的，所以不要放密碼或任何敏感資料）
-- **signature**：用 server 的 secret key 對前兩段做簽名，確保內容沒有被竄改
+- **signature**：依演算法以共享密鑰做 MAC，或以私鑰簽章、公鑰驗證，保護內容完整性
 
 所以 JWT 的安全性不在於「資料被隱藏了」，而在於「資料如果被竄改，簽名就會對不上，server 就會拒絕這個 token」。
 :::
@@ -154,23 +171,22 @@ JWT 看起來像一串亂碼，但其實結構是三段 Base64 編碼用 `.` 串
 ### Session vs. JWT 怎麼選
 
 Session 有個特性是 server 可以**主動讓它失效**——只要把那筆 session 從記憶體或 Redis 刪掉，使用者馬上就被登出。
-但 JWT 因為 server 不記狀態，沒辦法這樣做。
-Token 一旦發出去，在有效期間內根本沒辦法讓它失效，除非另外維護一個 token 黑名單，但那又繞回需要共享狀態的問題了。
+只做離線簽章驗證的 JWT，在到期前通常不會因為刪掉前端副本就失效。若需要提早撤銷，可採拒絕清單、token 版本、金鑰輪換等設計，代價是增加狀態或影響其他 token；短效 access token 只能縮短風險時間，不等於即時撤銷。
 
 所以兩種方案各有取捨，沒有絕對的優劣：
-- 需要嚴格的即時登出控制（例如金融、醫療類應用）？Session 可能更合適。
-- 服務是前後端分離、多服務架構，或有 mobile app 要一起接？JWT 通常更方便。
+- 若需要逐 session 的即時撤銷，server-side session store 提供直接的控制點。
+- 若服務間需要驗證可攜的 claims，簽章 token 可能合適；仍須設計有效期、授權與撤銷，不由 MPA／SPA 的區分單獨決定。
 
 ## localStorage 與 sessionStorage
 
-Cookie 拿來在瀏覽器端存資料，有個相當惱人的限制：**每個 cookie 最多 4KB**，而且每次 HTTP 請求都會自動帶上，白白吃頻寬。
+Cookie 容量有限，單筆通常約 4KB，實際限制依瀏覽器；符合附帶條件的 HTTP 請求還會帶上它，增加傳輸量。純前端狀態若不需要伺服器讀取，可考慮 Web Storage。
 
 HTML5 帶來了 **Web Storage API**，提供兩個更現代的瀏覽器端儲存方案：`localStorage` 與 `sessionStorage`。
 兩者的 API 幾乎一模一樣，差別只在**生命週期**與**範圍**。
 
 ### localStorage
 
-`localStorage` 存的資料是**持久性**的，瀏覽器關掉也不會消失，除非手動清除或程式碼主動刪除。
+`localStorage` 沒有內建到期時間，通常跨瀏覽器重啟保留；使用者清除、隱私模式或瀏覽器儲存政策仍可能使資料消失，不應把它當唯一可靠備份。
 資料的範圍以 **origin（protocol + domain + port）** 為單位，同一個 origin 下的所有頁面都讀得到。
 
 ```js
@@ -186,8 +202,8 @@ localStorage.clear()
 ### sessionStorage
 
 `sessionStorage` 的 API 跟 `localStorage` 完全相同，但生命週期只在**當前的瀏覽器分頁（tab）開著的期間**。
-關掉分頁或瀏覽器，資料就消失了。
-而且更嚴格的是，就算是同一個 origin，不同分頁之間的 `sessionStorage` 也是**各自獨立、互不共享**的。
+一般頁面重載仍會保留；分頁工作階段結束才清除，瀏覽器的恢復功能可能延續該工作階段。
+同 origin 的不同頂層分頁不會持續共享同一份資料；由 opener 開的新分頁可能取得初始副本，之後各自獨立。
 
 ```js
 sessionStorage.setItem('step', '2')
@@ -199,10 +215,10 @@ sessionStorage.removeItem('step')
 
 | 特性 | Cookie | localStorage | sessionStorage |
 | :--- | :--- | :--- | :--- |
-| 容量上限 | ~4KB | ~5-10MB | ~5-10MB |
-| 生命週期 | 可自訂（或 session） | 永久，直到手動清除 | 當前分頁存活期間 |
-| 跨分頁共享 | 是（同 origin） | 是（同 origin） | 否 |
-| 隨 HTTP 請求傳送 | 是，自動帶上 | 否 | 否 |
+| 容量上限 | 單筆通常約 4KB，依瀏覽器 | 配額依瀏覽器與政策，常為數 MB | 配額依瀏覽器與政策，常為數 MB |
+| 生命週期 | 到期或 session／清除政策 | 無內建期限，仍可能被清除 | 分頁工作階段，可受恢復機制影響 |
+| 跨分頁共享 | 符合 domain／path 等範圍可共用，不以 port 隔離 | 同 origin 通常共享；嵌入情境可能分割 | 不持續共享，可能有 opener 初始副本 |
+| 隨 HTTP 請求傳送 | 符合範圍、憑證模式與政策才附帶 | 否 | 否 |
 | JavaScript 可讀 | 可（除非 HttpOnly） | 是 | 是 |
 | 伺服器可設定 | 是 | 否 | 否 |
 
@@ -210,7 +226,7 @@ sessionStorage.removeItem('step')
 **不要把 JWT 或任何 authentication token 存在 `localStorage`！**
 
 這是一個相當常見的誤區，尤其是網路上有很多教學直接示範把 JWT 塞進 `localStorage`，然後每次 request 再從裡面拿出來放進 header 帶走。
-問題在於，`localStorage` 可以被頁面上任何 JavaScript 存取，只要頁面有 XSS 漏洞，攻擊者就能輕鬆把 token 偷走，完整模擬使用者的身份，而且因為 JWT 本身 server 不記狀態，你也很難即時讓那個被盜的 token 失效。
+問題在於，`localStorage` 可被同 origin 的頁面腳本存取；若有 XSS，攻擊者可能竊取 token 並以其權限發請求。只做離線驗證且沒有撤銷機制的 JWT，也較難即時停用被盜 token。
 
 相對安全的做法是把 JWT 存在設有 `HttpOnly` 的 cookie 裡，讓 JavaScript 碰不到它，由瀏覽器自動附上，由後端讀取驗證。
 當然，用 cookie 傳遞 token 又要注意另一種攻擊：**CSRF (Cross-Site Request Forgery)**，也就是惡意網站誘騙瀏覽器發出帶有你 cookie 的請求。
@@ -251,19 +267,18 @@ sessionStorage.removeItem('step')
 | **JWT（body 方式）** | response body 的 JSON，例如 `{ token: "..." }` | 前端從 response body 裡撈出來，自己決定存哪 |
 
 關鍵就在最後兩行：JWT 後端可以選擇兩種回傳方式，**行為完全不同**。
-用 `Set-Cookie` 傳的話，跟 cookie / session 一樣，前端感知不到、也不需要處理，瀏覽器自動把它存起來，之後每次請求也自動帶上。
+用 `Set-Cookie` 傳時，前端 JavaScript 不能直接讀取這個 response header；`HttpOnly` 內容也無法透過 `document.cookie` 讀取。但前端仍須配合請求的 credentials 模式、CORS 與 CSRF 設計，瀏覽器也可能拒收或不附帶第三方 cookie。
 但如果後端選擇放在 response body 裡，前端就必須自己去讀取、自己決定存在哪（記憶體、`localStorage` 等），也要自己在之後的請求手動帶上 `Authorization` header。
 
 所以當你跟後端討論驗證機制時，要確認的不只是「我們用 JWT 還是 session」，還要確認「JWT 是從 header 來還是 body 來」——這直接決定了前端要不要自己處理存取邏輯。
 
 ### 現代實務怎麼用？
 
-**登入驗證**：現代前後端分離的專案，主流是 JWT token-based 驗證。
-token 的存放方式有兩派，一派存 `HttpOnly` cookie（安全性較高，但要處理 CSRF），另一派存在框架的 state/store 記憶體裡，每次 refresh 頁面就消失，需要搭配 refresh token 機制來自動續期。
-這兩種方式各有取捨，不同團隊的選擇不同。
+**登入驗證**：先確認身分協定、session／token 的生命週期與傳輸方式，再決定儲存位置。Cookie session 與 JWT 都可用在前後端分離的專案；不用未附統計的「主流」判斷取代需求分析。
 
-**前端基本不碰跟驗證有關的 cookie**：正常的開發流程中，前端工程師幾乎不會需要直接操作 cookie 來處理登入相關的邏輯，這塊交給後端設定 `HttpOnly` cookie，前端感知不到也不需要感知。
-前端能碰的 cookie，通常只剩第三方 SDK 自己寫的追蹤或 analytics 類 cookie，或者極少數需要前端主動設定的偏好類資料（但這種情境現在也幾乎都改用 `localStorage` 了）。
+**前後端共同處理驗證流程**：後端設定 `HttpOnly` 憑證，前端通常不直接讀寫它；前端仍需處理登入狀態、401、跨 origin 請求與 CSRF token。讀不到憑證不代表不需要理解流程。
 
-**UI 狀態的儲存**：深色模式、語言偏好、側欄展開收合狀態... 這類「跟使用者帳號無關的個人設定」，幾乎一律放 `localStorage`。
+**UI 狀態的儲存**：深色模式、語言偏好、側欄展開收合等非敏感狀態可放 `localStorage`；若 SSR 首次回應也需要讀取偏好，cookie 也可能合適。Web Storage 只保存字串，讀寫可能因配額或政策失敗，必要時應捕捉錯誤並提供預設值。
 如果是多步驟表單的暫存進度、或只需要在這次操作中保留的資料，則會考慮 `sessionStorage`。
+
+延伸核對：[Set-Cookie 與瀏覽器行為](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie)、[WHATWG Web Storage](https://html.spec.whatwg.org/multipage/webstorage.html)、[OWASP Session Management](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)、[JWT 格式 RFC 7519](https://www.rfc-editor.org/rfc/rfc7519.html)。

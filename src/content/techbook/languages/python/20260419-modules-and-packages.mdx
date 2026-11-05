@@ -1,9 +1,9 @@
 ---
 title: "[Python] 模組與套件"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["Python", "module", "package", "import", "pip"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 5
 ---
 
@@ -21,13 +21,11 @@ OOP 把 class 寫好後，下一步是把這些 class 散到多檔、再往上�
 
 假設目錄：
 
-```
-my_app/
-├── main.py
-└── utils/
-    ├── __init__.py
-    └── math.py
-```
+| 相對路徑（位於 my_app） | 用途 |
+| :--- | :--- |
+| `main.py` | 執行入口 |
+| `utils/__init__.py` | 套件初始化 |
+| `utils/math.py` | 數學工具模組 |
 
 `utils/math.py`：
 
@@ -79,7 +77,7 @@ from utils import add, PI    # 不用透過 utils.math
 
 ## 相對 import vs 絕對 import
 
-**絕對 import**：從專案根開始的完整路徑。
+**絕對 import**：從 import 搜尋路徑可找到的頂層套件開始寫完整模組名，不一定是檔案系統的專案根。
 
 ```python
 from utils.math import add
@@ -90,7 +88,7 @@ from utils.math import add
 ```python
 # utils/helpers.py
 from .math import add        # 同 package 內
-from ..other import x        # 上一層 package
+from ..other import x        # 只在 utils 本身位於更上層 package 中才成立
 ```
 
 慣例：跨 package 用絕對、同 package 內用相對。**頂層腳本（`python xxx.py` 直接跑的那個）裡不能用相對 import**，因為它的 `__package__` 是 None。
@@ -106,9 +104,10 @@ print(sys.path)
 
 1. 目前執行的腳本所在資料夾
 2. `PYTHONPATH` 環境變數列出的路徑
-3. 安裝的 site-packages
+3. 標準庫與擴充模組路徑
+4. 安裝的 site-packages
 
-只要某個 `.py` 在 `sys.path` 內就找得到。常見問題「找不到模組」幾乎都是 `sys.path` 不對。
+上面是一般檔案模組的簡化流程；內建／frozen 模組等由 import 系統另外處理，`-m`／互動模式的首個搜尋位置也不同。常見問題「找不到模組」幾乎都是 `sys.path` 不對。
 
 ## __name__ == '__main__'
 
@@ -132,15 +131,7 @@ if __name__ == '__main__':
 
 ### 1. 簡單 package
 
-```
-my_lib/
-├── __init__.py
-├── client.py
-├── errors.py
-└── models/
-    ├── __init__.py
-    └── user.py
-```
+套件包含 `my_lib/__init__.py`、`my_lib/client.py`、`my_lib/errors.py`，以及子套件的 `my_lib/models/__init__.py`、`my_lib/models/user.py`。
 
 `__init__.py` 集中暴露 API：
 
@@ -159,16 +150,12 @@ from my_lib import Client, User, MyError
 
 ### 2. src layout（推薦）
 
-```
-my_app/
-├── pyproject.toml
-├── src/
-│   └── my_lib/
-│       ├── __init__.py
-│       └── client.py
-└── tests/
-    └── test_client.py
-```
+| 相對路徑（位於 my_app） | 用途 |
+| :--- | :--- |
+| `pyproject.toml` | 專案與 build metadata |
+| `src/my_lib/__init__.py` | 套件入口 |
+| `src/my_lib/client.py` | 實作 |
+| `tests/test_client.py` | 測試 |
 
 優點：`pip install -e .` 之後 import 走的是真正安裝過的 package，避免「測試誤用了當前資料夾」這類問題。
 
@@ -177,7 +164,7 @@ my_app/
 `requirements.txt`（傳統）：
 
 ```
-requests==2.32.0
+requests==2.32.5
 flask>=3.0
 ```
 
@@ -205,7 +192,7 @@ build-backend = "hatchling.build"
 ```bash
 pip install -r requirements.txt
 pip install -e .              # 把當前專案以「可編輯」模式裝進去
-pip install -e .[dev]         # 含 optional dependency 群組
+pip install -e ".[dev]"         # 含 optional dependency 群組
 ```
 
 ## __all__：控制 from xxx import *
@@ -257,3 +244,9 @@ python -m http.server 8000     # 內建簡易 HTTP server
 `-m` 的意思是「以模組身分執行」，`__package__` 會被正確設定，相對 import 才能正常運作。
 
 下一篇進檔案 IO 與例外處理，前面 `with` context manager 跟 `try / except` 會在那裡正式展開。
+
+## 參考文件
+
+- [Python 3.13：Modules](https://docs.python.org/3.13/tutorial/modules.html)
+- [PyPA：src layout vs flat layout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/)
+- [Requests：Release History](https://requests.readthedocs.io/en/latest/community/updates/)

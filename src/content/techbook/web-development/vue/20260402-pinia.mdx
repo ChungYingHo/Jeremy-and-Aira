@@ -1,23 +1,17 @@
 ---
 title: '[Vue] Pinia'
-author: 'Jeremy & Claude'
+author: 'Jeremy & Claude & Codex'
 date: '2026-04-02'
 tags: ['vue', 'pinia', 'state management', 'store']
 sameDateSort: 4
-changelog: ['2026-06-11']
+changelog: ['2026-06-11', '2026-11-05']
 ---
 
 ## 為什麼需要狀態管理？
 
 幾個彼此沒有父子關係的元件要共享同一份資料時，麻煩就來了。看個例子：
 
-```
-App
-├── Header          ← 需要 user
-├── Sidebar         ← 需要 user
-└── Main
-    └── Settings    ← 需要修改 user
-```
+例如 App 底下有 Header、Sidebar 與 Main，Settings 又在 Main 裡：Header／Sidebar 要讀 user，Settings 要修改 user。
 
 這三個元件不在同一條父子鏈上。用 props 得一層層往下傳；用 `provide/inject` 也得在每個地方分別注入，要改的時候牽連一大片。專案越大，這個成本越高。
 
@@ -100,7 +94,7 @@ export const useCounterStore = defineStore('counter', () => {
 })
 ```
 
-兩種寫法效果相同。Setup Store 的對應關係很好記：`ref` 就是 state、`computed` 就是 getter、function 就是 action。
+兩者都能管理狀態，但不完全相同：Option Store 有內建 $reset，Setup Store 則要自行實作；Setup Store 也要回傳全部 state，才能正確支援 SSR、DevTools 與外掛。對應關係很好記：`ref` 就是 state、`computed` 就是 getter、function 就是 action。
 
 ---
 
@@ -137,9 +131,9 @@ counter.$patch({
   name: 'Aira'
 })
 
-// $patch 也可以傳函式（適合修改陣列）
+// $patch 也可以傳函式（適合把多項變更分成一組）
 counter.$patch((state) => {
-  state.items.push({ id: 1, name: 'item' })
+  state.name = 'Aira'
   state.count++
 })
 ```
@@ -152,7 +146,7 @@ import { storeToRefs } from 'pinia'
 const counter = useCounterStore()
 
 // ❌ 直接解構會失去響應式！
-const { count, name } = counter
+// const { count, name } = counter
 
 // ✅ 用 storeToRefs
 const { count, name } = storeToRefs(counter)
@@ -161,7 +155,7 @@ const { count, name } = storeToRefs(counter)
 const { increment } = counter
 ```
 
-為什麼？`counter.count` 本質上是個 `ref`，直接解構拿到的只是當下的原始值，不是 ref 本身。`storeToRefs` 會幫你保住 ref 的連結。
+為什麼？store 是 reactive 物件，透過 counter.count 讀取時 ref 會自動解包；對這些數字／字串屬性直接解構，拿到的是當時的值。`storeToRefs` 會幫你保住 ref 的連結。
 
 ---
 
@@ -230,8 +224,10 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(email, password) {
     const res = await fetch('/api/login', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     })
+    if (!res.ok) throw new Error(`Login failed: ${res.status}`)
     const data = await res.json()
 
     user.value = data.user
@@ -249,7 +245,9 @@ export const useAuthStore = defineStore('auth', () => {
 })
 ```
 
-同步、非同步（async/await）都可以，沒有額外限制。
+同步、非同步（async/await）都可以。這些範例以純瀏覽器 SPA 為前提，省略重複的 defineStore／ref／computed import，api 代表另行提供的 HTTP client；不同 store 區塊是替代範例，不要重複宣告。fetch 遇到 HTTP4xx／5xx 不會自動 reject，所以要檢查 res.ok。
+
+認證段落只示範狀態流，token 放 localStorage 可被同源 JavaScript 讀取，不是完整的安全認證方案。正式產品需由伺服器驗證每個受保護請求，並依架構選擇 session／HttpOnly cookie／token 儲存策略；SSR 也不能直接在 setup 讀 localStorage。
 
 ---
 
@@ -261,7 +259,7 @@ export const useAuthStore = defineStore('auth', () => {
 | Action | 處理非同步，再 commit mutation | 直接改 state，同步非同步都行 |
 | Module | 需要，而且有 namespace 的坑 | 每個 store 獨立，不需要 module |
 | TypeScript | 支援差，很多地方要手動標型別 | 原生支援，推導很好 |
-| 體積 | ~10kb | ~1.5kb |
+| 體積 | 隨版本與打包方式變動 | 隨版本與打包方式變動，應看實際 bundle |
 | DevTools | 支援 | 支援 |
 
 Vuex 最大的痛點就是 mutation。你想改一個 state，得先寫一個 mutation，然後在 action 裡 commit 這個 mutation。一個簡單的修改要經過三個步驟：
@@ -269,9 +267,12 @@ Vuex 最大的痛點就是 mutation。你想改一個 state，得先寫一個 mu
 ```js
 // Vuex：改一個 count 要三步
 // 1. 定義 mutation
-mutations: { INCREMENT(state) { state.count++ } }
-// 2. 定義 action
-actions: { increment({ commit }) { commit('INCREMENT') } }
+const options = {
+  mutations: { INCREMENT(state) { state.count++ } },
+  // 2. 定義 action
+  actions: { increment({ commit }) { commit('INCREMENT') } }
+}
+// options 要交給 createStore；下方 store 代表已建立的 Vuex store
 // 3. 元件裡呼叫
 store.dispatch('increment')
 ```
@@ -412,3 +413,10 @@ export const useThemeStore = defineStore('theme', () => {
 | storeToRefs | 解構 store 時保留響應式 |
 
 Pinia 真的沒有想像中那麼可怕。如果你已經會用 Composition API 的 `ref`、`computed`、普通函式，那你其實已經會用 Pinia 了 — 它們用的是完全一樣的概念，只是多了一層「集中管理」的外殼而已。
+
+## 參考文件
+
+- [Pinia：Defining a Store](https://pinia.vuejs.org/core-concepts/)
+- [Pinia：State and reset](https://pinia.vuejs.org/core-concepts/state.html)
+- [MDN：Fetch HTTP error handling](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch)
+- [OWASP：HTML5 Web Storage](https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html)

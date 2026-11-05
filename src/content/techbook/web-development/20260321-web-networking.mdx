@@ -1,9 +1,9 @@
 ---
 title: '[Web] 網路基礎：IP、Domain、TCP/IP 與 CDN'
-author: 'Jeremy & Claude'
+author: 'Jeremy & Claude & Codex'
 date: '2026-03-21'
 tags: [web, network, dns, tcp/ip, http, cdn, domain]
-changelog: ['2026-06-11']
+changelog: ['2026-06-11', '2026-11-05']
 ---
 
 import TcpIpLayersDiagram from '@/components/ArticleRelated/web/TcpIpLayersDiagram.svelte'
@@ -12,7 +12,7 @@ import CdnDiagram from '@/components/ArticleRelated/web/CdnDiagram.svelte'
 
 ## IP 位址
 
-每台連上網路的裝置都有一個 IP 位址，這是它在網路上的唯一身分。封包要送到哪台機器，看的就是 IP。
+IP 位址用於網路介面的定址與封包路由，不是裝置永久且全球唯一的身分。同一裝置可有多個位址，位址可能動態改變；多台裝置也可透過 NAT 共用一個對外 IPv4 位址。
 
 **IPv4** 長這樣：
 
@@ -39,24 +39,24 @@ Domain（網域）就是給人看的名字，像 `google.com`、`github.com`。D
 Domain 的結構要從右往左看：
 
 - **TLD（頂級網域）**：最右邊，像 `.com`、`.org`、`.tw`
-- **二級網域**：你登記的名字，像 `google`、`github`
+- **二級網域**：緊接 TLD 左側的標籤；在 `.com` 例子中是 `google`、`github`。可註冊網域的層級依公共後綴而異，例如 `.com.tw` 的規則不同
 - **子網域**：最左邊，像 `www`、`mail`、`api`
 
 拿 `mail.google.com` 來拆：`.com` 是 TLD，`google` 是二級網域，`mail` 是子網域。
 
 ### DNS 解析流程
 
-瀏覽器手上沒有 domain 對 IP 的對照表，得一層一層問出來：
+瀏覽器／作業系統先查可用快取；需要外部查詢時，通常交給遞迴解析器。沒有可用快取的簡化流程如下：
 
 <DnsResolutionDiagram client:visible />
 
-順序是：瀏覽器 → Recursive Resolver（ISP 提供的，或像 Google 的 `8.8.8.8`）→ Root Nameserver → TLD Nameserver → Authoritative Nameserver → 拿到 IP。
+用戶端先問 Recursive Resolver（例如 ISP 或公共解析器）。解析器視快取情況，向 Root 取得 TLD 的指引，再向 TLD 取得權威伺服器的指引，最後取得記錄並回傳；不是瀏覽器把所有請求逐站轉送。DNS 也可回傳 CNAME、MX 等記錄，不只 IP。
 
 :::info
-看起來要問四層，實際上通常幾毫秒就結束，因為每一層都有快取。查到的結果會照 TTL 設定暫存，在有效期間內就不用重問。
+快取可省去部分查詢，延遲仍取決於網路、快取命中與解析鏈；不能保證只需幾毫秒。記錄的 TTL 控制快取可重用的時間，並非所有層級都一定重新查詢。
 :::
 
-也因為到處都是快取，改 DNS 設定之後不會馬上生效——要等全球各地的快取陸續過期。這段等待期叫 **DNS propagation**，通常幾小時到 48 小時不等。
+更新權威記錄後，不同使用者可能暫時看到快取的舊值；俗稱 **DNS propagation**，主要與原本 TTL、委派、負向快取及供應商處理有關，沒有通用的「一定 48 小時」期限。準備切換時可提前調低 TTL，已被快取的舊 TTL 不會因此立刻縮短。
 
 ## TCP/IP
 
@@ -69,21 +69,21 @@ TCP/IP 是網路通訊的基礎協定組，把整個通訊過程切成四層：
 | 層級 | 負責內容 |
 | :--- | :--- |
 | **應用層** | HTTP、Email、DNS 等應用協定 |
-| **傳輸層** | 資料分段、送達確認、流量控制 |
+| **傳輸層** | 端點間的傳輸；TCP 提供可靠位元組串流，UDP 本身不提供相同保證 |
 | **網路層** | 封包路由、IP 定址 |
 | **網路存取層** | 實體訊號傳輸（電纜、Wi-Fi、光纖） |
 
 ### TCP vs UDP
 
-傳輸層有兩大協定，取捨很明確——要可靠還是要快：
+TCP 與 UDP 提供不同服務；實際速度取決於網路與上層協定，不能只用「可靠／快」二選一：
 
 | | TCP | UDP |
 | :--- | :--- | :--- |
 | 全名 | Transmission Control Protocol | User Datagram Protocol |
 | 連線方式 | 三次握手建立連線 | 無連線 |
-| 可靠性 | 確認送達，遺失重送 | 不保證送達 |
-| 延遲 | 較高（確認開銷） | 極低 |
-| 適用場景 | 網頁載入、檔案下載 | 線上遊戲、視訊通話 |
+| 可靠性 | 有序位元組串流、重送與錯誤偵測；斷線仍可能失敗 | datagram，不自行保證送達、順序或不重複 |
+| 延遲／控制 | 有連線、擁塞與流量控制 | header 較簡單，可靠性與擁塞控制等視應用需求處理；不保證低延遲 |
+| 適用場景 | 常見 HTTP/1.1、HTTP/2、檔案傳輸 | 遊戲、即時媒體；HTTP/3 的 QUIC 也建於 UDP 上並自行提供可靠傳輸 |
 
 :::tip
 TCP 三次握手：Client → SYN → Server → SYN-ACK → Client → ACK。三步走完，雙方都確認對方準備好了，才開始傳資料。
@@ -96,13 +96,13 @@ TCP 三次握手：Client → SYN → Server → SYN-ACK → Client → ACK。�
 - **Request**：方法（GET、POST 等）、路徑、Header
 - **Response**：狀態碼（200 OK、404 Not Found 等）、Header、Body
 
-拆開看實際文字格式——Request：
+以下是 **HTTP/1.1** 的文字格式；HTTP/2 與 HTTP/3 使用不同的 framing。`Content-Length` 以 body 位元組數計，以下 body 不含額外換行。Request：
 
 ```http
 POST /api/login HTTP/1.1
 Host: example.com
 Content-Type: application/json
-Content-Length: 42
+Content-Length: 40
 
 {"email":"aira@example.com","pw":"****"}
 ```
@@ -113,14 +113,14 @@ Response：
 HTTP/1.1 200 OK
 Content-Type: application/json
 Set-Cookie: sid=abc123; HttpOnly; Secure
-Content-Length: 25
+Content-Length: 23
 
 {"ok":true,"userId":42}
 ```
 
-注意一件事：HTTP 是明文傳輸，路上經過的每個節點都讀得到全部內容。
+未加密的 HTTP 流量可被有能力觀察該流量的中間節點讀取或修改；HTTPS 則保護 HTTP 內容在 TLS 端點間的傳輸。
 
-**HTTPS** 就是在 HTTP 底下墊一層 **TLS（Transport Layer Security）** 加密。建立連線時雙方先協商出金鑰，之後傳的東西全部用這把金鑰加密——就算被攔截，也只是一堆看不懂的密文。
+**HTTPS** 透過 TLS 提供加密、完整性與伺服器身分驗證；實際有多把流量金鑰與更新機制，不是永遠共用一把。TLS 不會隱藏所有連線中繼資訊，也不保證網站內容本身可信。HTTP/3 的 TLS 1.3 握手整合在 QUIC 中，並非先建立 TCP。
 
 :::warning
 現在幾乎所有網站都應該用 HTTPS。瀏覽器會對 HTTP 網站顯示「不安全」警告，搜尋引擎也偏好 HTTPS 網站。如果你在架站，讓 TLS 憑證這件事盡早處理好。
@@ -132,14 +132,14 @@ TLS 憑證可以從 Let's Encrypt 免費取得，大部分的主機平台（Verc
 
 你的伺服器可能放在美國，但你的使用者可能在台灣、日本、德國。物理距離是客觀存在的，光速是有限的，資料要跑 2000 公里，延遲就是比較高。
 
-**CDN（Content Delivery Network）** 的解法是在全球各地部署快取節點（Edge Node）。使用者連線時，不是直接打去原始伺服器，而是打去離他最近的 Edge Node。
+**CDN（Content Delivery Network）** 在多地提供 Edge Node，透過 DNS、Anycast 或供應商路由把請求導到合適節點；目標常是較低延遲與可用性，不保證地理距離最近。
 
 <CdnDiagram client:visible />
 
 CDN 的核心概念是快取：
 
 - **Cache Hit**：Edge Node 已經有這份內容的副本，直接回傳，原始伺服器完全不需要介入
-- **Cache Miss**：Edge Node 沒有快取（第一次請求、或快取過期），才回去跟原始伺服器要，取得後再快取起來
+- **Cache Miss**：節點沒有可直接使用的副本時，可能向上一層快取或 origin 取用；過期內容也可能先重新驗證。是否可存、多久及能否共享須依 HTTP cache headers 與 CDN 設定，個人化內容不能不加區分共用
 
 靜態資源（圖片、CSS、JS、字型）特別適合 CDN，因為這些檔案不常變動，快取命中率高。
 
@@ -155,13 +155,15 @@ CDN 不只是速度的問題。當流量突然暴增，CDN 的快取節點可以
 
 ## 串起來看
 
-把這些拼在一起，你輸入網址按下 Enter 之後發生的事，大概是這樣：
+以建立新的 **HTTPS over TCP（HTTP/1.1 或 HTTP/2）** 連線、站點使用 CDN 為例：
 
 1. **DNS 查詢**：瀏覽器問 Recursive Resolver，最終拿到 IP 位址
 2. **TCP 連線**：三次握手，與目標伺服器（或 CDN Edge Node）建立連線
 3. **TLS 握手**：如果是 HTTPS，協商加密金鑰
 4. **HTTP 請求**：瀏覽器發出 GET 請求，說明要哪個資源
 5. **CDN 回應**：如果是 Cache Hit，Edge Node 直接回傳；如果是 Cache Miss，Edge Node 先跟原始伺服器拿，再回傳
-6. **頁面渲染**：瀏覽器拿到 HTML，再繼續請求 CSS、JS、圖片，重複以上步驟
+6. **頁面渲染**：瀏覽器解析 HTML，陸續取得 CSS、JS、圖片；會重用連線與快取，不是每個資源都重做完整 DNS／握手
 
-整個流程在 0.幾秒內跑完，每個環節都有相應的技術在背後支撐。理解這個流程不只是知識層面的好奇，也能幫助你在遇到效能問題、網路錯誤的時候，更快判斷問題出在哪個環節。
+HTTP/3 改由 QUIC 建立安全連線；已有快取、連線重用、重新導向等情況也會改變流程。耗時要依實際網路與站點量測；理解各步驟能幫助定位效能與連線問題。
+
+延伸核對：[DNS 基礎 RFC 1034](https://www.rfc-editor.org/rfc/rfc1034.html)、[HTTP/1.1 訊息格式 RFC 9112](https://www.rfc-editor.org/rfc/rfc9112.html)、[HTTP/3 over QUIC RFC 9114](https://www.rfc-editor.org/rfc/rfc9114.html)。

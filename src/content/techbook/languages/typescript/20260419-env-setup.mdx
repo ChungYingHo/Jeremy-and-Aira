@@ -1,9 +1,9 @@
 ---
 title: "[TypeScript] 環境建置"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["TypeScript", "tsconfig", "Node", "Bun", "tsx"]
-changelog: ['2026-06-11']
+changelog: ['2026-06-11', '2026-11-05']
 sameDateSort: 1
 ---
 
@@ -11,7 +11,7 @@ sameDateSort: 1
 
 ## TypeScript 是什麼
 
-TypeScript 是 JavaScript 的超集，在 JS 之上多一層靜態型別系統。寫好的 TS 要先用 `tsc` 編譯成純 JS——瀏覽器和 Node 不會直接執行 `.ts` 檔（除非搭配 runtime loader）。
+TypeScript 是 JavaScript 的超集，在 JS 之上多一層靜態型別系統。瀏覽器一般仍需要工具把 TS 轉成 JavaScript；Node22.18+／較新的 Node 版本則可直接執行只含可擦除型別語法的 `.ts`，但不做型別檢查、也不讀 tsconfig。enum 等需要轉換的語法要另外處理。本文設定以 TypeScript5.9 為基準，避免把新版預設差異混進入門範例。
 
 不過實務上幾乎不會手動跑 `tsc`，多半交給這些工具：
 
@@ -20,7 +20,7 @@ TypeScript 是 JavaScript 的超集，在 JS 之上多一層靜態型別系統�
 | `tsc` | 官方編譯器，做型別檢查與輸出 JS |
 | `tsx` / `ts-node` | Node 上直接執行 `.ts`，內部即時轉譯 |
 | `Bun` | 原生支援 `.ts`，零設定即可跑 |
-| `Vite` / `webpack` | 前端打包工具，內部用 esbuild / SWC 處理 TS |
+| `Vite` / `webpack` | 前端打包工具，依版本／設定使用轉譯器處理 TS，通常還要另外執行型別檢查 |
 
 ## 安裝
 
@@ -28,7 +28,7 @@ TypeScript 是 JavaScript 的超集，在 JS 之上多一層靜態型別系統�
 
 ```bash
 # 專案內（推薦，避免版本衝突）
-npm install -D typescript @types/node
+npm install -D typescript@~5.9 @types/node
 npx tsc --version
 
 # 全域
@@ -75,7 +75,7 @@ npx tsc --init
     "rootDir": "./src",
 
     // 嚴格性（強烈建議全開）
-    "strict": true,                // 等於下列全部開啟
+    "strict": true,                // 開啟 strict 家族旗標；並非所有可選檢查
     // "noImplicitAny": true,
     // "strictNullChecks": true,
     // "strictFunctionTypes": true,
@@ -85,7 +85,7 @@ npx tsc --init
     // "alwaysStrict": true,
 
     // 額外建議開啟
-    "noUncheckedIndexedAccess": true,  // arr[i] 結果一律帶 undefined
+    "noUncheckedIndexedAccess": true,  // 未知索引通常加 undefined；已知 tuple 索引另論
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
@@ -96,7 +96,7 @@ npx tsc --init
     "forceConsistentCasingInFileNames": true,
 
     // 開發體驗
-    "skipLibCheck": true,              // 跳過 node_modules 內 .d.ts 的檢查
+    "skipLibCheck": true,              // 跳過宣告檔內部檢查，不限 node_modules
     "resolveJsonModule": true,         // 允許 import xxx from './data.json'
 
     // 路徑別名
@@ -125,6 +125,8 @@ function greet(name: string): string {
 
 console.log(greet('Jeremy'))
 ```
+
+以下 module=ESNext 的 tsc 輸出需讓 Node 以 ESM 執行，例如 package.json 設定 `"type": "module"`。真實 Node 專案優先採文末的 NodeNext 配對；paths 只協助解析，不會替你改寫輸出 import。
 
 跑法（任一）：
 
@@ -179,3 +181,9 @@ VS Code 內建 TS 支援。常用調整：
 直接拷別人的 tsconfig 很常踩雷，先想清楚這份 TS 是要被誰執行的。
 
 環境就緒、`tsx`/Bun 跑得起 `.ts`、`tsconfig` 開了 `strict`，下一篇進基本型別，把 TS 型別系統的入口磚塊鋪好。
+
+## 參考文件
+
+- [Node：Modules TypeScript](https://nodejs.org/api/typescript.html)
+- [TypeScript：noUncheckedIndexedAccess](https://www.typescriptlang.org/tsconfig/noUncheckedIndexedAccess.html)
+- [TypeScript：Module reference](https://www.typescriptlang.org/docs/handbook/modules/reference.html)

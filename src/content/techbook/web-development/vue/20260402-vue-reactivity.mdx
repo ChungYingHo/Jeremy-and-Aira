@@ -1,10 +1,10 @@
 ---
 title: '[Vue] 響應式系統'
-author: 'Jeremy & Claude'
+author: 'Jeremy & Claude & Codex'
 date: '2026-04-02'
 tags: ['vue', 'reactivity', 'ref', 'reactive', 'computed', 'watch']
 sameDateSort: 0
-changelog: ['2026-06-11']
+changelog: ['2026-06-11', '2026-11-05']
 ---
 
 ## 什麼是「響應式」？
@@ -14,7 +14,7 @@ changelog: ['2026-06-11']
 
 ### 底層原理
 
-Vue 3 的響應式是用 JavaScript 的 `Proxy` 做的：把資料包成 Proxy 物件，讀取和修改都會被攔截到，Vue 就趁這個時機追蹤依賴、觸發畫面更新。
+Vue3 的 reactive 物件以 Proxy 為基礎，ref 的 .value 則以 getter／setter 追蹤：把資料包成 Proxy 物件，讀取和修改都會被攔截到，Vue 就趁這個時機追蹤依賴、觸發畫面更新。
 
 ```js
 // 概念上大概長這樣（不是真正的原始碼）
@@ -61,7 +61,7 @@ function increment() {
 ### 重點
 
 - **在 JS 裡要加 `.value`** — `ref` 回傳的是一個包裝物件，值放在 `.value` 裡
-- **在 template 裡不用加** — Vue 會自動解包（unwrap），直接寫 `{{ count }}` 就好
+- **template 頂層的 ref 通常自動解包**，可寫 `{{ count }}`；陣列／Map 內的 ref 或某些巢狀表達式仍要留意解包規則
 - **什麼型別都能包** — 字串、數字、布林、陣列、物件都行
 
 ```js
@@ -73,7 +73,7 @@ const user = ref({ name: 'Aira' }) // 物件
 
 ### 為什麼需要 `.value`？
 
-JavaScript 的基本型別（string、number、boolean）是傳值的，Proxy 追蹤不到。所以 `ref` 把值包進一個物件，存取都走 `.value`，Proxy 才有東西可以攔。Template 裡 Vue 幫你自動解包，所以不用寫 `.value`。
+JavaScript 的基本型別（string、number、boolean）是傳值的，Proxy 追蹤不到。所以 ref 把值包進物件，透過 .value 的 getter／setter 追蹤；當值是物件時，預設再轉成深層 reactive proxy。不是 ref 本身全部靠 Proxy。Template 裡 Vue 幫你自動解包，所以不用寫 `.value`。
 
 ---
 
@@ -111,10 +111,10 @@ function increment() {
 ```js
 let state = reactive({ count: 0 })
 
-// ❌ 這樣會失去響應式！
+// ⚠️ 新物件本身仍是 reactive，但原先訂閱舊 proxy 的連結不會自動轉移
 state = reactive({ count: 1 })
 
-// 變數指向新物件，舊 Proxy 連結中斷
+// 先前的 watcher／外部參照仍可能指向舊 Proxy
 ```
 
 **限制 2：解構會失去響應式**
@@ -282,13 +282,13 @@ watch(user, (newUser) => {
 }, { deep: true })
 ```
 
-注意：深層監聽效能比較差，因為 Vue 要遞迴遍歷整個物件。如果你只是要監聽某個特定屬性，用 getter 函式比較好。
+深層變更時 newUser 和 oldUser 可能是同一個物件參照，不是自動產生的新舊快照。注意：深層監聽效能比較差，因為 Vue 要遞迴遍歷整個物件。如果你只是要監聽某個特定屬性，用 getter 函式比較好。
 
 ---
 
 ## watchEffect — watch 的懶人版
 
-`watchEffect` 跟 `watch` 很像，但它不需要你指定要監聽什麼。它會**自動收集依賴** — 你在 callback 裡面用了什麼響應式資料，它就監聽什麼。
+`watchEffect` 跟 `watch` 很像，但它不需要你指定要監聽什麼。它會**自動收集同步執行期間讀取的依賴**；async callback 在第一個 await 之後才讀取的資料，不會自動列入這次追蹤。
 
 ```js
 import { ref, watchEffect } from 'vue'
@@ -318,7 +318,7 @@ watchEffect(() => {
 
 ### 停止監聽
 
-不管是 `watch` 還是 `watchEffect`，都會回傳一個「停止函式」。元件卸載時它們會自動停止，但如果你想提前停掉：
+不管是 `watch` 還是 `watchEffect`，都會回傳一個「停止函式」。在 setup 中同步建立時，會綁定元件並於卸載時停止；若在 setTimeout 等非同步 callback 裡建立，就要自己清理。要提前停止可這樣做：
 
 ```js
 const stop = watchEffect(() => {
@@ -344,3 +344,9 @@ stop()
 記住一個原則：**大部分時候用 `ref` + `computed` 就能搞定 80% 的需求**。`watch` 留給需要執行副作用的場景（打 API、操作 DOM 之類的），`reactive` 留給你真的很確定要用的時候。
 
 其實 Vue 3 的響應式系統設計得相當優雅，一旦理解了「資料變 → 畫面自動更新」這個核心概念，剩下的就只是選擇用哪個 API 比較適合而已。
+
+## 參考文件
+
+- [Vue：Reactivity in Depth](https://vuejs.org/guide/extras/reactivity-in-depth.html)
+- [Vue：Reactivity Fundamentals](https://vuejs.org/guide/essentials/reactivity-fundamentals.html)
+- [Vue：Watchers](https://vuejs.org/guide/essentials/watchers.html)

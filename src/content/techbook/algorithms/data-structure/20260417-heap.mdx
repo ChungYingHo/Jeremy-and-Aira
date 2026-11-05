@@ -1,9 +1,9 @@
 ---
 title: "[Data Structure] 堆積"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-17"
 tags: [data structure, heap, priority queue, heap sort]
-changelog: []
+changelog: ['2026-11-05']
 sameDateSort: 2
 ---
 
@@ -11,7 +11,7 @@ import HeapArrayMappingDiagram from '@/components/ArticleRelated/data-structure/
 import HeapInsertVisualizer from '@/components/ArticleRelated/data-structure/heap/HeapInsertVisualizer.svelte'
 import HeapExtractVisualizer from '@/components/ArticleRelated/data-structure/heap/HeapExtractVisualizer.svelte'
 
-**堆積 (Heap)** 是一種以**完全二元樹 (Complete Binary Tree)** 為形狀約束、並滿足**堆積性質 (Heap Property)** 的資料結構。堆積讓「取出最大值（或最小值）」的操作穩定為 $O(\log n)$，是**優先佇列 (Priority Queue)** 的標準實作。
+本篇介紹**二元堆積 (Binary Heap)**：形狀是**完全二元樹 (Complete Binary Tree)**，並滿足**堆積性質 (Heap Property)**。看最大值或最小值是 $O(1)$，取出並維持結構是 $O(\log n)$，是**優先佇列 (Priority Queue)** 的常見實作。Heap 還有其他變體，不一定採完全二元樹。
 
 ## 完全二元樹
 
@@ -49,13 +49,7 @@ import HeapExtractVisualizer from '@/components/ArticleRelated/data-structure/he
 
 以 max-heap `[_, 6, 5, 4, 1, 2, 3]`（1-indexed，`_` 代表 index 0 保留不用，讓 $i \cdot 2$、$i \cdot 2 + 1$ 的公式直接對上位置）為例：
 
-```
-         6  (index 1)
-        / \
-       5   4
-      /|   |
-     1 2   3
-```
+根為 index 1 的 6，下一層為 5、4，最下層由左到右為 1、2、3，與下方陣列映射圖一致。
 
 | index | 1 | 2 | 3 | 4 | 5 | 6 |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -92,15 +86,7 @@ import HeapExtractVisualizer from '@/components/ArticleRelated/data-structure/he
 | 5 | insert 2，放 index 5；2 < 父 5，不動 | [_, 6, 5, 3, 1, 2] |
 | 6 | insert 4，放 index 6；4 > 父 3，swap → 4 上到 index 3；4 < 父 6，停 | [_, 6, 5, 4, 1, 2, 3] |
 
-最終 max-heap：
-
-```
-         6
-        / \
-       5   4
-      /|   |
-     1 2   3
-```
+最終 max-heap 為 `[_, 6, 5, 4, 1, 2, 3]`，與上方映射圖相同。
 
 以下動畫逐步重現上面六次 insert 的 sift-up 過程——新插入的節點會先落在陣列尾端，再往上和父節點比較：
 
@@ -195,7 +181,7 @@ Floyd's 版本較快的直覺：越接近葉子節點越多、但下沉高度越
 
 以 `[3, 1, 6, 5, 2, 4]` 為例（1-indexed，排序區以粗體標記在陣列尾端）：
 
-| 步驟 | 動作 | 陣列狀態（排序區用 `|` 分隔）|
+| 步驟 | 動作 | 陣列狀態（排序區用豎線分隔）|
 | :---: | :--- | :--- |
 | 1 | Build max-heap | [_, 6, 5, 4, 1, 2, 3] |
 | 2 | swap idx 1 與 6（堆積大小 6 → 5），sift down 3 | [_, 5, 3, 4, 1, 2 \| 6] |
@@ -219,7 +205,7 @@ Floyd's 版本較快的直覺：越接近葉子節點越多、但下沉高度越
 
 | 底層結構 | Insert | Extract | 適用 |
 | :--- | :---: | :---: | :--- |
-| 未排序陣列 | $O(1)$ | $O(n)$ | 幾乎不插入、很少取 |
+| 未排序陣列 | 攤銷 $O(1)$ | $O(n)$ | 插入多、取極值少 |
 | 已排序陣列 | $O(n)$ | $O(1)$ | 大量查詢、少量插入 |
 | **Heap** | $O(\log n)$ | $O(\log n)$ | **兩者兼顧，實務標準** |
 
@@ -256,6 +242,7 @@ public class PQExample {
 
 ```java
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 
 public class MaxHeap {
     private ArrayList<Integer> heap = new ArrayList<>();
@@ -266,7 +253,10 @@ public class MaxHeap {
 
     public int size() { return heap.size() - 1; }
     public boolean isEmpty() { return size() == 0; }
-    public int peek() { return heap.get(1); }
+    public int peek() {
+        if (isEmpty()) throw new NoSuchElementException("heap is empty");
+        return heap.get(1);
+    }
 
     public void insert(int value) {
         heap.add(value);
@@ -274,6 +264,7 @@ public class MaxHeap {
     }
 
     public int extractMax() {
+        if (isEmpty()) throw new NoSuchElementException("heap is empty");
         int max = heap.get(1);
         int last = heap.remove(heap.size() - 1);
         if (!isEmpty()) {
@@ -341,13 +332,14 @@ $$
 \text{樹高 } h = \lfloor \log_2 n \rfloor,\ \text{每層 swap } O(1) \Rightarrow O(\log n)
 $$
 
-**Floyd's Build Heap $O(n)$**：高度為 $h$ 的節點數 $\le \lceil n / 2^{h+1} \rceil$，每個節點下沉最多 $h$ 層：
+**Floyd's Build Heap $O(n)$**：把每個節點能下沉的高度加起來，等於逐層數「高度至少為 $h$」的節點數；完全二元樹中，這個數量至多 $\lfloor n/2^h\rfloor$：
 
 $$
-T(n) = \sum_{h=0}^{\lfloor \log n \rfloor} \left\lceil \frac{n}{2^{h+1}} \right\rceil \cdot h \le n \sum_{h=0}^{\infty} \frac{h}{2^{h+1}} = n \cdot 1 = O(n)
+T(n) = O\!\left(n + \sum_{h=1}^{\lfloor\log_2 n\rfloor} \left\lfloor\frac{n}{2^h}\right\rfloor\right)
+\leq O\!\left(n + n\sum_{h=1}^{\infty}2^{-h}\right) = O(n)
 $$
 
-（$\sum h / 2^{h+1} = 1$ 是常見等比加權和。）
+這裡保留了整數取整的方向；不能把原本的 $\lceil n/2^{h+1}\rceil$ 直接去掉卻仍寫成上界。
 
 **Heap Sort $O(n \log n)$**：Build $O(n)$ + $n-1$ 次 extract × $O(\log n)$ = $O(n \log n)$
 
@@ -375,5 +367,9 @@ $$
 | **Top-K 問題** | 找前 $K$ 大（小）元素 | 大小為 $K$ 的 min-heap（或 max-heap） |
 
 :::tip
-這些演算法改用堆積的效果：Dijkstra 從 $O(|V|^2)$ 降到 $O((|V| + |E|) \log |V|)$；Prim 同理；Huffman 從 $O(n^2)$ 降到 $O(n \log n)$。換句話說，**堆積是把「每回合找最值」從 $O(n)$ 壓到 $O(\log n)$ 的核心工具**，這也是為什麼優先佇列在演算法課程裡反覆出現。
+對稀疏圖，heap 版 Dijkstra／Prim 的 $O((|V|+|E|)\log|V|)$ 常優於陣列版 $O(|V|^2)$；稠密圖則未必。反覆線性找兩個最小值的 Huffman 可由 $O(n^2)$ 改為 heap 的 $O(n\log n)$。堆積把「移除極值並維護候選集合」做到對數時間；單純看根仍是常數時間。
 :::
+
+上方 `ArrayList` 實作採動態陣列：單次容量擴張可能是 $O(n)$，所以包含擴容的 insert 是攤銷 $O(\log n)$；若容量已足夠，單次 sift-up 為 $O(\log n)$。Heap Sort 若用迭代 sift-down 可維持 $O(1)$ 額外空間。
+
+延伸核對：[Java PriorityQueue 官方複雜度](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/PriorityQueue.html)。

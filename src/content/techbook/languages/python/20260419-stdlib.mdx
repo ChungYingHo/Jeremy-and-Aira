@@ -1,9 +1,9 @@
 ---
 title: "[Python] 常用標準庫"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["Python", "stdlib", "json", "re", "datetime", "collections"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 7
 ---
 
@@ -15,7 +15,7 @@ Python 的賣點之一是「batteries included」——標準庫覆蓋極廣，�
 import os
 
 os.getcwd()                      # 當前工作目錄
-os.chdir('/tmp')
+os.chdir('/tmp')                  # 示意 POSIX 路徑；Windows 換成存在的目錄
 os.environ.get('HOME', '/')      # 讀環境變數
 os.environ['MY_VAR'] = 'x'       # 設定
 os.listdir('.')                  # 列目錄
@@ -135,10 +135,10 @@ diff.total_seconds()
 ```
 
 :::warning
-跨時區一律用「aware datetime」（帶 `tzinfo`）。「naive datetime」（不帶時區）只有在你確定整個系統都是同一時區時才用。把兩者拿來比較或相減會直接 raise。
+跨時區一律用「aware datetime」（帶 `tzinfo`）。「naive datetime」（不帶時區）只有在你確定整個系統都是同一時區時才用。兩者做排序比較或相減通常會 TypeError；`==`／`!=` 比較不會因此拋錯，而是視為不相等。
 :::
 
-更現代的選擇：第三方 `arrow` 或 `pendulum`。
+需要 IANA 地區時區可用標準庫 `zoneinfo`（Python 3.9+）；第三方日期工具則依需求評估，不是用了就自動解決時區語意。
 
 ## collections：增強的容器
 
@@ -183,7 +183,7 @@ q.pop()             # 右端取出
 q.popleft()         # 左端取出
 ```
 
-`list.pop(0)` 是 O(n)，要 FIFO 一律用 deque。
+`list.pop(0)` 是 O(n)，單純 FIFO 通常用 deque；需要執行緒間阻塞等待與同步協調時，看 `queue.Queue`。
 
 ### namedtuple
 
@@ -230,6 +230,8 @@ for key, group in groupby(data, key=lambda x: x[0]):
 ```
 
 注意：`groupby` **只把相鄰的相同 key 歸成一組**，不是全域分組。所以幾乎一定要先 `sorted(data, key=...)` 再餵給 `groupby`，而且兩邊的 key 函式要一致——沒先排序的話，同一組會被打散成好幾段。
+
+`os`／`sys` 等速查段落是獨立 API 示意，不應把刪除檔案、改工作目錄、退出程序逐行當成一支腳本執行。
 
 ## functools：函式工具
 
@@ -313,3 +315,9 @@ print(args.input, args.output, args.verbose, args.n)
 想要更簡潔的寫法，可以看第三方的 `typer`（基於 type hints）或 `click`。
 
 下一篇是 Python 系列最後一篇——把前面四處出現的「型別提示」收尾：完整 `typing` 用法、`mypy` 檢查、`Protocol` 結構性子型別。
+
+## 參考文件
+
+- [Python 3.13：datetime](https://docs.python.org/3.13/library/datetime.html)
+- [Python 3.13：collections](https://docs.python.org/3.13/library/collections.html)
+- [Python 3.13：zoneinfo](https://docs.python.org/3.13/library/zoneinfo.html)

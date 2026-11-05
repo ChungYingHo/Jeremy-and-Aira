@@ -1,9 +1,9 @@
 ---
 title: "[Python] 流程控制與函式"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["Python", "if", "for", "function", "lambda", "args"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 3
 ---
 
@@ -175,7 +175,7 @@ def show(name, age): print(name, age)
 show(**opts)
 ```
 
-## 限定參數種類：/ 與 *
+## 限定參數種類：/（Python 3.8+）與 *
 
 ```python
 def f(a, b, /, c, d, *, e, f):
@@ -207,7 +207,8 @@ print(noop())   # None
 
 ```python
 def split(s):
-    return s.split('@')
+    local, domain = s.split('@', 1)
+    return local, domain
 
 local, domain = split('a@b.com')
 ```
@@ -285,7 +286,7 @@ if __name__ == '__main__':
     main()
 ```
 
-這個 `.py` 被**直接執行**時，`__name__` 是 `'__main__'`；被 **import** 時則是模組名。所以這段程式只在直接執行時才跑，被 import 時不會。
+這個 `.py` 被**直接執行**時，`__name__` 是 `'__main__'`；被 **import** 時則是模組名。所以這段程式在直接執行或 `python -m 模組名` 時會跑，單純 import 時不會。
 
 ## 走 functional 風格
 
@@ -307,3 +308,7 @@ reduce(lambda a, b: a + b, [1, 2, 3, 4])   # 10
 慣例：能寫 comprehension 就寫 comprehension，可讀性比 `map` / `filter` 好。
 
 下一篇進物件導向，這篇的函式概念會延伸到 method、`self`、classmethod 與 staticmethod，順便把 dataclass 一次帶過。
+
+## 參考文件
+
+- [Python 3.13：More Control Flow Tools](https://docs.python.org/3.13/tutorial/controlflow.html)

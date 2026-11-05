@@ -1,9 +1,9 @@
 ---
 title: "[Rust] 結構體與列舉"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["Rust", "struct", "enum", "impl", "match", "pattern matching"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 4
 ---
 
@@ -193,7 +193,7 @@ impl Message {
 
 ## 內建：Option\<T>
 
-Rust 沒有 `null`。要表達「可能有值，可能沒有」，用標準庫的 `Option`：
+Rust 的安全參考不能是 null；raw pointer 仍可為 null。一般要表達「可能有值，可能沒有」，用標準庫的 `Option`：
 
 ```rust
 enum Option<T> {
@@ -209,7 +209,7 @@ let x: Option<i32> = Some(5);
 let y: Option<i32> = None;
 ```
 
-這個設計逼你**明確處理「沒值」的情況**，徹底消滅 NullPointerException 這類問題。
+這個設計逼你**明確處理「沒值」的情況**，避免把缺值當成有效參考；但對 None 呼叫 unwrap 仍會 panic，所以不是所有缺值錯誤都自動消失。
 
 ## match：模式匹配
 
@@ -320,7 +320,7 @@ while let Some(top) = stack.pop() {
 // 印 3, 2, 1，stack 空了 pop 回 None，迴圈結束
 ```
 
-## let else：早退場
+## let else（Rust1.65+）：早退場
 
 值不符合 pattern 就走 else 分支（else 裡必須中斷流程）：
 
@@ -333,6 +333,11 @@ fn parse_age(s: &str) -> u32 {
 }
 ```
 
-比 `match` 或巢狀 `if let` 平坦許多。
+比 `match` 或巢狀 `if let` 平坦許多。本文 `/* ... */` 的 struct 欄位是省略示意，需補齊才能編譯；不同區塊的 Point 等型別也應分開試。
 
 `Option<T>` 處理「可能沒值」；下一篇的 `Result<T, E>` 用一樣的 enum + `match` 模式處理「可能失敗」，是 Rust 錯誤處理的核心。
+
+## 參考文件
+
+- [Rust Book：Enums and Option](https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html)
+- [Rust1.65：let-else](https://blog.rust-lang.org/2022/11/03/Rust-1.65.0/)

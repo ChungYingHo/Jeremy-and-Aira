@@ -1,9 +1,9 @@
 ---
 title: "[Rust] 錯誤處理"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["Rust", "Result", "Option", "error", "panic"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 5
 ---
 
@@ -22,7 +22,7 @@ Rust 把錯誤分成兩類：
 
 ## panic!
 
-`panic!` 是不可恢復的崩潰：預設會印出錯誤訊息、展開 stack、終止程式（或執行緒）。
+`panic!` 一般表示無法沿原流程繼續的程式錯誤。常見預設是印出訊息並 unwind 該執行緒；設定 panic=abort 時會直接終止程序。`catch_unwind` 可在限定邊界捕捉部分 unwind panic，但不是一般錯誤處理的 try/catch 替代品，也接不住 abort。
 
 ```rust
 fn main() {
@@ -166,7 +166,7 @@ fn read_username() -> Result<String, io::Error> {
 
 `?` 也能用在 `Option` 上，意義對應：`Some` 取值、`None` 直接 return None。
 
-## 限制：? 只能在回傳 Result / Option 的函式裡用
+## 限制：? 必須與所在函式的回傳型別相容
 
 ```rust
 fn main() {
@@ -185,7 +185,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
-修法 2：把邏輯抽到一個回傳 `Result` 的函式，`main` 只負責呼叫它然後 unwrap。
+修法2：抽到回傳 Result 的函式，main 再明確記錄／處理 Err；只有接受失敗即 panic 時才 unwrap。Result 的 ? 不能直接接在 Option 回傳函式裡，反之亦然，要先用 ok_or 等方式轉換。本文示範最常見的 Result／Option；標準庫也支援部分 `Poll<Result<...>>` 組合。
 
 ## 自訂錯誤型別
 
@@ -225,7 +225,7 @@ fn read_number() -> Result<i32, AppError> {
 真的在寫應用程式，不用每次都自己刻 `From`。社群有兩個常用 crate：
 
 - **`thiserror`**：給 library 用，巨集自動產生 `Display` / `Error` / `From`
-- **`anyhow`**：給 application 用，提供 `anyhow::Result<T>` = `Result<T, anyhow::Error>`，能吃下任何錯誤，配 `?` 用爽
+- **`anyhow`**：給 application 用，提供 `anyhow::Result<T>` = `Result<T, anyhow::Error>`，可整合符合 std::error::Error + Send + Sync + 'static 等條件的錯誤，並補上情境資訊；不是任意字串或任意型別都能直接用 ?
 :::
 
 ## Option 與 Result 互轉
@@ -267,9 +267,11 @@ fn divide(a: i32, b: i32) -> Result<i32, &'static str> {
     if b == 0 {
         Err("divide by zero")    // 可預期，回傳 Err
     } else {
-        Ok(a / b)
+        a.checked_div(b).ok_or("division overflow")
     }
 }
+
+// i32::MIN / -1 也會溢位，checked_div 把它轉成 Err。
 
 fn first_element<T>(v: &[T]) -> &T {
     assert!(!v.is_empty());      // 違反前提條件，panic
@@ -278,3 +280,9 @@ fn first_element<T>(v: &[T]) -> &T {
 ```
 
 `Result` + `?` 串完，下一篇進集合（`Vec`、`HashMap`、`String` 操作）。那些方法多半回傳 `Option` 或 `Result`，會一直用到這篇的工具。
+
+## 參考文件
+
+- [Rust Book：Error Handling](https://doc.rust-lang.org/book/ch09-00-error-handling.html)
+- [Rust：checked_div](https://doc.rust-lang.org/std/primitive.i32.html#method.checked_div)
+- [Rust：catch_unwind](https://doc.rust-lang.org/std/panic/fn.catch_unwind.html)

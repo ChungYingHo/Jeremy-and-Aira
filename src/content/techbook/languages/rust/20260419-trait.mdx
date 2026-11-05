@@ -1,9 +1,9 @@
 ---
 title: "[Rust] Trait"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["Rust", "trait", "generic", "polymorphism", "dyn"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 8
 ---
 
@@ -195,15 +195,15 @@ for g in &greeters {
 | 派發方式 | 靜態（單形化 monomorphization） | 動態（vtable） |
 | 效能 | 接近手寫，無 indirection | 多一次間接呼叫 |
 | 二進位大小 | 較大（每個型別產生一份程式碼） | 較小 |
-| 異質集合 | ✗ | ✓ |
+| 異質集合 | 不同具體型別不能直接共用同一個 T；也可用 enum 統一 | 可透過指標放入實作同一 trait 的型別 |
 
-## Object safety
+## Dyn compatibility（舊稱 object safety）
 
-不是所有 trait 都能做成 trait object。trait 必須是 **object safe** 才能用 `dyn`。常見限制：
+不是所有 trait 都能做成 trait object。trait 必須符合 **dyn compatibility** 才能用 `dyn`（舊稱 object safe）。對需要透過 trait object 派發的方法，常見限制包括：
 
 - 方法不能有泛型參數
 - 方法不能回傳 `Self`
-- 不能有 associated function（沒 `&self`）
+- 需要可派發的 receiver，例如 `&self`／`&mut self`／`Box<Self>`；沒有 receiver 的 associated function 不能直接透過 dyn 呼叫
 
 原因出在 vtable（函式指標表）：動態派發靠它找方法，每個欄位只能放一個函式指標。泛型方法會依 `T` 實體化成多個版本，一張 vtable 放不下；回傳 `Self` 也不行，因為不同實作的 `Self` 大小不同，caller 無法預知 stack 佈局。
 
@@ -217,7 +217,7 @@ trait Good {
 }
 ```
 
-違反時編譯器訊息會明確指出原因。
+但方法加上 `where Self: Sized` 後，可以保留在 dyn-compatible trait 裡，只是不能對 trait object 呼叫。例如 `fn make() -> Self where Self: Sized;`。這份清單不是完整規則，associated constants／泛型 associated types 等也有限制，細節以 Reference 為準。
 
 ## 常用標準 trait
 
@@ -347,14 +347,14 @@ associated type 每個 `impl` 只能填一個值——`Iterator for MyIter` 只�
 
 ## 孤兒規則（orphan rule）
 
-要寫 `impl Trait for Type`，**Trait 或 Type 至少有一個必須定義在你自己的 crate 內**。
+入門先記：Trait 或相關型別至少要有本地 crate 定義的部分。完整 orphan／coherence 規則對泛型實作還有本地型別順序與 uncovered type parameters 限制；不是滿足這句口訣就保證每個泛型 impl 都合法。
 
 ```rust
 // ✅ 自家 trait 給標準型別
 impl MyTrait for Vec<i32> {}
 
 // ✅ 標準 trait 給自家型別
-impl std::fmt::Display for MyType {}
+// impl std::fmt::Display for MyType { /* 實作 fmt */ }
 
 // ❌ 標準 trait 給標準型別
 impl std::fmt::Display for Vec<i32> {}
@@ -434,3 +434,8 @@ fn print_all(sources: &[Box<dyn DataSource>], id: u32) {
 4. **trait 設計上會擋掉 dyn**（回傳 Self、泛型方法等）→ 要嘛拆 trait，要嘛只用泛型
 
 Rust 系列到此告一段落。八篇下來：環境、變數型別、所有權、結構與列舉、錯誤處理、集合、模組、trait——剛好構成寫真實 Rust 程式所需的最小完整地圖。剩下的（async、巨集、`unsafe`、各 ecosystem 框架）是分支，回頭再展開。
+
+## 參考文件
+
+- [Rust Reference：Dyn compatibility](https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility)
+- [Rust Reference：Trait implementation coherence](https://doc.rust-lang.org/reference/items/implementations.html#trait-implementation-coherence)

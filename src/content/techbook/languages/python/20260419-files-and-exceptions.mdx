@@ -1,9 +1,9 @@
 ---
 title: "[Python] 檔案處理與例外"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["Python", "file", "exception", "with", "context manager"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 6
 ---
 
@@ -28,7 +28,7 @@ f.close()
 | `b` | 二進位（搭配其他 mode，例如 `rb`） |
 | `+` | 讀寫（搭配，例如 `r+`） |
 
-`encoding` 強烈建議顯式指定，否則跨平台會踩雷（Windows 預設不是 UTF-8）。
+`encoding` 強烈建議顯式指定，否則跨平台會踩雷（Python 3.13 在未啟用 UTF-8 mode 的 Windows 上可能使用其他編碼；Python 3.15 的預設也有調整，不能只看作業系統判斷）。
 
 ## with：上下文管理器（必用）
 
@@ -43,7 +43,7 @@ with open('a.txt', 'r', encoding='utf-8') as f:
 多檔同時開：
 
 ```python
-with open('a.txt') as fa, open('b.txt', 'w') as fb:
+with open('a.txt', encoding='utf-8') as fa, open('b.txt', 'w', encoding='utf-8') as fb:
     fb.write(fa.read())
 ```
 
@@ -54,14 +54,20 @@ with open('a.txt', encoding='utf-8') as f:
     # 1. 一次讀全部
     content = f.read()
 
+    f.seek(0)  # 前面已讀到結尾，先回到開頭再示範下一種方式
+
     # 2. 一行一行讀（記憶體友善，大檔首選）
     for line in f:
-        print(line.rstrip())   # rstrip 去尾端換行
+        print(line.rstrip())   # rstrip 也會去尾端空格；只去換行可用 rstrip("\r\n")
+
+    f.seek(0)
 
     # 3. 讀成 list（小檔）
     lines = f.readlines()
 
-    # 4. 讀指定 byte 數
+    f.seek(0)
+
+    # 4. 文字模式最多讀 100 個字元；rb 模式才是 bytes
     head = f.read(100)
 ```
 
@@ -89,7 +95,7 @@ with open('out.bin', 'wb') as f:
 
 ## pathlib：取代字串拼路徑
 
-`os.path` 老舊。新程式碼一律用 `pathlib.Path`：
+`os.path` 仍受支援；新程式若偏好物件式路徑操作，可以優先用 `pathlib.Path`：
 
 ```python
 from pathlib import Path
@@ -145,7 +151,9 @@ finally:
 | `try` | 主邏輯 |
 | `except` | 捕到對應例外才跑 |
 | `else` | try 沒丟例外才跑（可選） |
-| `finally` | 一定會跑，包含釋放資源（可選） |
+| `finally` | 控制流程離開 try 時執行，適合清理（可選） |
+
+正常的 return／例外傳播會執行 finally，但強制終止程序（如 `os._exit` 或作業系統殺掉程序）不保證執行。
 
 ## raise：丟例外
 
@@ -204,7 +212,7 @@ except APIError as e:        # 父類能接子類的例外
 ## 不要這樣寫
 
 ```python
-# ❌ 抓 Exception 會吞掉所有錯（包含 KeyboardInterrupt 沒到那麼上面，但仍掩蓋很多 bug）
+# ❌ 裸 except 會抓 BaseException，連 KeyboardInterrupt／SystemExit 也會吞掉
 try:
     do_work()
 except:
@@ -286,3 +294,9 @@ with timer():
 `KeyboardInterrupt` 與 `SystemExit` 繼承自 `BaseException` 而非 `Exception`，所以 `except Exception` 不會抓到它們（這是好事——Ctrl+C 不該被你的錯誤處理吞掉）。
 
 下一篇逛標準庫——`json`、`datetime`、`collections`、`itertools`、`functools` 這些每個 Python 程式幾乎都會 import 的東西。
+
+## 參考文件
+
+- [Python 3.13：Input and Output](https://docs.python.org/3.13/tutorial/inputoutput.html)
+- [Python 3.13：Errors and Exceptions](https://docs.python.org/3.13/tutorial/errors.html)
+- [PEP 686：Python 3.15 UTF-8 mode default](https://peps.python.org/pep-0686/)

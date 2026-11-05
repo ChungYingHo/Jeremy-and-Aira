@@ -1,9 +1,9 @@
 ---
 title: "[Java] Lambda 與 Stream"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-20"
 tags: ["Java", "lambda", "stream", "functional", "Optional"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 7
 ---
 
@@ -86,7 +86,7 @@ long count = names.stream()
 
 - **lazy**：中間操作不會實際跑，等終端操作才走一遍
 - **single-use**：跑完一個終端操作就用完了，不能重複
-- **不修改來源**：原 collection 不變
+- **非干涉**：操作應避免修改來源；lambda 若自行修改外部可變物件，Stream 不會替你阻止
 
 展開來說，lazy 是指 `map`、`filter` 這類**中間操作**只是把動作登記下來，不真的執行；直到呼叫**終端操作**（`collect`、`forEach`、`count` 等）才一次串起來跑完。終端操作跑完，stream 就「耗盡」了，再呼叫會丟 `IllegalStateException`——stream 不能重用，要重跑就從 source 再開一條。
 
@@ -135,13 +135,13 @@ List<Integer> flat = nested.stream()
 .anyMatch(p) / .allMatch(p) / .noneMatch(p)
 .findFirst() / .findAny()                 // 回 Optional
 .forEach(c)
-.toList()                                  // Java 16+，不可變
+.toList()                                  // Java 16+，不可修改清單結構
 .toArray()
 .reduce(...)
 .collect(...)
 ```
 
-`toList()` 是 Java 16+ 的捷徑，等同 `.collect(Collectors.toUnmodifiableList())`。舊版用 `.collect(Collectors.toList())`。
+`Stream.toList()`（Java 16+）回傳不可修改的 List，但可包含 null；`Collectors.toUnmodifiableList()` 則拒絕 null，因此兩者不完全相同。`Collectors.toList()` 不保證具體型別或可修改性；確定要 ArrayList 時用 `toCollection(ArrayList::new)`。這些都不保證元素本身不可變。
 
 ## reduce
 
@@ -167,9 +167,9 @@ List<Person> people = List.of(
     new Person("Carol", "Eng", 28)
 );
 
-List<String> list = stream.collect(toList());
-Set<String>  set  = stream.collect(toSet());
-String joined     = stream.collect(joining(", ", "[", "]"));
+List<String> list = people.stream().map(Person::name).collect(toList());
+Set<String> set = people.stream().map(Person::name).collect(toSet());
+String joined = people.stream().map(Person::name).collect(joining(", ", "[", "]"));
 
 Map<String, Integer> byName = people.stream()
     .collect(toMap(Person::name, Person::age));
@@ -214,7 +214,7 @@ long count = list.parallelStream()
     .count();
 ```
 
-底層走 ForkJoinPool。要划算，得同時滿足三個條件：純 CPU 運算、無共享可變狀態、資料量大（$> 10^4$ 量級）。I/O 密集（DB、網路）會阻塞 ForkJoinPool 的 worker；資料量小或 `forEach` 帶 side effect，好處都會被同步與 fork 的開銷吃掉，反而更慢。日常 99% 用 sequential 就好。
+常見 JDK 實作使用 ForkJoinPool，但不要把執行池細節當成 Stream API 的可攜保證。是否划算要量測：每個元素的 CPU 成本、來源拆分效率、排序／合併成本，都比固定筆數門檻更重要。先避免共享可變狀態。I/O 密集（DB、網路）會阻塞 ForkJoinPool 的 worker；資料量小或 `forEach` 帶 side effect，好處都會被同步與 fork 的開銷吃掉，反而更慢。日常 99% 用 sequential 就好。
 
 ## Optional：替代 null
 
@@ -227,7 +227,7 @@ u.isPresent();
 u.isEmpty();                      // Java 11+
 u.get();                          // ❌ 沒值會丟，少用
 u.orElse(defaultUser);
-u.orElseGet(() -> defaultUser);   // 預設值生成有成本時用
+u.orElseGet(() -> createDefaultUser()); // 沒值時才呼叫 factory
 u.orElseThrow();                  // 沒值丟 NoSuchElementException
 u.orElseThrow(() -> new NotFoundException("user"));
 u.ifPresent(user -> log(user));
@@ -242,7 +242,7 @@ u.filter(user -> user.isActive());
 - **欄位、參數、集合元素不要用 Optional**（過度包裝）
 - 不要回傳 `null Optional`（永遠 `Optional.empty()`）
 
-為什麼欄位、參數、集合元素不要用 Optional？首先 `Optional` 變數本身也可能是 `null`（`Optional<T> x = null`），反而多一層 `NullPointerException` 風險；再來序列化框架（Jackson、JPA）處理 `Optional` 欄位一向麻煩；最後，與其寫 `List<Optional<T>>`，不如直接用 `List<T>` 並過濾掉 null，語意更清楚。Optional 的定位就是當回傳型別，標示「可能沒有」。
+這是常見 API 設計取捨，不是語言禁止。`repo`／`User`／`createDefaultUser` 等為業務物件示意。為什麼通常不把欄位、參數、集合元素包成 Optional？首先 `Optional` 變數本身也可能是 `null`（`Optional<T> x = null`），反而多一層 `NullPointerException` 風險；再來序列化框架（Jackson、JPA）處理 `Optional` 欄位一向麻煩；最後，與其寫 `List<Optional<T>>`，不如直接用 `List<T>` 並過濾掉 null，語意更清楚。Optional 的定位就是當回傳型別，標示「可能沒有」。
 
 ## 常見組合範例
 
@@ -253,11 +253,11 @@ Map<String, Long> freq = Arrays.stream(text.split("\\s+"))
     .collect(groupingBy(Function.identity(), counting()));
 ```
 
-### top N
+### top N（沿用上面的 Person，依年齡）
 
 ```java
 List<Person> top3 = people.stream()
-    .sorted(Comparator.comparingInt(Person::score).reversed())
+    .sorted(Comparator.comparingInt(Person::age).reversed())
     .limit(3)
     .toList();
 ```
@@ -271,6 +271,8 @@ Optional<Person> oldest = people.stream()
 
 ### 把 Map 反轉
 
+以下位於有 `<K, V>` 型別參數的方法中；value 若重複，沒有合併函式的 `toMap` 會丟 `IllegalStateException`，要先決定衝突時保留誰。
+
 ```java
 Map<V, K> inverted = m.entrySet().stream()
     .collect(toMap(Map.Entry::getValue, Map.Entry::getKey));
@@ -283,3 +285,8 @@ Map<V, K> inverted = m.entrySet().stream()
 - 別追求「全 stream」，可讀性優先
 
 下一篇是 Java 系列收尾——建置工具與測試：Maven vs Gradle、JUnit 5 寫法、Mockito 基礎。一個專案能不能交出去，靠這層支撐。
+
+## 參考文件
+
+- [Java 21：Stream（toList、lazy 與 non-interference）](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/stream/Stream.html)
+- [Java 21：Collectors](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/stream/Collectors.html)

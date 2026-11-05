@@ -1,12 +1,14 @@
 ---
 title: '[AI] Claude Code 基礎指南'
-author: 'Jeremy & Claude'
+author: 'Jeremy & Claude & Codex'
 date: '2026-04-06'
 tags: [ai, claude, claude-code, cli, mcp, hooks, skills, settings]
-changelog: ['2026-06-11']
+changelog: ['2026-06-11', '2026-11-05']
 ---
 
 Claude Code 的安裝、設定、Skill、Hook、MCP 操作速查。
+
+CLI 功能與設定會隨版本變動；以下已依官方文件核對。先用 `claude --version` 記下版本，再以 `/help` 與 `/` 選單確認目前可用功能。本文的 JSON、Hook 與 MCP 以 Claude Code 為範圍，不能直接套用到所有 Claude 產品。
 
 ---
 
@@ -19,7 +21,7 @@ Claude Code 的安裝、設定、Skill、Hook、MCP 操作速查。
 | **Claude Code**（CLI） | 終端機 AI agent，直接讀寫 codebase、跑指令 | ✓✓ |
 | **API** | 自己寫程式呼叫 Anthropic API | 特定需求 |
 
-這篇以 **Claude Code** 為主。Claude Desktop 的設定邏輯大致相通，學一套就夠。
+這篇以 **Claude Code** 為主。Desktop 的 Chat、Cowork、Code 介面有不同能力與設定入口，不能只因使用同一帳號就假設所有設定互通。
 
 ---
 
@@ -27,7 +29,13 @@ Claude Code 的安裝、設定、Skill、Hook、MCP 操作速查。
 
 ### 1-1. 安裝 Claude Code
 
-需要 Node.js 18 以上，裝成全域套件：
+可使用不依賴 Node.js 的原生安裝方式。Windows 以 WinGet 為例：
+
+```bash
+winget install Anthropic.ClaudeCode
+```
+
+其他 OS 請依[官方安裝說明](https://code.claude.com/docs/en/setup)選擇方式。若選 npm 安裝，目前套件要求 Node.js 22 以上；不要再以已結束支援的 Node.js 18 作為安裝前提：
 
 ```bash
 npm install -g @anthropic-ai/claude-code
@@ -49,7 +57,7 @@ claude --version
 claude
 ```
 
-照畫面指示在瀏覽器完成 Anthropic 帳號登入，token 會寫進 `~/.claude/`，之後啟動就不用再登入。
+依畫面選擇支援的帳號或 API／雲端驗證方式。憑證的保存位置與系統、登入方式相關，不要假設 token 一律寫在 `~/.claude/`，也不要把它複製到專案裡。
 
 ### 1-3. 啟動 Claude Code
 
@@ -66,14 +74,14 @@ claude
 > 幫我看一下 src/utils/date.ts 這支檔案在做什麼
 ```
 
-Claude 會自己讀檔、解釋給你聽；要動手改東西之前，會先問過你。
+是否需要確認取決於權限模式、既有 allow／deny 規則及組織政策；不能保證每次改檔之前都會再次詢問。
 
 ### 1-4. 下載 Claude Desktop
 
-從 [claude.ai/download](https://claude.ai/download) 抓對應作業系統的版本（Mac / Windows）。登入同一個 Anthropic 帳號後，MCP 和 skill 設定可以跟 Claude Code 共用。
+從 [Claude 官方下載頁](https://claude.ai/download)取得對應版本。Desktop 各介面與 Claude Code 的 MCP、Skill 載入機制須分別確認；有些整合可以匯入或同步，但不是單純登入就自動共用全部設定。
 
 :::info
-Cowork 是 Claude Desktop 裡的檔案 / 指令模式，可以想成圖形介面版的 Claude Code，開啟後指定工作資料夾就能用。
+Cowork 是 Desktop 中處理工作任務的介面；能使用的資料夾、連接器及 Skill 依產品版本與授權而定。以下 CLI 檔案路徑不代表 Cowork 的通用設定方式。
 :::
 
 ---
@@ -87,7 +95,7 @@ Cowork 是 Claude Desktop 裡的檔案 / 指令模式，可以想成圖形介面
 
 ### 2-1. CLAUDE.md — 專案說明書
 
-**用途**：寫下專案規範、架構、coding style、commit 規則和必要的背景知識。Claude Code 每次啟動都會自動讀進來，產出的程式碼就會照著這份規範走。
+**用途**：寫下專案規範、架構、coding style、commit 規則和必要背景。Claude Code 會依工作目錄與讀取檔案範圍載入相關 `CLAUDE.md`；它是給模型的上下文指示，**不是保證遵守的權限邊界**，產出仍須檢查。
 
 **檔案位置**：
 
@@ -132,7 +140,7 @@ Windows 的 `~` 會展開成 `C:\Users\<username>`，例如 `C:\Users\Jeremy\.cl
 
 ### 2-2. settings.json — 權限與工具設定
 
-**用途**：控制 Claude Code 能做什麼——允許哪些工具、哪些指令不用每次確認、載入哪些 MCP server、掛哪些 hook。
+**用途**：設定 Claude Code 的權限、模型、環境與 Hook 等選項；MCP 伺服器的註冊檔案另見 §5。
 
 **檔案位置**：
 
@@ -142,7 +150,7 @@ Windows 的 `~` 會展開成 `C:\Users\<username>`，例如 `C:\Users\Jeremy\.cl
 | 專案層級 | `<project-root>/.claude/settings.json` | 中 |
 | 專案本機覆寫（不進 git） | `<project-root>/.claude/settings.local.json` | 高 |
 
-`settings.local.json` 通常會加進 `.gitignore`，拿來放個人的 MCP token 和私有偏好，避免不小心 commit 進 repo。
+`settings.local.json` 適合個人的權限與偏好覆寫，應確認未被版本控制追蹤。MCP 註冊不在這個檔案；憑證也不應因為檔案「local」就任意寫成明文。
 
 **最常用的是 permissions**：
 
@@ -153,8 +161,7 @@ Windows 的 `~` 會展開成 `C:\Users\<username>`，例如 `C:\Users\Jeremy\.cl
       "Bash(npm run lint)",
       "Bash(npm run test)",
       "Bash(git status)",
-      "Bash(git diff)",
-      "Read(**)"
+      "Bash(git diff)"
     ],
     "deny": [
       "Bash(rm -rf *)",
@@ -164,19 +171,17 @@ Windows 的 `~` 會展開成 `C:\Users\<username>`，例如 `C:\Users\Jeremy\.cl
 }
 ```
 
-- `allow`：列在這裡的指令，Claude 執行前不會再問你
-- `deny`：列在這裡的指令，永遠禁止
+- `allow`：匹配的動作可免個別確認，仍受更高優先政策與 deny 規則限制
+- `deny`：拒絕匹配的動作；此例的幾條字串規則不等於封鎖所有等效的危險指令
 
 **其他常見欄位**：
 
 ```json
 {
-  "model": "claude-opus-4-7",
+  "model": "sonnet",
   "env": {
-    "ANTHROPIC_API_KEY": "..."
-  },
-  "mcpServers": { /* MCP 設定，見 §5 */ },
-  "hooks": { /* Hook 設定，見 §4 */ }
+    "NODE_ENV": "development"
+  }
 }
 ```
 
@@ -188,7 +193,7 @@ Windows 的 `~` 會展開成 `C:\Users\<username>`，例如 `C:\Users\Jeremy\.cl
 2. 讀 `settings.json` → 知道 `npm run lint` 已經在 allow 名單，不用再問
 3. 執行 `npm run lint`、分析結果、修改程式碼
 
-簡單記：**CLAUDE.md 是「規範」，settings.json 是「權限」**。兩者都分全域和專案兩層，專案層蓋過全域層。
+簡單記：**CLAUDE.md 提供指示，settings.json 提供產品設定**。指示可累積載入；設定則有 managed、命令列、local、project、user 等優先關係，某些陣列還會合併，不是整份專案檔一律蓋掉全域檔。參見[設定優先順序](https://code.claude.com/docs/en/settings)。
 
 ---
 
@@ -198,7 +203,7 @@ Windows 的 `~` 會展開成 `C:\Users\<username>`，例如 `C:\Users\Jeremy\.cl
 
 **Skill** 是預先封裝好、可以重複使用的能力包，裡面有描述、指令和相依工具。Claude 在對話中判斷需要時會自動觸發，你也可以主動呼叫。
 
-官方預裝的 skill：
+以下是常見文件處理 Skill 的例子，**不是每個 Claude Code 安裝都預裝**的清單；須先依來源安裝，或確認所在產品已提供：
 
 | Skill | 功能 |
 | :--- | :--- |
@@ -210,13 +215,13 @@ Windows 的 `~` 會展開成 `C:\Users\<username>`，例如 `C:\Users\Jeremy\.cl
 
 ### 3-2. 查看 / 呼叫 skill
 
-在 Claude Code 輸入：
+在 Claude Code 輸入 `/` 開啟選單，搜尋可用指令與 Skill：
 
 ```
-/skills
+/
 ```
 
-就能列出目前可用的 skill。要主動呼叫的話：
+已安裝且允許由使用者呼叫的 Skill，可用 `/skill-name`。例如已安裝 `pdf` 才能呼叫：
 
 ```
 /pdf 把 report-q1.pdf 和 report-q2.pdf 合併
@@ -231,13 +236,7 @@ Windows 的 `~` 會展開成 `C:\Users\<username>`，例如 `C:\Users\Jeremy\.cl
 
 每個 skill 是一個資料夾，至少要有 `SKILL.md`：
 
-```
-~/.claude/skills/pr-reviewer/
-├── SKILL.md          # skill 描述與使用說明
-├── checklist.md      # skill 參考資料
-└── scripts/
-    └── run-review.sh # 可執行 helper
-```
+例如資料夾 `~/.claude/skills/pr-reviewer/` 內有 `SKILL.md`、`checklist.md` 與 `scripts/run-review.sh`。只有需要的參考資料與 helper 才放進去。
 
 `SKILL.md` 開頭用 frontmatter 寫 metadata：
 
@@ -266,7 +265,7 @@ description: 根據團隊 code review checklist 產出審查報告
 功能是讀取 PR diff、對照我們的 code review checklist 產出審查報告
 ```
 
-Claude 會在 `.claude/skills/` 底下自動建好資料夾和 `SKILL.md`。
+上例先假設你已安裝 `skill-creator`。也可手動建立上述 `SKILL.md`，不必依賴產生器；實際產生位置要在要求中寫明並檢查。詳見[官方 Skill 文件](https://code.claude.com/docs/en/skills)。
 
 ---
 
@@ -298,7 +297,7 @@ Hook 寫在 `settings.json` 的 `hooks` 欄位：
 - 全域：`~/.claude/settings.json`
 - 專案：`<project-root>/.claude/settings.json`
 
-### 4-4. 範例：改完檔案自動 lint
+### 4-4. 範例：改完檔案檢查 lint
 
 ```json
 {
@@ -309,7 +308,7 @@ Hook 寫在 `settings.json` 的 `hooks` 欄位：
         "hooks": [
           {
             "type": "command",
-            "command": "npx eslint --fix \"$CLAUDE_FILE_PATH\""
+            "command": "npm run lint"
           }
         ]
       }
@@ -320,27 +319,12 @@ Hook 寫在 `settings.json` 的 `hooks` 欄位：
 
 - `matcher: "Edit|Write"`：只在 Claude 呼叫 Edit 或 Write 時觸發
 - `command`：要執行的 shell 指令
-- `$CLAUDE_FILE_PATH`：Claude 自動帶入被編輯的檔案路徑
+- 此例假設專案根目錄有可執行的 `lint` script，會檢查整個專案；大型專案可能不適合每次編輯都執行
+- Hook 的工具輸入是由 **stdin 傳入的 JSON**，例如 `tool_input.file_path`；`CLAUDE_FILE_PATH`、`CLAUDE_TOOL_INPUT` 不是可直接依賴的內建變數。若只檢查改動檔案，須在獨立腳本解析 JSON，並以參數陣列安全呼叫工具
 
-### 4-5. 範例：commit 前先跑 test
+### 4-5. commit 前的檢查應放在哪
 
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -q 'git commit'; then npm test; fi"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
+若目標是「每次 Git commit 前都要測試」，應使用專案的 Git hook 工具與 CI。Claude 的 `PreToolUse` 只涵蓋相應的工具呼叫，不會攔截你在其他終端機或 GUI 做的 commit；用字串搜尋 `git commit` 也無法可靠識別包裝指令。若要攔截 Claude 的動作，須正確解析 stdin 的 `tool_input.command`，並依[Hook 輸入與退出碼規格](https://code.claude.com/docs/en/hooks)決定允許或阻擋；一般非零退出碼不一定等於阻擋。
 
 ---
 
@@ -366,31 +350,21 @@ Claude 本身不內建 Notion、GitHub 這些服務的連線——但只要那�
 
 ### 5-2. MCP 設定位置
 
-寫在 `settings.json` 的 `mcpServers` 欄位：
+Claude Code 使用以下位置，與一般 settings scope 分開：
 
-- 全域：`~/.claude/settings.json`
-- 專案：`<project-root>/.claude/settings.json`
-- 本機私有（不進 git）：`<project-root>/.claude/settings.local.json`
+- user：`~/.claude.json`，供個人的各專案使用
+- local：同樣存於 `~/.claude.json`，按目前專案路徑區隔，預設為私人設定
+- project：專案根目錄 `.mcp.json`，可供團隊分享
 
-含 token 的設定建議放 `settings.local.json`，並加入 `.gitignore`。
+優先用 `claude mcp add` 讓 CLI 寫入正確 scope；分享 `.mcp.json` 時不要嵌入 token。環境變數、OAuth 與 managed 設定的處理方式以[官方 MCP 文件](https://code.claude.com/docs/en/mcp)為準。
 
 ### 5-3. 範例：接 Notion
 
-```json
-{
-  "mcpServers": {
-    "notion": {
-      "command": "npx",
-      "args": ["-y", "@notionhq/notion-mcp-server"],
-      "env": {
-        "NOTION_API_KEY": "secret_xxxxxxxxxx"
-      }
-    }
-  }
-}
+```bash
+claude mcp add --transport http --scope local notion https://mcp.notion.com/mcp
 ```
 
-設定完重啟 `claude`，就可以這樣用：
+再用 `/mcp` 檢查連線並依指示完成 OAuth，授權所需的 Notion 工作區。參見 [Notion 官方連線方式](https://developers.notion.com/guides/mcp/get-started-with-mcp)。連線後仍只能操作帳號與工具獲准的內容，例如可要求：
 
 ```
 > 幫我搜 Notion 裡所有標籤是 "frontend" 的頁面，整理成清單
@@ -398,28 +372,17 @@ Claude 本身不內建 Notion、GitHub 這些服務的連線——但只要那�
 
 ### 5-4. 範例：接本機 filesystem（細粒度權限）
 
-```json
-{
-  "mcpServers": {
-    "filesystem": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "/Users/jeremy/projects/my-blog"
-      ]
-    }
-  }
-}
+```bash
+claude mcp add --transport stdio --scope local filesystem -- npx -y @modelcontextprotocol/server-filesystem /Users/jeremy/projects/my-blog
 ```
 
-這個 MCP server 只能存取指定的資料夾，比 Claude Code 預設的全盤存取更安全。
+路徑須換成自己的實際工作目錄，並先確認 Node.js／npx 與套件需求。這個 server 限制的是**它自己的工具**能存取的範圍，不會自動限制 Claude Code 的 Read、Bash 等其他工具；不能把新增 filesystem server 當成全域檔案隔離。
 
 ### 5-5. 尋找 MCP server
 
-- 官方 registry：[modelcontextprotocol.io/registry](https://modelcontextprotocol.io)
-- 在 Claude 裡輸入 `search_mcp_registry` 搜關鍵字
-- 大多數可以直接用 `npx` 跑起來，不用自己建置
+- 官方 registry：[MCP Registry](https://registry.modelcontextprotocol.io/)
+- 依服務商官方文件確認安裝方式、需要的權限與驗證流程
+- 遠端 HTTP server 不一定需要本機套件；stdio server 則可能使用 npx、uvx 或原生執行檔，不能一律用 npx
 
 ---
 
@@ -433,10 +396,10 @@ Claude 本身不內建 Notion、GitHub 這些服務的連線——但只要那�
 | `/model` | 切換模型（`/model opus`、`/model sonnet`、`/model haiku`） |
 | `/clear` | 清除當前對話、重新開始 |
 | `/compact` | 壓縮目前對話（保留摘要、釋放 context window） |
-| `/skills` | 列出可用的 skill |
+| `/` 選單 | 搜尋目前可用的指令與 Skill |
 | `/mcp` | 管理 / 檢視 MCP server 狀態 |
-| `/config` | 編輯 settings.json |
-| `/resume` | 接續上一段被壓縮或中斷的對話 |
+| `/config` | 開啟設定介面，不等於直接編輯整份 JSON |
+| `/resume` | 選擇既有儲存 session 接續；同一 session 的壓縮不需另行 resume |
 | `/cost` | 查看當前 session 的 token 使用與費用 |
 | `/exit` | 離開 Claude Code |
 
@@ -452,12 +415,12 @@ Claude 本身不內建 Notion、GitHub 這些服務的連線——但只要那�
 
 | 模型 | 強項 | 適合任務 |
 | :--- | :--- | :--- |
-| **Opus** | 最強推理能力 | 架構設計、跨檔案重構、debug 複雜邏輯 |
-| **Sonnet** | 速度與品質平衡 | 日常寫 code、code review、寫文件 |
-| **Haiku** | 最快、最便宜 | 簡單格式轉換、批次檔案處理、快速查詢 |
+| **Opus** | 可考慮用於較複雜的推理與規劃 | 架構設計、跨檔案重構、複雜 debug |
+| **Sonnet** | 可作為日常工作候選 | 寫 code、code review、文件 |
+| **Haiku** | 可比較簡單任務的延遲與成本 | 格式轉換、批次處理、查詢 |
 
 :::tip
-複雜問題切 Opus，寫 CRUD / boilerplate 切 Sonnet 或 Haiku。`/model` 可以在對話中即時切換，不用重啟。
+模型名稱、可用版本、配額與費用依方案和供應商而異，先用 `/model` 看可選項，再用自己的代表性任務比較品質、延遲及成本；不要把模型家族視為永遠固定的排名。
 :::
 
 ### 7-2. Prompt：具體 vs 模糊
@@ -484,6 +447,8 @@ Claude 本身不內建 Notion、GitHub 這些服務的連線——但只要那�
 ```
 
 差別在於把**輸入 / 輸出格式、規則、位置、風格**這四個面向的限制都講清楚了。
+
+這裡只是展示如何描述需求，上述簡化 email 規則不等於完整的信箱語法驗證，也無法確認地址能收信；若是產品功能，須另外定義驗證範圍。
 
 ### 7-3. 提問時附上完整 context
 
@@ -516,7 +481,7 @@ claude --permission-mode acceptEdits # 自動允許改檔案
 claude --permission-mode bypassPermissions # 全自動（危險）
 ```
 
-預設是每個有副作用的操作都要你確認一次。還不熟之前，建議維持預設。
+這些模式仍受版本、組織政策與工具規則影響。`acceptEdits` 不等於自動批准所有 shell 指令；`bypassPermissions` 跳過權限詢問，不是通用的安全隔離。預設模式也可能記住允許規則，不能概括為每次副作用都重新問。詳見[權限模式](https://code.claude.com/docs/en/permissions)。
 
 ### 8-2. 不應 commit 的檔案
 
@@ -527,14 +492,14 @@ claude --permission-mode bypassPermissions # 全自動（危險）
 .claude/.env
 ```
 
-團隊共用的設定則放 `.claude/settings.json` 並 commit，這樣所有成員 clone 下來就有一致的 hook / MCP 基礎設定。
+團隊可分享 `.claude/settings.json` 的 Hook／權限基礎設定，以及不含秘密的 `.mcp.json`；個人覆寫、組織政策與外部帳號授權仍可能不同。
 
 ### 8-3. 停止與回退
 
 - `Esc` 可以中斷目前的輸出
 - 跟它說「請停止」、「還原剛才的修改」，Claude 會嘗試復原
 - 用 `git status` / `git diff` 確認實際改了什麼
-- 重要操作前先 `git commit`，出問題還能 `git reset` 救回來
+- 修改前建立合適的 Git checkpoint 或備份；需要回復時先查看差異，選擇具體檔案或提交，避免直接丟棄尚未備份的工作
 
 ---
 
@@ -543,29 +508,17 @@ claude --permission-mode bypassPermissions # 全自動（危險）
 - **安裝**：`npm install -g @anthropic-ai/claude-code` → `claude`
 - **規範 Claude 行為**：`CLAUDE.md`
 - **控制 Claude 權限**：`.claude/settings.json`
-- **預裝能力**：`/skills` 查看，檔案放在 `~/.claude/skills/` 或 `.claude/skills/`
+- **可用 Skill**：在 `/` 選單確認；自訂檔案放在 `~/.claude/skills/` 或 `.claude/skills/`
 - **事件自動化**：`settings.json` 的 `hooks`
-- **外部服務連線**：`settings.json` 的 `mcpServers`
+- **外部服務連線**：`claude mcp add`；user／local 在 `~/.claude.json`，project 在 `.mcp.json`
 - **模型切換 / 對話壓縮 / 費用查詢**：`/model`、`/compact`、`/cost`
 
-完整生態：
-
-```
-使用者 ─> Claude Code / Desktop
-           │
-           ├── 讀 CLAUDE.md     → 知悉專案規範
-           ├── 讀 settings.json → 知悉可用工具、hook、MCP
-           │
-           ├── 內建工具：Read / Edit / Write / Bash / Glob / Grep
-           ├── Skill：可重複使用的任務模板（docx、pdf、自訂…）
-           ├── Hook：事件驅動的 shell 指令
-           └── MCP：外部世界（Notion / GitHub / Slack / Chrome…）
-```
+工具之間的關係是：Claude Code 載入相關專案指示與產品設定，再透過內建工具執行工作；Skill 提供可重用流程，Hook 在事件發生時執行程式，MCP 則連接外部工具。每一層的可用能力與權限都要分別確認。
 
 要擴充 Claude 的能力時，照這個順序判斷：
 
 1. 想改它做事的方式 → `CLAUDE.md`
 2. 想開放或禁止工具 → `settings.json` 的 `permissions`
 3. 想在特定時機自動跑腳本 → `hooks`
-4. 想連外部服務 → `mcpServers`
+4. 想連外部服務 → MCP 註冊與正確的 scope
 5. 想封裝重複的任務流程 → `skill`

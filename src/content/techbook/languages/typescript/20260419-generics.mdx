@@ -1,9 +1,9 @@
 ---
 title: "[TypeScript] 泛型"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-19"
 tags: ["TypeScript", "generic", "keyof", "infer", "conditional type"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 5
 ---
 
@@ -14,8 +14,8 @@ sameDateSort: 5
 沒有泛型，型別只能寫死，每種型別都得複製一份函式：
 
 ```typescript
-function firstString(arr: string[]): string { return arr[0] }
-function firstNumber(arr: number[]): number { return arr[0] }
+function firstString(arr: string[]): string | undefined { return arr[0] }
+function firstNumber(arr: number[]): number | undefined { return arr[0] }
 ```
 
 或者退而求其次用 `any`，但這樣型別資訊就丟光了：
@@ -27,14 +27,16 @@ function first(arr: any[]): any { return arr[0] }
 泛型的解法是讓「型別本身」也變成參數：
 
 ```typescript
-function first<T>(arr: T[]): T {
+function first<T>(arr: T[]): T | undefined {
   return arr[0]
 }
 
-const a = first(['a', 'b'])   // T 推導為 string，回傳 string
-const b = first([1, 2])       // T 推導為 number，回傳 number
+const a = first(['a', 'b'])   // T 推導為 string，回傳 string | undefined
+const b = first([1, 2])       // T 推導為 number，回傳 number | undefined
 const c = first<boolean>([true]) // 顯式指定
 ```
+
+空陣列的第一個元素是 undefined；這裡配合環境篇的 noUncheckedIndexedAccess 保留這個可能性。若 API 保證非空，也可以把參數改成 `[T, ...T[]]`。
 
 ## 泛型函式
 
@@ -233,7 +235,7 @@ type A = Awaited2<Promise<string>>   // string
 type B = Awaited2<number>            // number
 ```
 
-（標準庫已有 `Awaited<T>`，這裡只是示範原理。）
+（標準庫已有 `Awaited<T>`；這個簡化版本只拆一層 Promise，不支援內建工具完整的遞迴／thenable 語意。）
 
 ## mapped type：把已有型別逐欄變換
 
@@ -301,7 +303,7 @@ type AsyncAPI = Asyncify<Sync>
 // }
 ```
 
-mapped type + template literal + conditional type + infer，一次到位。
+mapped type + template literal + conditional type + infer，一次到位。這只建立型別，不會把同步方法真的改成 async；實作仍需另外提供，非函式欄位在這個簡化版本中會映射成 never。
 
 ## 寫泛型的順序建議
 
@@ -313,3 +315,9 @@ mapped type + template literal + conditional type + infer，一次到位。
 不要一開始就追求最通用的寫法，否則容易卡在型別系統裡，忘了原本要實作什麼。
 
 下一篇看標準庫把這些泛型工具包好的 utility types（`Partial`、`Pick`、`Omit`、`Record`⋯⋯）。多數時候不必自己寫 mapped type，直接組合現成的就夠。
+
+## 參考文件
+
+- [TypeScript：Generics](https://www.typescriptlang.org/docs/handbook/2/generics.html)
+- [TypeScript：Conditional Types](https://www.typescriptlang.org/docs/handbook/2/conditional-types.html)
+- [TypeScript：noUncheckedIndexedAccess](https://www.typescriptlang.org/tsconfig/noUncheckedIndexedAccess.html)

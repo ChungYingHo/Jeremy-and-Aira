@@ -1,9 +1,9 @@
 ---
 title: "[Java] 泛型"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-20"
 tags: ["Java", "generics", "wildcard", "type erasure"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 4
 ---
 
@@ -127,7 +127,7 @@ void printSize(Collection<?> c) {
 
 ### 上界 `? extends T`
 
-「T 或 T 的子型別」——**生產者 producer**，可讀不可寫：
+「T 或 T 的子型別」——**生產者 producer**，可讀，但不能任意加入 T：
 
 ```java
 double sum(List<? extends Number> nums) {
@@ -140,7 +140,7 @@ sum(List.of(1, 2, 3));       // List\<Integer\> ✅
 sum(List.of(1.0, 2.0));      // List\<Double\> ✅
 ```
 
-不能寫入（除了 `null`）：
+不能加入一般的非 null 值（仍可移除或 clear，所以不是唯讀容器）：
 
 ```java
 List<? extends Number> xs = ...;
@@ -174,13 +174,13 @@ Object o = xs.get(0);   // 只知道是某個 Integer 的父類
 
 集合「拿出來給人用」（producer）→ `extends`；集合「給人塞東西進來」（consumer）→ `super`。
 
-`Collections.copy(List<? super T> dest, List<? extends T> src)` 是經典範例。
+`Collections.copy(List<? super T> dest, List<? extends T> src)` 是經典範例。dest 的 size 必須至少和 src 一樣大，只有預留 capacity 的空 ArrayList 還不夠。
 
 ## type erasure：泛型只活在編譯期
 
-JVM **看不到**泛型，runtime 全被抹成原始型別（`T` → `Object`、`T extends Number` → `Number`）。
+一般泛型實例不會為每組型別引數產生不同的 runtime class；型別參數擦除成上界（無界 `T` → `Object`、`T extends Number` → `Number`），編譯器另插入必要的 cast 與 bridge method。
 
-「擦除」發生在**編譯期末段**：.java 編譯到 .class 時，`List<String>` 會被替換為 raw `List`，所有 `T` 變成 `Object`（或 bound 上界）。runtime 看到的是沒有泛型資訊的 class 檔——這就是為什麼 `list instanceof List<String>` 不能寫（語法禁止）。
+「擦除」發生在**編譯期末段**：.java 編譯到 .class 時，`List<String>` 會被替換為 raw `List`，所有 `T` 變成 `Object`（或 bound 上界）。但 class 檔不是完全沒有泛型資訊：類別、欄位、方法的宣告可保留 signature metadata，反射能讀到部分資訊。物件本身不攜帶可供一般元素型別檢查的參數資訊，所以不能任意檢查 `list instanceof List<String>`；`List<?>` 則可以。
 
 後果是一連串限制：
 
@@ -272,3 +272,8 @@ Pair<String, Double> p2 = p.withSecond(3.14);
 ```
 
 下一篇換口味——`enum` 與字串。`enum` 在 Java 是「真正的型別」（不是 int 別名），可以帶方法、帶欄位；字串則展開 `String` immutability、`StringBuilder`、Java 15+ 的 text block。
+
+## 參考文件
+
+- [Oracle：Type Erasure](https://docs.oracle.com/javase/tutorial/java/generics/erasure.html)
+- [Oracle：Wildcard Guidelines](https://docs.oracle.com/javase/tutorial/java/generics/wildcardGuidelines.html)

@@ -1,9 +1,9 @@
 ---
 title: "[Java] 例外處理"
-author: "Jeremy & Claude"
+author: "Jeremy & Claude & Codex"
 date: "2026-04-20"
 tags: ["Java", "exception", "try-catch", "throws"]
-changelog: ["2026-06-11"]
+changelog: ["2026-06-11", '2026-11-05']
 sameDateSort: 2
 ---
 
@@ -15,17 +15,9 @@ Java 例外比其他語言多一層「checked」概念——編譯器強迫你�
 | :--- | :--- | :--- | :--- |
 | **checked** | `Exception`（非 RuntimeException） | `IOException`、`SQLException` | ✅ 必須 try/catch 或 `throws` |
 | **unchecked** | `RuntimeException` | `NullPointerException`、`IllegalArgumentException` | ❌ 不強制 |
-| **error** | `Error` | `OutOfMemoryError`、`StackOverflowError` | 不該抓 |
+| **error（也是 unchecked）** | `Error` | `OutOfMemoryError`、`StackOverflowError` | 不強制，一般業務邏輯不捕捉 |
 
-整個階層：
-
-```
-Throwable
-├── Error              （JVM 層級災難，別碰）
-└── Exception
-    ├── RuntimeException        （unchecked）
-    └── 其他                     （checked）
-```
+`Throwable` 底下分成 `Error` 與 `Exception`；`RuntimeException` 是 `Exception` 的子類。`RuntimeException`、`Error` 及其子類都屬於 unchecked，其餘 throwable 類型是 checked。`Error` 通常表示一般應用程式不預期自行恢復的問題，並不是語法上不能捕捉。
 
 ## try / catch / finally
 
@@ -52,7 +44,7 @@ try {
 }
 ```
 
-multi-catch 內的 `e` 是「共同父類型」，能呼叫的方法只到那層。
+multi-catch 內可用的成員由這些型別的共同上界決定，不能直接呼叫某一分支獨有的方法；也不能重新賦值給 `e`。同一組不能同時列出父類與子類，例如 `IOException | FileNotFoundException`。
 
 ## try-with-resources（Java 7+）
 
@@ -74,7 +66,9 @@ try (Connection c = ds.getConnection();
 }
 ```
 
-新程式碼處理 IO / DB / Stream 一律用這個，不要自己寫 finally close。
+自己取得且負責關閉的 IO／DB 資源，優先用這個，不要自己寫 finally close。不是所有 Stream 都要關閉：由 `Files.lines` 等 IO 來源產生的串流要關，由集合產生的串流通常不需要。如果主體和 `close()` 同時丟例外，主體例外保留，關閉例外可從 `getSuppressed()` 取得。
+
+本文 `stmt`、`ds`、`log` 等代表既有的資料庫／記錄器物件；`...` 是省略實作的示意，不能直接當成 Java 敘述編譯。
 
 ## throws：往上拋
 
@@ -146,7 +140,7 @@ try {
 
 ## try / catch / finally 的微妙之處
 
-### finally 永遠跑
+### finally 在正常控制流程離開時會跑
 
 ```java
 try {
@@ -155,6 +149,8 @@ try {
     System.out.println("still runs");   // 會跑，return 之後、回呼叫端之前
 }
 ```
+
+這不等於任何情況都保證執行：例如 JVM 被終止、呼叫 `System.exit`，或執行緒一直停在 try 內，都不能依賴 finally 完成清理。
 
 ### finally 內 return 會吃掉 try 的 return（陷阱）
 
@@ -213,6 +209,12 @@ try {
 | `IOException` | 檔案 / 網路 IO 失敗（checked） |
 | `InterruptedException` | 執行緒被中斷（checked） |
 
-`NullPointerException`（NPE）是 Java 最常見的 bug 來源。Java 8+ 用 `Optional`、Java 14+ 用 helpful NPE messages（`-XX:+ShowCodeDetailsInExceptionMessages`，預設開）能幫上忙，根本解法仍是「不要回傳 null」。
+`NullPointerException`（NPE）很常見。Java 8 的 `Optional` 適合用在「可能沒有結果」的方法回傳值，但不是所有 null 的通用替代品。Helpful NPE messages 在 Java 14 加入，Java 15 起預設啟用；可用 `-XX:+ShowCodeDetailsInExceptionMessages` 控制。更根本的是明訂哪些值可以缺少，並在邊界驗證。
 
 下一篇進集合框架——`List` / `Map` / `Set` / `Queue`，與何時選哪一個實作（`ArrayList` vs `LinkedList`、`HashMap` vs `TreeMap`）。
+
+## 參考文件
+
+- [JLS 21：Exceptions](https://docs.oracle.com/javase/specs/jls/se21/html/jls-11.html)
+- [Oracle：try-with-resources 與 suppressed exceptions](https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html)
+- [JEP 358：Helpful NullPointerExceptions](https://openjdk.org/jeps/358)／[預設啟用的 Java 15 變更](https://bugs.openjdk.org/browse/JDK-8233014)

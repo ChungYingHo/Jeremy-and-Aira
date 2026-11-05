@@ -1,10 +1,10 @@
 ---
 title: '[Vue] Router'
-author: 'Jeremy & Claude'
+author: 'Jeremy & Claude & Codex'
 date: '2026-04-02'
 tags: ['vue', 'vue-router', 'routing', 'SPA']
 sameDateSort: 3
-changelog: ['2026-06-11']
+changelog: ['2026-06-11', '2026-11-05']
 ---
 
 ## 前端路由的作用
@@ -21,7 +21,7 @@ changelog: ['2026-06-11']
 安裝套件（`create-vue` 建專案時若已選 Router 則不需要）：
 
 ```bash
-npm install vue-router
+npm install vue-router@4
 ```
 
 ### 建立路由
@@ -94,7 +94,7 @@ createWebHashHistory()
 
 | 模式 | URL 格式 | 後端配合 | 備註 |
 |---|---|---|---|
-| `createWebHistory` | `example.com/about` | 需要（所有路徑導向 index.html） | 主流部署平台（Vercel、Netlify）自動處理，推薦使用 |
+| `createWebHistory` | `example.com/about` | 需要（所有路徑導向 index.html） | 需依部署方式設定 SPA fallback，不能假定平台自動處理 |
 | `createWebHashHistory` | `example.com/#/about` | 不需要（`#` 後的內容不送到伺服器） | URL 較不美觀 |
 
 如果是自己架伺服器，後端要設 rewrite 把所有路徑指回 `index.html`，不然使用者一按重新整理就 404：
@@ -177,12 +177,7 @@ watch(
 
 常見需求：外層共用一個 layout（像 sidebar），中間的內容區跟著子路由切換。
 
-```
-/settings
-├── /settings/profile    → 個人資料
-├── /settings/security   → 安全設定
-└── /settings/notify     → 通知設定
-```
+`/settings` 使用共用 layout；其子頁 `/settings/profile`、`/settings/security`、`/settings/notify` 分別顯示個人資料、安全設定與通知設定。
 
 用巢狀路由就能做到：
 
@@ -239,7 +234,7 @@ const routes = [
 
 ## 導航守衛
 
-導航守衛會在路由切換前攔下來，檢查過了才放行。最常見的用途就是**權限控制**。
+導航守衛會在路由切換前攔下來，檢查過了才放行。常用來控制前端頁面的導向體驗。前端守衛與 localStorage 的 token 只能當 UI 狀態，無法取代伺服器授權；API 每次請求仍須驗證身份與權限。本文沿用 Vue Router4 API，UserProfile／api／stores 等為專案既有物件示意。
 
 ### 全域守衛
 
@@ -296,6 +291,7 @@ const routes = [
 
 ```vue
 <script setup>
+import { ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 
 const hasUnsavedChanges = ref(false)
@@ -313,11 +309,15 @@ onBeforeRouteLeave((to, from) => {
 
 從 A 頁面導航到 B 頁面，守衛依序執行：
 
-1. A 的 `onBeforeRouteLeave`
-2. 全域 `beforeEach`
-3. B 的 `beforeEnter`（如果有）
-4. B 的元件被解析
-5. 全域 `afterEach`
+1. 離開元件的 beforeRouteLeave／onBeforeRouteLeave
+2. 全域 beforeEach
+3. 複用元件的 beforeRouteUpdate／onBeforeRouteUpdate
+4. 路由設定的 beforeEnter
+5. 解析非同步路由元件
+6. 新啟用元件的 beforeRouteEnter（Options API）
+7. 全域 beforeResolve
+8. 確認導航，再執行 afterEach
+9. 觸發 DOM 更新，之後執行 beforeRouteEnter 交給 next 的 instance callback（若有）
 
 ---
 
@@ -358,7 +358,7 @@ component: () => import(/* webpackChunkName: "settings" */ '@/views/SettingsSecu
 component: () => import(/* webpackChunkName: "settings" */ '@/views/SettingsNotify.vue')
 ```
 
-不過如果你用 Vite 的話，它的 tree-shaking 已經做得很好了，大部分情況不需要手動分組。
+上面是 webpack 專屬的 chunk 註解，不適用 Vite。Vite 的 chunk 分組依其版本與 bundler 設定處理；tree-shaking 是刪除未用程式碼，與把哪些頁面分在同一個 chunk 是不同問題。通常先用預設切分，再根據量測決定是否調整。
 
 ---
 
@@ -407,7 +407,7 @@ console.log(route.query.page) // '1'（注意是字串）
 }
 ```
 
-把這個放在路由設定的最後面，所有沒匹配到的路徑都會導到 404 頁面。
+這個 catch-all 會匹配其他規則未覆蓋的路徑；Vue Router4 有路由排名，不是單靠最後一條的先後順序決定。SPA 顯示 NotFound 也不代表伺服器一定回傳 HTTP404，部署時要另外確認。
 
 ### 滾動行為
 
@@ -439,3 +439,10 @@ const router = createRouter({
 | 懶載入 | `() => import()` 用到才載入 |
 
 Vue Router 的東西其實還有很多（transition、keep-alive、命名視圖等），但上面這些已經涵蓋了日常開發 90% 的需求。把這些搞懂，你就能建構一個有完整路由系統的 Vue 應用了。
+
+## 參考文件
+
+- [Vue Router：Navigation Guards](https://router.vuejs.org/guide/advanced/navigation-guards.html)
+- [Vue Router：History Modes](https://router.vuejs.org/guide/essentials/history-mode.html)
+- [Vue Router：Lazy Loading](https://router.vuejs.org/guide/advanced/lazy-loading.html)
+- [Vue Router：Dynamic Matching](https://router.vuejs.org/guide/essentials/dynamic-matching.html)
